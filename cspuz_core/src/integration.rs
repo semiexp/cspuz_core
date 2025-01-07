@@ -1,4 +1,5 @@
 use crate::arithmetic::CheckedInt;
+use crate::normalizer::ConvertedBoolVar;
 
 use super::config::Config;
 use super::csp::{
@@ -357,18 +358,26 @@ pub struct Model<'a> {
 
 impl<'a> Model<'a> {
     pub fn get_bool(&self, var: BoolVar) -> bool {
-        match self.normalize_map.get_bool_var(var) {
-            Some(norm_lit) => {
+        match self.normalize_map.get_bool_var_raw(var) {
+            Some(ConvertedBoolVar::Lit(norm_lit)) => {
                 self.encode_map
                     .get_bool_lit(norm_lit)
                     .map(|sat_lit| self.model.assignment(sat_lit.var()) ^ sat_lit.is_negated())
                     .unwrap_or(false) // unused variable optimization
             }
-            None => {
+            Some(ConvertedBoolVar::Removed) => {
                 let var_data = self.csp.get_bool_var_status(var);
                 match var_data {
                     BoolVarStatus::Infeasible => panic!(),
                     BoolVarStatus::Fixed(v) => v,
+                    BoolVarStatus::Unfixed => panic!(),
+                }
+            }
+            None => {
+                let var_data = self.csp.get_bool_var_status(var);
+                match var_data {
+                    BoolVarStatus::Infeasible => panic!(),
+                    BoolVarStatus::Fixed(_) => panic!(),
                     BoolVarStatus::Unfixed => false, // unused variable optimization
                 }
             }

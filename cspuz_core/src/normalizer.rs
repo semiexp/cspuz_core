@@ -1,5 +1,5 @@
 use super::config::Config;
-use super::csp::{BoolExpr, BoolVar, CSPVars, IntExpr, IntVar, Stmt, CSP};
+use super::csp::{BoolExpr, BoolVar, BoolVarStatus, CSPVars, IntExpr, IntVar, Stmt, CSP};
 use super::norm_csp::BoolLit as NBoolLit;
 use super::norm_csp::IntVar as NIntVar;
 use super::norm_csp::{Constraint, ExtraConstraint, LinearLit, LinearSum, NormCSP};
@@ -39,8 +39,14 @@ type HashMap<K, V> = std::collections::HashMap<K, V, deterministic_hash_map::Det
 #[cfg(target_arch = "wasm32")]
 use deterministic_hash_map::new_hash_map;
 
+#[derive(Clone, Copy)]
+pub(crate) enum ConvertedBoolVar {
+    Lit(NBoolLit),
+    Removed, // Variable is removed during constant folding
+}
+
 pub struct NormalizeMap {
-    bool_map: ConvertMap<BoolVar, NBoolLit>,
+    bool_map: ConvertMap<BoolVar, ConvertedBoolVar>,
     int_map: ConvertMap<IntVar, NIntVar>,
     int_expr_equivalence: HashMap<IntExpr, NIntVar>,
 }
@@ -61,13 +67,25 @@ impl NormalizeMap {
         var: BoolVar,
     ) -> NBoolLit {
         match self.bool_map[var] {
-            Some(x) => x,
+            Some(x) => match x {
+                ConvertedBoolVar::Lit(x) => x,
+                ConvertedBoolVar::Removed => panic!(),
+            },
             None => {
                 let ret = NBoolLit::new(norm.new_bool_var(), false);
-                self.bool_map[var] = Some(ret);
+                self.bool_map[var] = Some(ConvertedBoolVar::Lit(ret));
                 ret
             }
         }
+    }
+
+    fn mark_removed(&mut self, var: BoolVar) {
+        match self.bool_map[var] {
+            Some(ConvertedBoolVar::Lit(_)) => panic!(),
+            _ => (),
+        }
+
+        self.bool_map[var] = Some(ConvertedBoolVar::Removed);
     }
 
     fn convert_int_var(&mut self, csp_vars: &CSPVars, norm: &mut NormCSP, var: IntVar) -> NIntVar {
@@ -83,6 +101,13 @@ impl NormalizeMap {
     }
 
     pub fn get_bool_var(&self, var: BoolVar) -> Option<NBoolLit> {
+        self.bool_map[var].map(|x| match x {
+            ConvertedBoolVar::Lit(x) => x,
+            ConvertedBoolVar::Removed => panic!(),
+        })
+    }
+
+    pub(crate) fn get_bool_var_raw(&self, var: BoolVar) -> Option<ConvertedBoolVar> {
         self.bool_map[var]
     }
 
@@ -122,32 +147,57 @@ pub fn normalize(csp: &mut CSP, norm: &mut NormCSP, map: &mut NormalizeMap, conf
             if let Stmt::Expr(e) = constr {
                 if let BoolExpr::Iff(x, y) = e {
                     match (x.as_var(), y.as_var()) {
-                        (Some(x), Some(y)) => match (env.map.bool_map[x], env.map.bool_map[y]) {
-                            (Some(_), Some(_)) => (),
-                            (Some(xl), None) => env.map.bool_map[y] = Some(xl),
-                            (None, Some(yl)) => env.map.bool_map[x] = Some(yl),
-                            (None, None) => {
-                                let xl = env.convert_bool_var(x);
-                                env.map.bool_map[y] = Some(xl);
+                        (Some(x), Some(y)) => {
+                            match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
+                                (Some(_), Some(_)) => (),
+                                (Some(xl), None) => {
+                                    assert!(env.map.bool_map[y].is_none());
+                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(xl));
+                                }
+                                (None, Some(yl)) => {
+                                    assert!(env.map.bool_map[x].is_none());
+                                    env.map.bool_map[x] = Some(ConvertedBoolVar::Lit(yl));
+                                }
+                                (None, None) => {
+                                    let xl = env.convert_bool_var(x);
+                                    assert!(env.map.bool_map[y].is_none());
+                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(xl));
+                                }
                             }
-                        },
+                        }
                         _ => (),
                     }
                 } else if let BoolExpr::Xor(x, y) = e {
                     match (x.as_var(), y.as_var()) {
-                        (Some(x), Some(y)) => match (env.map.bool_map[x], env.map.bool_map[y]) {
-                            (Some(_), Some(_)) => (),
-                            (Some(xl), None) => env.map.bool_map[y] = Some(!xl),
-                            (None, Some(yl)) => env.map.bool_map[x] = Some(!yl),
-                            (None, None) => {
-                                let xl = env.convert_bool_var(x);
-                                env.map.bool_map[y] = Some(!xl);
+                        (Some(x), Some(y)) => {
+                            match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
+                                (Some(_), Some(_)) => (),
+                                (Some(xl), None) => {
+                                    assert!(env.map.bool_map[y].is_none());
+                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(!xl));
+                                }
+                                (None, Some(yl)) => {
+                                    assert!(env.map.bool_map[x].is_none());
+                                    env.map.bool_map[x] = Some(ConvertedBoolVar::Lit(!yl));
+                                }
+                                (None, None) => {
+                                    let xl = env.convert_bool_var(x);
+                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(!xl));
+                                }
                             }
-                        },
+                        }
                         _ => (),
                     }
                 }
             }
+        }
+    }
+
+    for var in env.csp_vars.bool_vars_iter() {
+        let data = &env.csp_vars[var];
+        match data.get_status() {
+            BoolVarStatus::Fixed(_) => env.map.mark_removed(var),
+            _ => (),
         }
     }
 
@@ -1522,6 +1572,40 @@ mod tests {
     }
 
     #[test]
+    fn test_normalization_removed_variables() {
+        let mut csp = CSP::new();
+        let mut norm_csp = NormCSP::new();
+        let mut map = NormalizeMap::new();
+        let config = Config::default();
+
+        let v = csp.new_bool_var();
+        let w = csp.new_bool_var();
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+        let z = csp.new_bool_var();
+        csp.add_constraint(Stmt::Expr(!w.expr()));
+        csp.add_constraint(Stmt::Expr(w.expr() | x.expr()));
+        csp.add_constraint(Stmt::Expr(y.expr() | z.expr()));
+
+        csp.optimize(true, false);
+
+        normalize(&mut csp, &mut norm_csp, &mut map, &config);
+
+        fn is_removed(v: ConvertedBoolVar) -> bool {
+            match v {
+                ConvertedBoolVar::Removed => true,
+                _ => false,
+            }
+        }
+
+        assert!(map.bool_map[v].is_none());
+        assert!(is_removed(map.bool_map[w].unwrap()));
+        assert!(is_removed(map.bool_map[x].unwrap()));
+        assert!(!is_removed(map.bool_map[y].unwrap()));
+        assert!(!is_removed(map.bool_map[z].unwrap()));
+    }
+
+    #[test]
     fn test_normalization_equiv_optimization() {
         let mut tester = NormalizerTester::new();
 
@@ -1538,8 +1622,8 @@ mod tests {
         tester.config.merge_equivalent_variables = true;
         tester.check();
         assert_eq!(
-            tester.map.bool_map[v].unwrap().var,
-            tester.map.bool_map[z].unwrap().var
+            tester.map.get_bool_var(v).unwrap().var,
+            tester.map.get_bool_var(z).unwrap().var,
         );
     }
 

@@ -6,6 +6,12 @@ use std::ops::{Index, IndexMut};
 
 pub use super::csp_repr::{BoolExpr, BoolVar, IntExpr, IntVar, Stmt};
 
+pub enum BoolVarStatus {
+    Infeasible,
+    Fixed(bool),
+    Unfixed,
+}
+
 pub(super) struct BoolVarData {
     possibility_mask: u8,
 }
@@ -14,6 +20,16 @@ impl BoolVarData {
     fn new() -> BoolVarData {
         BoolVarData {
             possibility_mask: 3,
+        }
+    }
+
+    pub(super) fn get_status(&self) -> BoolVarStatus {
+        match self.possibility_mask {
+            0 => BoolVarStatus::Infeasible,
+            1 => BoolVarStatus::Fixed(false),
+            2 => BoolVarStatus::Fixed(true),
+            3 => BoolVarStatus::Unfixed,
+            _ => panic!(),
         }
     }
 
@@ -76,12 +92,10 @@ impl CSPVars {
             BoolExpr::Const(_) => (),
             BoolExpr::Var(v) => {
                 let value = &self[*v];
-                if !value.is_feasible(true) && value.is_feasible(false) {
-                    *expr = BoolExpr::Const(false)
-                } else if value.is_feasible(true) && !value.is_feasible(false) {
-                    *expr = BoolExpr::Const(true)
-                } else if value.is_unsatisfiable() {
-                    panic!(); // this should be handled when the inconsistency first occurred.
+                match value.get_status() {
+                    BoolVarStatus::Fixed(b) => *expr = BoolExpr::Const(b),
+                    BoolVarStatus::Infeasible => panic!(), // this should be handled when the inconsistency first occurred.
+                    BoolVarStatus::Unfixed => (),
                 }
             }
             BoolExpr::NVar(_) => unreachable!(),
@@ -319,12 +333,6 @@ impl IndexMut<IntVar> for CSPVars {
     }
 }
 
-pub enum BoolVarStatus {
-    Infeasible,
-    Fixed(bool),
-    Unfixed,
-}
-
 pub enum IntVarStatus {
     Infeasible,
     Fixed(CheckedInt),
@@ -387,13 +395,7 @@ impl CSP {
     }
 
     pub fn get_bool_var_status(&self, var: BoolVar) -> BoolVarStatus {
-        let data = &self.vars[var];
-        match (data.is_feasible(false), data.is_feasible(true)) {
-            (false, false) => BoolVarStatus::Infeasible,
-            (false, true) => BoolVarStatus::Fixed(true),
-            (true, false) => BoolVarStatus::Fixed(false),
-            (true, true) => BoolVarStatus::Unfixed,
-        }
+        self.vars[var].get_status()
     }
 
     pub fn get_int_var_status(&self, var: IntVar) -> IntVarStatus {
