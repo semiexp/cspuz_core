@@ -43,11 +43,43 @@ use deterministic_hash_map::new_hash_map;
 pub(crate) enum ConvertedBoolVar {
     Lit(NBoolLit),
     Removed, // Variable is removed during constant folding
+    NotConverted,
+}
+
+impl ConvertedBoolVar {
+    #[allow(unused)]
+    fn is_removed(&self) -> bool {
+        match self {
+            ConvertedBoolVar::Removed => true,
+            _ => false,
+        }
+    }
+
+    #[allow(unused)]
+    fn is_lit(&self) -> bool {
+        match self {
+            ConvertedBoolVar::Lit(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_not_converted(&self) -> bool {
+        match self {
+            ConvertedBoolVar::NotConverted => true,
+            _ => false,
+        }
+    }
+}
+
+impl Default for ConvertedBoolVar {
+    fn default() -> ConvertedBoolVar {
+        ConvertedBoolVar::NotConverted
+    }
 }
 
 pub struct NormalizeMap {
     bool_map: ConvertMap<BoolVar, ConvertedBoolVar>,
-    int_map: ConvertMap<IntVar, NIntVar>,
+    int_map: ConvertMap<IntVar, Option<NIntVar>>,
     int_expr_equivalence: HashMap<IntExpr, NIntVar>,
 }
 
@@ -67,13 +99,11 @@ impl NormalizeMap {
         var: BoolVar,
     ) -> NBoolLit {
         match self.bool_map[var] {
-            Some(x) => match x {
-                ConvertedBoolVar::Lit(x) => x,
-                ConvertedBoolVar::Removed => panic!(),
-            },
-            None => {
+            ConvertedBoolVar::Lit(x) => x,
+            ConvertedBoolVar::Removed => panic!(),
+            ConvertedBoolVar::NotConverted => {
                 let ret = NBoolLit::new(norm.new_bool_var(), false);
-                self.bool_map[var] = Some(ConvertedBoolVar::Lit(ret));
+                self.bool_map[var] = ConvertedBoolVar::Lit(ret);
                 ret
             }
         }
@@ -81,11 +111,11 @@ impl NormalizeMap {
 
     fn mark_removed(&mut self, var: BoolVar) {
         match self.bool_map[var] {
-            Some(ConvertedBoolVar::Lit(_)) => panic!(),
+            ConvertedBoolVar::Lit(_) => panic!(),
             _ => (),
         }
 
-        self.bool_map[var] = Some(ConvertedBoolVar::Removed);
+        self.bool_map[var] = ConvertedBoolVar::Removed;
     }
 
     fn convert_int_var(&mut self, csp_vars: &CSPVars, norm: &mut NormCSP, var: IntVar) -> NIntVar {
@@ -101,13 +131,14 @@ impl NormalizeMap {
     }
 
     pub fn get_bool_var(&self, var: BoolVar) -> Option<NBoolLit> {
-        self.bool_map[var].map(|x| match x {
-            ConvertedBoolVar::Lit(x) => x,
+        match self.bool_map[var] {
+            ConvertedBoolVar::Lit(x) => Some(x),
             ConvertedBoolVar::Removed => panic!(),
-        })
+            ConvertedBoolVar::NotConverted => None,
+        }
     }
 
-    pub(crate) fn get_bool_var_raw(&self, var: BoolVar) -> Option<ConvertedBoolVar> {
+    pub(crate) fn get_bool_var_raw(&self, var: BoolVar) -> ConvertedBoolVar {
         self.bool_map[var]
     }
 
@@ -151,17 +182,17 @@ pub fn normalize(csp: &mut CSP, norm: &mut NormCSP, map: &mut NormalizeMap, conf
                             match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
                                 (Some(_), Some(_)) => (),
                                 (Some(xl), None) => {
-                                    assert!(env.map.bool_map[y].is_none());
-                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(xl));
+                                    assert!(env.map.bool_map[y].is_not_converted());
+                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
                                 }
                                 (None, Some(yl)) => {
-                                    assert!(env.map.bool_map[x].is_none());
-                                    env.map.bool_map[x] = Some(ConvertedBoolVar::Lit(yl));
+                                    assert!(env.map.bool_map[x].is_not_converted());
+                                    env.map.bool_map[x] = ConvertedBoolVar::Lit(yl);
                                 }
                                 (None, None) => {
                                     let xl = env.convert_bool_var(x);
-                                    assert!(env.map.bool_map[y].is_none());
-                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(xl));
+                                    assert!(env.map.bool_map[y].is_not_converted());
+                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
                                 }
                             }
                         }
@@ -173,16 +204,16 @@ pub fn normalize(csp: &mut CSP, norm: &mut NormCSP, map: &mut NormalizeMap, conf
                             match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
                                 (Some(_), Some(_)) => (),
                                 (Some(xl), None) => {
-                                    assert!(env.map.bool_map[y].is_none());
-                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(!xl));
+                                    assert!(env.map.bool_map[y].is_not_converted());
+                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
                                 }
                                 (None, Some(yl)) => {
-                                    assert!(env.map.bool_map[x].is_none());
-                                    env.map.bool_map[x] = Some(ConvertedBoolVar::Lit(!yl));
+                                    assert!(env.map.bool_map[x].is_not_converted());
+                                    env.map.bool_map[x] = ConvertedBoolVar::Lit(!yl);
                                 }
                                 (None, None) => {
                                     let xl = env.convert_bool_var(x);
-                                    env.map.bool_map[y] = Some(ConvertedBoolVar::Lit(!xl));
+                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
                                 }
                             }
                         }
@@ -1591,18 +1622,11 @@ mod tests {
 
         normalize(&mut csp, &mut norm_csp, &mut map, &config);
 
-        fn is_removed(v: ConvertedBoolVar) -> bool {
-            match v {
-                ConvertedBoolVar::Removed => true,
-                _ => false,
-            }
-        }
-
-        assert!(map.bool_map[v].is_none());
-        assert!(is_removed(map.bool_map[w].unwrap()));
-        assert!(is_removed(map.bool_map[x].unwrap()));
-        assert!(!is_removed(map.bool_map[y].unwrap()));
-        assert!(!is_removed(map.bool_map[z].unwrap()));
+        assert!(map.bool_map[v].is_not_converted());
+        assert!(map.bool_map[w].is_removed());
+        assert!(map.bool_map[x].is_removed());
+        assert!(map.bool_map[y].is_lit());
+        assert!(map.bool_map[z].is_lit());
     }
 
     #[test]

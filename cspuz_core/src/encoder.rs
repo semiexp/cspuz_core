@@ -220,8 +220,8 @@ macro_rules! new_vars_as_lits {
 }
 
 pub struct EncodeMap {
-    bool_map: ConvertMap<BoolVar, Lit>, // mapped to Lit rather than Var so that further optimization can be done
-    int_map: ConvertMap<IntVar, Encoding>,
+    bool_map: ConvertMap<BoolVar, Option<Lit>>, // mapped to Lit rather than Var so that further optimization can be done
+    int_map: ConvertMap<IntVar, Option<Encoding>>,
 }
 
 impl EncodeMap {

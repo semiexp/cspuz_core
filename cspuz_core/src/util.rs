@@ -32,16 +32,18 @@ pub trait ConvertMapIndex {
     fn to_index(&self) -> usize;
 }
 
-pub struct ConvertMap<K: ConvertMapIndex, V> {
-    data: Vec<Option<V>>,
+pub struct ConvertMap<K: ConvertMapIndex, V: Default> {
+    data: Vec<V>,
     key_type: PhantomData<K>,
+    default: V,
 }
 
-impl<K: ConvertMapIndex, V> ConvertMap<K, V> {
+impl<K: ConvertMapIndex, V: Default> ConvertMap<K, V> {
     pub fn new() -> ConvertMap<K, V> {
         ConvertMap {
             data: vec![],
             key_type: PhantomData,
+            default: V::default(),
         }
     }
 
@@ -50,24 +52,24 @@ impl<K: ConvertMapIndex, V> ConvertMap<K, V> {
     }
 }
 
-impl<K: ConvertMapIndex, V> Index<K> for ConvertMap<K, V> {
-    type Output = Option<V>;
+impl<K: ConvertMapIndex, V: Default> Index<K> for ConvertMap<K, V> {
+    type Output = V;
 
     fn index(&self, index: K) -> &Self::Output {
         let index = index.to_index();
         if index < self.len() {
             &self.data[index]
         } else {
-            &None
+            &self.default
         }
     }
 }
 
-impl<K: ConvertMapIndex, V> IndexMut<K> for ConvertMap<K, V> {
+impl<K: ConvertMapIndex, V: Default> IndexMut<K> for ConvertMap<K, V> {
     fn index_mut(&mut self, index: K) -> &mut Self::Output {
         let index = index.to_index();
         while self.len() <= index {
-            self.data.push(None);
+            self.data.push(V::default());
         }
         &mut self.data[index]
     }
