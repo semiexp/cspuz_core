@@ -3,7 +3,9 @@ name: Run tests
 on:
   push:
     branches: ["main"]
-  pull_request:
+  pull_request: {}
+  schedule:
+    - cron: "0 15 * * FRI"  # weekly test: every Saturday 00:00 JST
 
 env:
   CARGO_TERM_COLOR: always
