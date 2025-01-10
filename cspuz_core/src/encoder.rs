@@ -258,41 +258,38 @@ impl EncodeMap {
         sat: &mut SAT,
         var: IntVar,
     ) {
-        if self.int_map[var].is_none() {
-            match norm_vars.int_var(var) {
-                IntVarRepresentation::Domain(domain) => {
-                    let domain = domain.enumerate();
-                    assert_ne!(domain.len(), 0);
-                    let lits;
-                    #[cfg(feature = "sat-analyzer")]
-                    {
-                        let mut tmp = vec![];
-                        for i in 0..domain.len() - 1 {
-                            tmp.push(
-                                new_var!(sat, "{}.ord>={}", var.id(), domain[i + 1].get())
-                                    .as_lit(false),
-                            );
-                        }
-                        lits = tmp;
+        assert!(self.int_map[var].is_none());
+        match norm_vars.int_var(var) {
+            IntVarRepresentation::Domain(domain) => {
+                let domain = domain.enumerate();
+                assert_ne!(domain.len(), 0);
+                let lits;
+                #[cfg(feature = "sat-analyzer")]
+                {
+                    let mut tmp = vec![];
+                    for i in 0..domain.len() - 1 {
+                        tmp.push(
+                            new_var!(sat, "{}.ord>={}", var.id(), domain[i + 1].get())
+                                .as_lit(false),
+                        );
                     }
-                    #[cfg(not(feature = "sat-analyzer"))]
-                    {
-                        lits = sat.new_vars_as_lits(domain.len() - 1);
-                    }
-                    for i in 1..lits.len() {
-                        // vars[i] implies vars[i - 1]
-                        sat.add_clause(&vec![!lits[i], lits[i - 1]]);
-                    }
+                    lits = tmp;
+                }
+                #[cfg(not(feature = "sat-analyzer"))]
+                {
+                    lits = sat.new_vars_as_lits(domain.len() - 1);
+                }
+                for i in 1..lits.len() {
+                    // vars[i] implies vars[i - 1]
+                    sat.add_clause(&vec![!lits[i], lits[i - 1]]);
+                }
 
-                    self.int_map[var] =
-                        Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
-                }
-                &IntVarRepresentation::Binary(cond, f, t) => {
-                    let domain = vec![f, t];
-                    let lits = vec![self.convert_bool_lit(norm_vars, sat, cond)];
-                    self.int_map[var] =
-                        Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
-                }
+                self.int_map[var] = Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
+            }
+            &IntVarRepresentation::Binary(cond, f, t) => {
+                let domain = vec![f, t];
+                let lits = vec![self.convert_bool_lit(norm_vars, sat, cond)];
+                self.int_map[var] = Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
             }
         }
     }
@@ -303,44 +300,42 @@ impl EncodeMap {
         sat: &mut SAT,
         var: IntVar,
     ) {
-        if self.int_map[var].is_none() {
-            match norm_vars.int_var(var) {
-                IntVarRepresentation::Domain(domain) => {
-                    let domain = domain.enumerate();
-                    assert_ne!(domain.len(), 0);
-                    let lits;
-                    #[cfg(feature = "sat-analyzer")]
-                    {
-                        let mut tmp = vec![];
-                        for i in 0..domain.len() {
-                            tmp.push(
-                                new_var!(sat, "{}.dir=={}", var.id(), domain[i].get())
-                                    .as_lit(false),
-                            );
-                        }
-                        lits = tmp;
+        assert!(self.int_map[var].is_none());
+        match norm_vars.int_var(var) {
+            IntVarRepresentation::Domain(domain) => {
+                let domain = domain.enumerate();
+                assert_ne!(domain.len(), 0);
+                let lits;
+                #[cfg(feature = "sat-analyzer")]
+                {
+                    let mut tmp = vec![];
+                    for i in 0..domain.len() {
+                        tmp.push(
+                            new_var!(sat, "{}.dir=={}", var.id(), domain[i].get()).as_lit(false),
+                        );
                     }
-                    #[cfg(not(feature = "sat-analyzer"))]
-                    {
-                        lits = sat.new_vars_as_lits(domain.len());
+                    lits = tmp;
+                }
+                #[cfg(not(feature = "sat-analyzer"))]
+                {
+                    lits = sat.new_vars_as_lits(domain.len());
+                }
+                sat.add_clause(&lits);
+                for i in 1..lits.len() {
+                    for j in 0..i {
+                        sat.add_clause(&vec![!lits[i], !lits[j]]);
                     }
-                    sat.add_clause(&lits);
-                    for i in 1..lits.len() {
-                        for j in 0..i {
-                            sat.add_clause(&vec![!lits[i], !lits[j]]);
-                        }
-                    }
+                }
 
-                    self.int_map[var] =
-                        Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
-                }
-                &IntVarRepresentation::Binary(cond, f, t) => {
-                    let c = self.convert_bool_lit(norm_vars, sat, cond);
-                    let domain = vec![f, t];
-                    let lits = vec![!c, c];
-                    self.int_map[var] =
-                        Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
-                }
+                self.int_map[var] =
+                    Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
+            }
+            &IntVarRepresentation::Binary(cond, f, t) => {
+                let c = self.convert_bool_lit(norm_vars, sat, cond);
+                let domain = vec![f, t];
+                let lits = vec![!c, c];
+                self.int_map[var] =
+                    Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
             }
         }
     }
@@ -357,66 +352,65 @@ impl EncodeMap {
         sat: &mut SAT,
         var: IntVar,
     ) {
-        if self.int_map[var].is_none() {
-            match norm_vars.int_var(var) {
-                IntVarRepresentation::Domain(domain) => {
-                    let low = domain.lower_bound_checked();
-                    let high = domain.upper_bound_checked();
-                    if low < 0 {
-                        todo!("negative values not supported in log encoding");
-                    }
-                    let n_bits = (32 - high.get().leading_zeros()) as usize;
-                    let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
-
-                    for i in 0..n_bits {
-                        if ((low.get() >> i) & 1) != 0 {
-                            let mut clause = vec![lits[i]];
-                            for j in (i + 1)..n_bits {
-                                clause.push(if (low.get() >> j) & 1 != 0 {
-                                    !lits[j]
-                                } else {
-                                    lits[j]
-                                });
-                            }
-                            sat.add_clause(&clause);
-                        }
-                    }
-
-                    for i in 0..n_bits {
-                        if (high.get() >> i) & 1 == 0 {
-                            let mut clause = vec![!lits[i]];
-                            for j in (i + 1)..n_bits {
-                                clause.push(if (high.get() >> j) & 1 != 0 {
-                                    !lits[j]
-                                } else {
-                                    lits[j]
-                                });
-                            }
-                            sat.add_clause(&clause);
-                        }
-                    }
-
-                    let domain = domain.enumerate();
-                    for i in 1..domain.len() {
-                        let gap_low = domain[i - 1].get() + 1;
-                        let gap_high = domain[i].get();
-                        for n in gap_low..gap_high {
-                            let mut clause = vec![];
-                            for j in 0..n_bits {
-                                clause.push(if (n >> j) & 1 != 0 { !lits[j] } else { lits[j] });
-                            }
-                            sat.add_clause(&clause);
-                        }
-                    }
-
-                    self.int_map[var] = Some(Encoding::log_encoding(LogEncoding {
-                        lits,
-                        range: Range::new(low, high),
-                    }));
+        assert!(self.int_map[var].is_none());
+        match norm_vars.int_var(var) {
+            IntVarRepresentation::Domain(domain) => {
+                let low = domain.lower_bound_checked();
+                let high = domain.upper_bound_checked();
+                if low < 0 {
+                    todo!("negative values not supported in log encoding");
                 }
-                IntVarRepresentation::Binary(_, _, _) => {
-                    todo!();
+                let n_bits = (32 - high.get().leading_zeros()) as usize;
+                let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
+
+                for i in 0..n_bits {
+                    if ((low.get() >> i) & 1) != 0 {
+                        let mut clause = vec![lits[i]];
+                        for j in (i + 1)..n_bits {
+                            clause.push(if (low.get() >> j) & 1 != 0 {
+                                !lits[j]
+                            } else {
+                                lits[j]
+                            });
+                        }
+                        sat.add_clause(&clause);
+                    }
                 }
+
+                for i in 0..n_bits {
+                    if (high.get() >> i) & 1 == 0 {
+                        let mut clause = vec![!lits[i]];
+                        for j in (i + 1)..n_bits {
+                            clause.push(if (high.get() >> j) & 1 != 0 {
+                                !lits[j]
+                            } else {
+                                lits[j]
+                            });
+                        }
+                        sat.add_clause(&clause);
+                    }
+                }
+
+                let domain = domain.enumerate();
+                for i in 1..domain.len() {
+                    let gap_low = domain[i - 1].get() + 1;
+                    let gap_high = domain[i].get();
+                    for n in gap_low..gap_high {
+                        let mut clause = vec![];
+                        for j in 0..n_bits {
+                            clause.push(if (n >> j) & 1 != 0 { !lits[j] } else { lits[j] });
+                        }
+                        sat.add_clause(&clause);
+                    }
+                }
+
+                self.int_map[var] = Some(Encoding::log_encoding(LogEncoding {
+                    lits,
+                    range: Range::new(low, high),
+                }));
+            }
+            IntVarRepresentation::Binary(_, _, _) => {
+                todo!();
             }
         }
     }
