@@ -7,7 +7,7 @@ edition = "2018"
 
 [lib]
 name = "cspuz_core"
-crate-type = ["cdylib", "lib"]
+crate-type = ["lib"]
 
 [features]
 default = ["csp-extra-constraints", "parser", "cli", "backend-external", "backend-cadical"]

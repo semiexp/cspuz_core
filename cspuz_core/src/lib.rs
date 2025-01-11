@@ -26,8 +26,5 @@ mod util;
 #[cfg(not(target_arch = "wasm32"))]
 pub use pyo3_binding::cspuz_core;
 
-#[cfg(target_arch = "wasm32")]
-mod wasm;
-
 #[cfg(test)]
 mod test_util;
