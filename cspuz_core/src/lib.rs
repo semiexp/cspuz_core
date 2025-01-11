@@ -17,13 +17,13 @@ pub mod csugar_cli;
 #[cfg(feature = "parser")]
 pub mod parser;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(feature = "python-bindings", not(target_arch = "wasm32")))]
 mod pyo3_binding;
 
 pub mod sat;
 mod util;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(feature = "python-bindings", not(target_arch = "wasm32")))]
 pub use pyo3_binding::cspuz_core;
 
 #[cfg(test)]
