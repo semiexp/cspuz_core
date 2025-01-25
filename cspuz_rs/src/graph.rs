@@ -763,6 +763,47 @@ pub fn single_cycle_grid_edges(solver: &mut Solver, grid_frame: &BoolGridEdges) 
     is_passed_flat.reshape_as_2d((height + 1, width + 1))
 }
 
+/// Adds a constraint that `edges` represents a division of a 2D grid and `sizes` represents the sizes
+/// of the region in which each cell belongs.
+///
+/// In `edges`, `true` values represent the edges that divide the grid, and `false` values represent the edges that do not.
+/// The constraint requires that the grid is divided into regions such that:
+///
+/// - There is no "extra" dividing edge: each dividing edge should face two different regions.
+/// - For each cell (y, x), the size of the region in which (y, x) belongs is `sizes[y][x]`.
+///
+/// The following is a valid example of the grid division (numbers represent `sizes`):
+/// ```custom
+/// +---+---+---+
+/// | 2 | 3   3 |
+/// +   +---+   +
+/// | 2 | 3 | 3 |
+/// +---+   +---+
+/// | 3   3 | 1 |
+/// +---+---+---+
+/// ```
+///
+/// The following is not a valid example because there is an "extra" dividing edge:
+/// ```custom
+/// +---+---+---+
+/// | 2 | 6   6 |
+/// +   +---+   +
+/// | 2 | 6   6 |
+/// +---+   +---+
+/// | 6   6 | 1 |
+/// +---+---+---+
+/// ```
+///
+/// The following is also not a valid example because the sizes are incorrect:
+/// ```custom
+/// +---+---+---+
+/// | 2 | 3   3 |
+/// +   +---+   +
+/// | 2 | 4 | 3 |
+/// +---+   +---+
+/// | 4   4 | 1 |
+/// +---+---+---+
+/// ```
 pub fn graph_division_2d<T>(solver: &mut Solver, sizes: &T, edges: &BoolInnerGridEdges)
 where
     T: Operand<Output = Array2DImpl<CSPIntExpr>> + Clone,
@@ -777,6 +818,54 @@ where
     solver.add_graph_division(&sizes, &graph.edges, edges)
 }
 
+/// Adds a constraint that "active" edges in the given graph form a single cycle with self-intersections allowed, or there is no active edge.
+///
+/// Returns a pair of 2D boolean variables `is_passed` and `is_cross`:
+/// - `is_passed[y, x]` is `true` if the vertex at (y, x) is on the cycle.
+/// - `is_cross[y, x]` is `true` if the loop intersects itself at the vertex (y, x).
+///
+/// This is an extension of `active_edges_single_cycle` that allows self-intersections in the cycle.
+/// When four edges meet at a vertex, the vertex is considered as an intersection.
+/// On an intersection, an incoming edge goes straight through the intersection.
+///
+/// # Visual representation
+/// The following is an example of a single cycle with a self-intersection.
+/// ```custom
+/// +---+   +
+/// |   |
+/// +---+---+
+///     |   |
+///     +---+
+/// ```
+///
+/// However, the following is not (there are two cycles):
+/// ```custom
+/// +---+---+   +
+/// |       |
+/// +   +---+---+
+/// |   |   |   |
+/// +---+---+   +
+///     |       |
+/// +   +---+---+
+/// ```
+///
+/// # Example
+/// ```
+/// # use cspuz_rs::graph::{BoolGridEdges, Graph, crossable_single_cycle_grid_edges};
+/// # use cspuz_rs::solver::Solver;
+/// let mut solver = Solver::new();
+/// let grid_frame = BoolGridEdges::new(&mut solver, (2, 2));
+/// let (is_passed, is_cross) = crossable_single_cycle_grid_edges(&mut solver, &grid_frame);
+///
+/// solver.add_expr(is_cross.at((1, 1)));
+/// solver.add_expr(grid_frame.horizontal.at((0, 0)));
+///
+/// let answer = solver.solve();
+/// assert!(answer.is_some());
+/// let answer = answer.unwrap();
+/// assert_eq!(answer.get(&is_passed.at((0, 2))), false);
+/// assert_eq!(answer.get(&grid_frame.horizontal.at((2, 1))), true);
+/// ```
 pub fn crossable_single_cycle_grid_edges(
     solver: &mut Solver,
     grid_frame: &BoolGridEdges,
