@@ -1080,6 +1080,7 @@ pub struct Solver<'a> {
 }
 
 impl<'a> Solver<'a> {
+    /// Creates a new `Solver` instance.
     pub fn new() -> Solver<'a> {
         Solver {
             solver: IntegratedSolver::new(),
@@ -1088,6 +1089,14 @@ impl<'a> Solver<'a> {
         }
     }
 
+    /// Creates and returns a new boolean variable.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.bool_var();
+    /// ```
     pub fn bool_var(&mut self) -> BoolVar {
         Value(Array0DImpl {
             data: self.solver.new_bool_var(),
@@ -1098,12 +1107,28 @@ impl<'a> Solver<'a> {
         self.solver.add_prenormalize_var(var.0.data);
     }
 
+    /// Creates and returns a new 1D array of boolean variables of the specified length.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.bool_var_1d(10);
+    /// ```
     pub fn bool_var_1d(&mut self, len: usize) -> BoolVarArray1D {
         Value(Array1DImpl {
             data: (0..len).map(|_| self.solver.new_bool_var()).collect(),
         })
     }
 
+    /// Creates and returns a new 2D array of boolean variables of the specified shape.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.bool_var_2d((5, 4));
+    /// ```
     pub fn bool_var_2d(&mut self, shape: (usize, usize)) -> BoolVarArray2D {
         let (h, w) = shape;
         Value(Array2DImpl {
@@ -1112,18 +1137,46 @@ impl<'a> Solver<'a> {
         })
     }
 
+    /// Creates and returns a new integer variable with the domain `[low, high]` (inclusive).
+    ///
+    /// The returned variable can take any integer value between `low` and `high`, inclusive.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.int_var(0, 10);
+    /// ```
     pub fn int_var(&mut self, low: i32, high: i32) -> IntVar {
         Value(Array0DImpl {
             data: self.solver.new_int_var(Domain::range(low, high)),
         })
     }
 
+    /// Creates and returns a new integer variable with the specified domain.
+    ///
+    /// The returned variable can take any integer value in the specified `domain`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.int_var_from_domain(vec![0, 1, 3, 5]);
+    /// ```
     pub fn int_var_from_domain(&mut self, domain: Vec<i32>) -> IntVar {
         Value(Array0DImpl {
             data: self.solver.new_int_var_from_list(domain),
         })
     }
 
+    /// Creates and returns a new 1D array of integer variables of the specified length with the domain `[low, high]` (inclusive).
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.int_var_1d(10, 0, 5);
+    /// ```
     pub fn int_var_1d(&mut self, len: usize, low: i32, high: i32) -> IntVarArray1D {
         Value(Array1DImpl {
             data: (0..len)
@@ -1132,6 +1185,14 @@ impl<'a> Solver<'a> {
         })
     }
 
+    /// Creates and returns a new 2D array of integer variables of the specified shape with the domain `[low, high]` (inclusive).
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.int_var_2d((5, 4), 0, 5);
+    /// ```
     pub fn int_var_2d(&mut self, shape: (usize, usize), low: i32, high: i32) -> IntVarArray2D {
         let (h, w) = shape;
         Value(Array2DImpl {
@@ -1142,6 +1203,17 @@ impl<'a> Solver<'a> {
         })
     }
 
+    /// Creates and returns a new 2D array of integer variables of the specified shape with the specified domain range for each element.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = solver.int_var_2d_from_ranges((2, 3), &vec![
+    ///     vec![(0, 1), (0, 2), (0, 3)],
+    ///     vec![(1, 2), (0, 3), (1, 4)],
+    /// ]);
+    /// ```
     pub fn int_var_2d_from_ranges(
         &mut self,
         shape: (usize, usize),
@@ -1159,6 +1231,22 @@ impl<'a> Solver<'a> {
         })
     }
 
+    /// Adds a constraint that the specified boolean expression(s) is true.
+    ///
+    /// You can pass multiple boolean expressions to this method, and the solver will add a constraint that all of them are true.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = &solver.bool_var();
+    /// let y = &solver.bool_var();
+    /// solver.add_expr(x | y);
+    /// solver.add_expr([x.imp(y), x & y]);  // multiple expressions
+    ///
+    /// let a = &solver.bool_var_2d((3, 4));
+    /// solver.add_expr(a);  // BoolVarArray2D is also supported
+    /// ```
     pub fn add_expr<T>(&mut self, exprs: T)
     where
         T: IntoIterator,
@@ -1169,6 +1257,17 @@ impl<'a> Solver<'a> {
             .for_each(|e| self.solver.add_expr(e.as_expr_array().data));
     }
 
+    /// Adds a constraint that the specified integer expressions have different values.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let a = &solver.int_var_1d(5, 0, 3);
+    /// solver.all_different(a);
+    ///
+    /// assert!(solver.solve().is_none());
+    /// ```
     pub fn all_different<T>(&mut self, exprs: T)
     where
         T: IntoIterator,
@@ -1232,6 +1331,28 @@ impl<'a> Solver<'a> {
         self.solver.set_perf_stats(perf_stats);
     }
 
+    /// Registers the specified boolean variable(s) as the answer key(s).
+    ///
+    /// Variables representing the "answer" of the problem instance (not proxy variables) can be
+    /// registered as the answer key. Answer keys are used in `irrefutable_facts` and `answer_iter` methods.
+    ///
+    /// # Example
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = &solver.bool_var();
+    /// solver.add_answer_key_bool(x);  // single variable
+    ///
+    /// let y = &solver.bool_var_1d(10);
+    /// solver.add_answer_key_bool(y);  // array of variables
+    ///
+    /// let z = &solver.bool_var_2d((5, 4));
+    /// solver.add_answer_key_bool(z);  // 2D array of variables
+    ///
+    /// let a = &solver.bool_var();
+    /// let b = &solver.bool_var();
+    /// solver.add_answer_key_bool([a, b]);  // multiple variables
+    /// ```
     pub fn add_answer_key_bool<T>(&mut self, keys: T)
     where
         T: IntoIterator,
@@ -1241,6 +1362,10 @@ impl<'a> Solver<'a> {
             .extend(keys.into_iter().map(|x| x.deref_var().0.data))
     }
 
+    /// Registers the specified integer variable(s) as the answer key(s).
+    ///
+    /// Variables representing the "answer" of the problem instance (not proxy variables) can be
+    /// registered as the answer key. Answer keys are used in `irrefutable_facts` and `answer_iter` methods.
     pub fn add_answer_key_int<T>(&mut self, keys: T)
     where
         T: IntoIterator,
@@ -1254,16 +1379,108 @@ impl<'a> Solver<'a> {
         self.solver.encode()
     }
 
+    /// Solves the CSP instance and returns a model (a mapping from variables to values) if it exists.
+    ///
+    /// If the CSP instance is unsatisfiable, this method returns `None`.
+    ///
+    /// You can call `solve` multiple times on the same `Solver` instance.
+    /// Each call considers all constraints that have been added to the `Solver` so far and returns a model that satisfies them.
+    ///
+    /// # Example
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = &solver.bool_var();
+    /// let y = &solver.bool_var();
+    /// let z = &solver.bool_var();
+    ///
+    /// solver.add_expr(x | y);
+    ///
+    /// let model = solver.solve();
+    /// assert!(model.is_some());
+    ///
+    /// solver.add_expr(!x | z);
+    /// solver.add_expr(!y | z);
+    ///
+    /// let model = solver.solve();
+    /// assert!(model.is_some());
+    ///
+    /// solver.add_expr(!z);
+    ///
+    /// let model = solver.solve();
+    /// assert!(model.is_none());
+    /// ```
     pub fn solve<'b>(&'b mut self) -> Option<Model<'b>> {
         self.solver.solve().map(|model| Model { model })
     }
 
+    /// Returns a partial model containing each answer key variable whose value is the same across all possible models
+    /// of the CSP instance. Each such variable is assigned its decided value in the returned model.
+    ///
+    /// If the CSP instance is unsatisfiable, this method returns `None`.
+    ///
+    /// This method may introduce additional constraints when computing partial models and therefore consumes the `Solver` instance.
+    ///
+    /// # Example
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = &solver.bool_var();
+    /// let y = &solver.bool_var();
+    /// let z = &solver.bool_var();
+    /// solver.add_answer_key_bool([x, y, z]);
+    ///
+    /// solver.add_expr(x | y);
+    /// solver.add_expr(x | z);
+    /// solver.add_expr(!y | !z);
+    ///
+    /// let partial_model = solver.irrefutable_facts();
+    /// assert!(partial_model.is_some());
+    /// let partial_model = partial_model.unwrap();
+    ///
+    /// // For this instance, there are 3 possible assigmnenets:
+    /// // 1. x = true, y = false, z = false
+    /// // 2. x = true, y = false, z = true
+    /// // 3. x = true, y = true, z = false
+    /// // `x` is always true, while the value of `y` and `z` is not decided.
+    /// assert_eq!(partial_model.get(x), Some(true));
+    /// assert_eq!(partial_model.get(y), None);
+    /// assert_eq!(partial_model.get(z), None);
+    /// ```
     pub fn irrefutable_facts(self) -> Option<OwnedPartialModel> {
         self.solver
             .decide_irrefutable_facts(&self.answer_key_bool, &self.answer_key_int)
             .map(|assignment| OwnedPartialModel { assignment })
     }
 
+    /// Returns an iterator that yields all possible assignments to the answer key variables.
+    ///
+    /// The order of assignments is implementation dependent and not guaranteed to be stable.
+    ///
+    /// This method may introduce additional constraints during search and therefore consumes the `Solver` instance.
+    ///
+    /// # Example
+    /// ```
+    /// # use cspuz_rs::solver::Solver;
+    /// let mut solver = Solver::new();
+    /// let x = &solver.bool_var();
+    /// let y = &solver.bool_var();
+    /// let z = &solver.bool_var();
+    ///
+    /// solver.add_answer_key_bool([x, y]);
+    ///
+    /// solver.add_expr(x | y);
+    ///
+    /// let iter = solver.answer_iter();
+    /// let count = iter.count();
+    ///
+    /// // For this instance, there are 3 possible assignments to (x, y):
+    /// // 1. x = false, y = true
+    /// // 2. x = true, y = false
+    /// // 3. x = true, y = true
+    /// // Note that `z` is not included in the answer key, so the value of `z` is not considered.
+    /// assert_eq!(count, 3);
+    /// ```
     pub fn answer_iter(self) -> impl Iterator<Item = OwnedPartialModel> + 'a {
         self.solver
             .answer_iter(&self.answer_key_bool, &self.answer_key_int)
