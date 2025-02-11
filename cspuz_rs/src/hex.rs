@@ -42,8 +42,6 @@ use std::ops::{Index, IndexMut};
 use crate::graph::Graph;
 use crate::solver::{BoolVar, FromModel, FromOwnedPartialModel, Model, Solver};
 
-const HEX_NEIGHBORS: [(i32, i32); 6] = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, 0), (1, 1)];
-
 #[derive(Clone, Debug)]
 struct HexCellMapping {
     a: usize,
