@@ -10,13 +10,12 @@ name = "cspuz_core"
 crate-type = ["lib"]
 
 [features]
-default = ["csp-extra-constraints", "parser", "cli", "backend-external", "backend-cadical", "python-bindings"]
+default = ["csp-extra-constraints", "parser", "cli", "backend-external", "backend-cadical"]
 sat-analyzer = []
 parser = ["dep:nom"]
 cli = ["parser", "dep:getopts"]
 backend-external = []
 backend-cadical = []
-python-bindings = ["dep:pyo3"]
 
 # Enable support for extra CSP constraints which are not used in puzzle solvers.
 csp-extra-constraints = []
@@ -24,9 +23,6 @@ csp-extra-constraints = []
 [dependencies]
 getopts = { version = "0.2", optional = true }
 nom = { version = "7.0.0", optional = true }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-pyo3 = { version = "0.21.2", features = ["extension-module"], optional = true }
 
 [build-dependencies]
 cc = "=1.2.1"
