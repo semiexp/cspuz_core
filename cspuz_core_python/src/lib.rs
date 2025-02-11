@@ -5,11 +5,9 @@ use std::collections::HashMap;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use crate::config::Config;
-use crate::sat::{Backend, OrderEncodingLinearMode};
-
-#[cfg(feature = "parser")]
-use crate::csugar_cli::csugar_cli;
+use cspuz_core::config::Config;
+use cspuz_core::csugar_cli::csugar_cli;
+use cspuz_core::sat::{Backend, OrderEncodingLinearMode};
 
 #[pyclass(name = "Config")]
 #[derive(Clone)]
@@ -225,7 +223,6 @@ fn set_config(config: PyConfig) {
     }
 }
 
-#[cfg(feature = "parser")]
 #[pyfunction]
 fn solver(input: String) -> String {
     let mut bytes = input.as_bytes();
@@ -233,13 +230,6 @@ fn solver(input: String) -> String {
     res
 }
 
-#[cfg(not(feature = "parser"))]
-#[pyfunction]
-fn solver(_input: String) -> String {
-    panic!("parser feature not enabled");
-}
-
-#[cfg(feature = "parser")]
 #[pyfunction]
 fn solver_with_perf(input: String) -> (String, HashMap<String, f64>) {
     let mut bytes = input.as_bytes();
@@ -256,14 +246,8 @@ fn solver_with_perf(input: String) -> (String, HashMap<String, f64>) {
     (res, perf_map)
 }
 
-#[cfg(not(feature = "parser"))]
-#[pyfunction]
-fn solver_with_perf(_input: String) -> (String, HashMap<String, f64>) {
-    panic!("parser feature not enabled");
-}
-
-#[pymodule]
-pub fn cspuz_core(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+#[pymodule(name = "cspuz_core")]
+pub fn cspuz_core_python_module(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(solver, m)?)?;
     m.add_function(wrap_pyfunction!(solver_with_perf, m)?)?;
     m.add_function(wrap_pyfunction!(set_config, m)?)?;
