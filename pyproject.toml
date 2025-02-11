@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "setuptools-rust"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cspuz_core"
+version = "0.1.0"
+
+[tool.setuptools]
+packages = []
+
+[[tool.setuptools-rust.ext-modules]]
+target = "cspuz_core"
+path = "cspuz_core_python/Cargo.toml"
+binding = "PyO3"
