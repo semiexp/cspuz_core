@@ -7,6 +7,9 @@ edition = "2021"
 name = "cspuz_core_python"
 crate-type = ["cdylib"]
 
+[features]
+cadical = ["cspuz_core/backend-cadical"]
+
 [dependencies]
-cspuz_core = { path = "../cspuz_core", features = ["parser", "cli"] }
+cspuz_core = { path = "../cspuz_core", features = ["csp-extra-constraints", "parser", "cli"], default-features = false }
 pyo3 = { version = "0.23.4", features = ["extension-module"] }
