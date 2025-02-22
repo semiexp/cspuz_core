@@ -5,6 +5,7 @@ members = [
     "cspuz_core_python",
     "cspuz_rs",
     "cspuz_rs_macro",
+    "cspuz_rs_puzzles",
     "cspuz_solver_backend",
 ]
 
@@ -12,6 +13,7 @@ default-members = [
     "cspuz_core",
     "cspuz_rs",
     "cspuz_rs_macro",
+    "cspuz_rs_puzzles",
     "cspuz_solver_backend",
 ]
 
