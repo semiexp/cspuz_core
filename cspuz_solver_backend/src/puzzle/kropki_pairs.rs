@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::kropki_pairs::{self, KropkiClue};
+use cspuz_rs_puzzles::puzzles::kropki_pairs::{self, KropkiClue};
 
 pub fn solve_kropki_pairs(url: &str) -> Result<Board, &'static str> {
     let (walls, cells) = kropki_pairs::deserialize_problem(url).ok_or("invalid url")?;

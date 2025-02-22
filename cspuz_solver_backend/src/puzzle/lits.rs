@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::lits;
+use cspuz_rs_puzzles::puzzles::lits;
 
 pub fn solve_lits(url: &str) -> Result<Board, &'static str> {
     let borders = lits::deserialize_problem(url).ok_or("invalid url")?;

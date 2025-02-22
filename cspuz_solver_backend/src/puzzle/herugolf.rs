@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::herugolf;
+use cspuz_rs_puzzles::puzzles::herugolf;
 
 pub fn solve_herugolf(url: &str) -> Result<Board, &'static str> {
     let (pond, clues) = herugolf::deserialize_problem(url).ok_or("invalid url")?;

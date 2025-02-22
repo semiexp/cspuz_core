@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::lohkous;
+use cspuz_rs_puzzles::puzzles::lohkous;
 
 pub fn solve_lohkous(url: &str) -> Result<Board, &'static str> {
     let problem = lohkous::deserialize_problem(url).ok_or("invalid url")?;

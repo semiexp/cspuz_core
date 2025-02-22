@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::slicy;
+use cspuz_rs_puzzles::puzzles::slicy;
 
 pub fn solve_slicy(url: &str) -> Result<Board, &'static str> {
     let borders = slicy::deserialize_problem(url).ok_or("invalid url")?;

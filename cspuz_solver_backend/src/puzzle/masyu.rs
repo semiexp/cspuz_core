@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::masyu;
+use cspuz_rs_puzzles::puzzles::masyu;
 
 pub fn solve_masyu(url: &str) -> Result<Board, &'static str> {
     use masyu::MasyuClue;

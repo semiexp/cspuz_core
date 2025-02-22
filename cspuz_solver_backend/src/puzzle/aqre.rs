@@ -1,7 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
-use cspuz_rs::puzzle::aqre;
+use cspuz_rs_puzzles::puzzles::aqre;
 
 pub fn solve_aqre(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = aqre::deserialize_problem(url).ok_or("invalid url")?;

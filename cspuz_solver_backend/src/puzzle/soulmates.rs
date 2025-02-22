@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::soulmates;
+use cspuz_rs_puzzles::puzzles::soulmates;
 
 pub fn solve_soulmates(url: &str) -> Result<Board, &'static str> {
     let problem = soulmates::deserialize_problem(url).ok_or("invalid url")?;

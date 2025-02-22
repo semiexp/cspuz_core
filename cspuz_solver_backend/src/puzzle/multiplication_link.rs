@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::multiplication_link;
+use cspuz_rs_puzzles::puzzles::multiplication_link;
 
 pub fn solve_multiplication_link(url: &str) -> Result<Board, &'static str> {
     let problem = multiplication_link::deserialize_problem(url).ok_or("invalid url")?;

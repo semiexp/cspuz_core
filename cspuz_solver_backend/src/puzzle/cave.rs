@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::cave;
+use cspuz_rs_puzzles::puzzles::cave;
 
 pub fn solve_cave(url: &str) -> Result<Board, &'static str> {
     let problem = cave::deserialize_problem(url).ok_or("invalid url")?;

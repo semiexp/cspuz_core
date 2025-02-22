@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::firewalk;
+use cspuz_rs_puzzles::puzzles::firewalk;
 
 pub fn solve_firewalk(url: &str) -> Result<Board, &'static str> {
     let (fire_cell, num) = firewalk::deserialize_problem(url).ok_or("invalid url")?;

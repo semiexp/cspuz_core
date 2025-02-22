@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::akari;
+use cspuz_rs_puzzles::puzzles::akari;
 
 pub fn solve_akari(url: &str) -> Result<Board, &'static str> {
     let problem = akari::deserialize_problem(url).ok_or("invalid url")?;

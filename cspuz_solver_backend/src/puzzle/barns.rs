@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::barns;
+use cspuz_rs_puzzles::puzzles::barns;
 
 pub fn solve_barns(url: &str) -> Result<Board, &'static str> {
     let (icebarn, borders) = barns::deserialize_problem(url).ok_or("invalid url")?;

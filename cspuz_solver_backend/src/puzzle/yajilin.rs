@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::yajilin;
+use cspuz_rs_puzzles::puzzles::yajilin;
 
 pub fn solve_yajilin(url: &str) -> Result<Board, &'static str> {
     use cspuz_rs::items::Arrow;

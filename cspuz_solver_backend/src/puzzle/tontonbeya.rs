@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::tontonbeya;
+use cspuz_rs_puzzles::puzzles::tontonbeya;
 
 fn num_to_item(n: i32) -> ItemKind {
     match n {

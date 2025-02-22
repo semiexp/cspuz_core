@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::castle_wall;
+use cspuz_rs_puzzles::puzzles::castle_wall;
 
 pub fn solve_castle_wall(url: &str) -> Result<Board, &'static str> {
     use castle_wall::Side;

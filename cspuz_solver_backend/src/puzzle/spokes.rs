@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::spokes;
+use cspuz_rs_puzzles::puzzles::spokes;
 
 pub fn solve_spokes(url: &str) -> Result<Board, &'static str> {
     let clues = spokes::deserialize_problem(url).ok_or("invalid url")?;

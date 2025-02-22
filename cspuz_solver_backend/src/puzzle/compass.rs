@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Compass, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::compass;
+use cspuz_rs_puzzles::puzzles::compass;
 
 pub fn solve_compass(url: &str) -> Result<Board, &'static str> {
     let problem = compass::deserialize_problem(url).ok_or("invalid url")?;

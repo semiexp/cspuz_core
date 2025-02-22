@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::parrot_loop;
+use cspuz_rs_puzzles::puzzles::parrot_loop;
 
 pub fn solve_parrot_loop(url: &str) -> Result<Board, &'static str> {
     let problem = parrot_loop::deserialize_problem(url).ok_or("invalid url")?;

@@ -1,0 +1,8 @@
+[package]
+name = "cspuz_rs_puzzles"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cspuz_rs = { path = "../cspuz_rs", default-features = false }
+cspuz_core = { path = "../cspuz_core", default-features = false }

@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::moonsun;
+use cspuz_rs_puzzles::puzzles::moonsun;
 
 pub fn solve_moonsun(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = moonsun::deserialize_problem(url).ok_or("invalid url")?;
