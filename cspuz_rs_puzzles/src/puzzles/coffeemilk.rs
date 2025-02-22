@@ -2,7 +2,9 @@ use std::vec;
 
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::serializer::{problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Spaces};
+use cspuz_rs::serializer::{
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Spaces,
+};
 use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_coffeemilk(clues: &[Vec<i32>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {

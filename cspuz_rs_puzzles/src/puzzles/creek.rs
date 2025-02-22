@@ -1,6 +1,6 @@
+use crate::puzzles::slitherlink::SlitherlinkClueCombinator;
 use crate::util;
 use cspuz_rs::graph;
-use crate::puzzles::slitherlink::SlitherlinkClueCombinator;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Size, Spaces,

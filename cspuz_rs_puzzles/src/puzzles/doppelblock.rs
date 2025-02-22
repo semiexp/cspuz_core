@@ -185,8 +185,8 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use crate::util;
     use super::*;
+    use crate::util;
 
     fn problem_for_tests1() -> Problem {
         (

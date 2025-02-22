@@ -171,11 +171,6 @@ mod tests {
     fn test_akichiwake_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?akichi/6/5/455993g7o03213g5";
-        crate::util::tests::serializer_test(
-            problem,
-            url,
-            serialize_problem,
-            deserialize_problem,
-        );
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

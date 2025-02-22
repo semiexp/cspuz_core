@@ -274,8 +274,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected =
-            crate::util::tests::to_option_bool_2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+        let expected = crate::util::tests::to_option_bool_2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
         assert_eq!(ans, expected);
     }
 

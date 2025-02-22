@@ -1,5 +1,5 @@
-use cspuz_rs::graph;
 use crate::puzzles::heyawake;
+use cspuz_rs::graph;
 use cspuz_rs::serializer::{problem_to_url_with_context, url_to_problem, Context};
 use cspuz_rs::solver::Solver;
 

@@ -160,8 +160,8 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use crate::util;
     use super::*;
+    use crate::util;
 
     fn problem_for_tests() -> graph::InnerGridEdges<Vec<Vec<bool>>> {
         // https://github.com/semiexp/cspuz/blob/d8d6df349c6c96500a996a46e3810977b513b3de/cspuz/puzzle/lits.py#L290-L301

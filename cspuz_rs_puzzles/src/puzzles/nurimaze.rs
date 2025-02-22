@@ -198,11 +198,6 @@ mod tests {
     fn test_nurimaze_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?nurimaze/6/5/ervrivfppu53b481b2b";
-        crate::util::tests::serializer_test(
-            problem,
-            url,
-            serialize_problem,
-            deserialize_problem,
-        );
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

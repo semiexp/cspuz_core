@@ -242,8 +242,8 @@ fn add_coral_clue(solver: &mut Solver, cells: &BoolVarArray1D, clue: &Vec<i32>) 
 
 #[cfg(test)]
 mod tests {
-    use crate::util;
     use super::*;
+    use crate::util;
 
     fn problem_for_tests() -> (Vec<Option<Vec<i32>>>, Vec<Option<Vec<i32>>>) {
         let clue_vertical = vec![

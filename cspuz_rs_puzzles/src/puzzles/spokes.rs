@@ -176,16 +176,8 @@ mod tests {
                     [1, 0, 0, 1, 0],
                 ]),
             },
-            crate::util::tests::to_option_bool_2d([
-                [0, 0, 0, 1],
-                [0, 0, 0, 0],
-                [0, 0, 1, 0],
-            ]),
-            crate::util::tests::to_option_bool_2d([
-                [1, 0, 0, 0],
-                [0, 1, 1, 0],
-                [1, 0, 0, 1],
-            ]),
+            crate::util::tests::to_option_bool_2d([[0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 1, 0]]),
+            crate::util::tests::to_option_bool_2d([[1, 0, 0, 0], [0, 1, 1, 0], [1, 0, 0, 1]]),
         );
         assert_eq!(ans, expected);
     }

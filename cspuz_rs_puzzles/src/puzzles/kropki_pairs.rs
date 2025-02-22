@@ -183,8 +183,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected =
-            crate::util::tests::to_option_2d([[0, 3, 4, 1], [3, 1, 2, 4], [4, 2, 1, 3]]);
+        let expected = crate::util::tests::to_option_2d([[0, 3, 4, 1], [3, 1, 2, 4], [4, 2, 1, 3]]);
         assert_eq!(ans, expected);
     }
 

@@ -191,8 +191,8 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::util;
     use super::*;
+    use crate::util;
 
     #[rustfmt::skip]
     fn problem_for_tests() -> Problem {

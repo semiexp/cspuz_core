@@ -1,6 +1,6 @@
+use crate::puzzles::slitherlink::combinator;
 use crate::util;
 use cspuz_rs::graph;
-use crate::puzzles::slitherlink::combinator;
 use cspuz_rs::serializer::{problem_to_url, url_to_problem};
 use cspuz_rs::solver::{Solver, TRUE};
 
@@ -161,11 +161,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::util::tests::to_option_bool_2d([
-                [0, 0, 0],
-                [1, 1, 1],
-                [0, 1, 0],
-            ]),
+            horizontal: crate::util::tests::to_option_bool_2d([[0, 0, 0], [1, 1, 1], [0, 1, 0]]),
             vertical: crate::util::tests::to_option_bool_2d([[1, 1, 1, 1], [1, 0, 0, 1]]),
         };
         assert_eq!(ans, expected);
