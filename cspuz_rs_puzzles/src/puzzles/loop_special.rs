@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Map, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LoopSpecialClue {
@@ -196,7 +196,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 0, 1, 1, 1],
                 [1, 1, 1, 1, 0],
                 [1, 1, 0, 1, 0],
@@ -205,7 +205,7 @@ mod tests {
                 [1, 0, 1, 0, 1],
                 [1, 1, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 0, 0, 1],
                 [0, 1, 1, 0, 1, 1],
                 [1, 1, 0, 1, 0, 1],

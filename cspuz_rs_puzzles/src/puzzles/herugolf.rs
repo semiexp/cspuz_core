@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_herugolf(
     pond: &[Vec<bool>],
@@ -198,7 +198,7 @@ mod tests {
     #[rustfmt::skip]
     fn problem_for_tests() -> Problem {
         (
-            crate::puzzle::util::tests::to_bool_2d(vec![
+            crate::util::tests::to_bool_2d(vec![
                 vec![0, 0, 0, 0, 0, 0],
                 vec![0, 1, 0, 0, 0, 0],
                 vec![0, 0, 0, 0, 0, 0],
@@ -226,7 +226,7 @@ mod tests {
         let ans = ans.unwrap();
         
         let expected = graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 0, 1, 0, 1],
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
@@ -234,7 +234,7 @@ mod tests {
                 [0, 1, 0, 0, 0],
                 [1, 1, 1, 1, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 1, 0],
                 [0, 0, 0, 1, 1, 0],
                 [0, 1, 0, 0, 1, 0],

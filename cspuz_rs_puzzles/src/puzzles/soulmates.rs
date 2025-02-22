@@ -1,11 +1,11 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, AlphaToNum,
     Choice, Combinator, DecInt, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
-use crate::graph;
+use cspuz_rs::graph;
 
 pub fn solve_soulmates(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -147,7 +147,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_2d([
+        let expected = crate::util::tests::to_option_2d([
             [10, 1, 10, 0],
             [0, 1, 0, 0],
             [0, 0, 3, 0],

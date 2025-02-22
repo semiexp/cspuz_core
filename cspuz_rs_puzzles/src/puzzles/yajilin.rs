@@ -1,11 +1,11 @@
-use super::util;
-use crate::graph;
-use crate::items::NumberedArrow;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::items::NumberedArrow;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Grid, MaybeSkip, NumberedArrowCombinator,
     Optionalize, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_yajilin(
     clues: &[Vec<Option<NumberedArrow>>],
@@ -66,7 +66,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::items::Arrow;
+    use cspuz_rs::items::Arrow;
 
     #[test]
     fn test_yajilin_problem() {
@@ -101,7 +101,7 @@ mod tests {
         assert!(ans.is_some());
         let (_, is_black) = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
             [1, 0, 1, 0, 0, 0, 0, 1, 0, 0],

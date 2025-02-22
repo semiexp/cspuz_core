@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::seiza;
+use cspuz_rs_puzzles::puzzles::seiza;
 
 pub fn solve_seiza(url: &str) -> Result<Board, &'static str> {
     let (absent_cell, num, borders) = seiza::deserialize_problem(url).ok_or("invalid url")?;

@@ -1,7 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
-use cspuz_rs::puzzle::yajilin_regions;
+use cspuz_rs_puzzles::puzzles::yajilin_regions;
 
 pub fn solve_yajilin_regions(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = yajilin_regions::deserialize_problem(url).ok_or("invalid url")?;

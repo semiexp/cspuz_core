@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::litherslink;
+use cspuz_rs_puzzles::puzzles::litherslink;
 
 pub fn solve_litherslink(url: &str) -> Result<Board, &'static str> {
     let problem = litherslink::deserialize_problem(url).ok_or("invalid url")?;

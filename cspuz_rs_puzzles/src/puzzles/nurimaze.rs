@@ -1,9 +1,9 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, Rooms, Size, Spaces, Tuple2,
 };
-use crate::solver::{Solver, TRUE};
+use cspuz_rs::solver::{Solver, TRUE};
 
 pub fn solve_nurimaze(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -151,13 +151,13 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         let borders = graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [1, 1, 1, 1, 1, 0],
                 [1, 1, 1, 1, 1, 1],
                 [0, 0, 1, 1, 1, 0],
                 [0, 1, 1, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [0, 1, 1, 1, 0],
                 [1, 1, 0, 1, 1],
                 [1, 1, 1, 1, 1],
@@ -184,7 +184,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 0, 1, 1, 1],
             [0, 1, 0, 0, 0, 1],
             [0, 1, 0, 1, 1, 1],
@@ -198,7 +198,7 @@ mod tests {
     fn test_nurimaze_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?nurimaze/6/5/ervrivfppu53b481b2b";
-        crate::puzzle::util::tests::serializer_test(
+        crate::util::tests::serializer_test(
             problem,
             url,
             serialize_problem,

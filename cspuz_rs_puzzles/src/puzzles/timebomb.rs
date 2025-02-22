@@ -1,9 +1,9 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, Grid,
     HexInt, Optionalize, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_timebomb(
     clues: &[Vec<Option<i32>>],
@@ -150,14 +150,14 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = (
-            crate::puzzle::util::tests::to_option_bool_2d([
+            crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 1, 1, 0],
                 [0, 0, 0, 0, 1, 0],
                 [1, 1, 0, 1, 0, 0],
                 [0, 1, 0, 1, 0, 1],
                 [0, 0, 0, 0, 1, 1],
             ]),
-            crate::puzzle::util::tests::to_option_2d([
+            crate::util::tests::to_option_2d([
                 [5, 4, 3, 2, 1, -1],
                 [-1, -1, -1, -1, 0, -1],
                 [2, 1, -1, 0, -1, -1],

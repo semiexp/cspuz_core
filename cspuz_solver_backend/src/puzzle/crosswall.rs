@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::crosswall;
+use cspuz_rs_puzzles::puzzles::crosswall;
 
 pub fn solve_crosswall(url: &str) -> Result<Board, &'static str> {
     let problem = crosswall::deserialize_problem(url).ok_or("invalid url")?;

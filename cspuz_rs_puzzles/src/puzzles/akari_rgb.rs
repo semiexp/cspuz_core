@@ -1,9 +1,9 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Map, PrefixAndSuffix,
 };
-use crate::solver::{IntVar, Solver};
+use cspuz_rs::solver::{IntVar, Solver};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AkariRGBClue {
@@ -211,7 +211,7 @@ mod tests {
         let ans = solve_akari_rgb(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_2d([
+        let expected = crate::util::tests::to_option_2d([
             [0, 0, 3, 0, 0, 0],
             [0, 3, 0, 0, 0, 2],
             [1, 0, 1, 0, 0, 0],

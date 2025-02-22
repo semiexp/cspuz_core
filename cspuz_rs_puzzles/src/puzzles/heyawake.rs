@@ -1,9 +1,9 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
     RoomsWithValues, Size, Spaces,
 };
-use crate::solver::{count_true, BoolVarArray2D, Solver};
+use cspuz_rs::solver::{count_true, BoolVarArray2D, Solver};
 
 pub fn solve_heyawake(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -135,7 +135,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 0, 1, 0, 0, 1],
             [0, 0, 0, 1, 0, 0],
             [0, 1, 0, 0, 1, 0],

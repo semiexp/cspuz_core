@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::loop_special::{self, LoopSpecialClue};
+use cspuz_rs_puzzles::puzzles::loop_special::{self, LoopSpecialClue};
 
 pub fn solve_loop_speical(url: &str) -> Result<Board, &'static str> {
     let problem = loop_special::deserialize_problem(url).ok_or("invalid url")?;

@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::chainedb;
+use cspuz_rs_puzzles::puzzles::chainedb;
 
 pub fn solve_chainedb(url: &str) -> Result<Board, &'static str> {
     let problem = chainedb::deserialize_problem(url).ok_or("invalid url")?;

@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::letter_weights;
+use cspuz_rs_puzzles::puzzles::letter_weights;
 
 const ALPHA: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

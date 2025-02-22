@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::nikoji;
+use cspuz_rs_puzzles::puzzles::nikoji;
 
 const ALPHA: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

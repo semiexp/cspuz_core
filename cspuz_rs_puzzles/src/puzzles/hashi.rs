@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph::{self, GridEdges};
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph::{self, GridEdges};
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use crate::solver::{sum, Solver};
+use cspuz_rs::solver::{sum, Solver};
 
 pub fn solve_hashi(clues: &[Vec<Option<i32>>]) -> Option<GridEdges<Vec<Vec<Option<i32>>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -124,7 +124,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_2d([
+            horizontal: crate::util::tests::to_option_2d([
                 [1, 1, 0, 0, 1],
                 [0, 1, 1, 0, 0],
                 [2, 2, 0, 0, 0],
@@ -132,7 +132,7 @@ mod tests {
                 [0, 0, 2, 2, 0],
                 [1, 1, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_2d([
+            vertical: crate::util::tests::to_option_2d([
                 [2, 0, 0, 0, 1, 1],
                 [2, 0, 0, 1, 1, 1],
                 [1, 0, 0, 1, 0, 1],

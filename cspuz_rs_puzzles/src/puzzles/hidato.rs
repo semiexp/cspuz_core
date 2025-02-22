@@ -1,9 +1,9 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_hidato(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -118,7 +118,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected =
-            crate::puzzle::util::tests::to_option_2d([[4, 3, 9, 11], [5, 8, 2, 10], [7, 6, 0, 1]]);
+            crate::util::tests::to_option_2d([[4, 3, 9, 11], [5, 8, 2, 10], [7, 6, 0, 1]]);
         assert_eq!(ans, expected);
     }
 

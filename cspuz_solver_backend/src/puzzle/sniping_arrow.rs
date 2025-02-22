@@ -1,7 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs::items::Arrow;
-use cspuz_rs::puzzle::sniping_arrow;
+use cspuz_rs_puzzles::puzzles::sniping_arrow;
 
 fn convert_arrow(arrow: Arrow) -> ItemKind {
     match arrow {

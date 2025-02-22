@@ -1,8 +1,8 @@
-use crate::serializer::{
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, AlphaToNum, Choice, Combinator,
     Context, DecInt, Dict, KudamonoGrid, KudamonoSequence, Map, PrefixAndSuffix,
 };
-use crate::solver::{int_constant, Solver};
+use cspuz_rs::solver::{int_constant, Solver};
 
 pub fn solve_letter_weights(
     sums: &[(Vec<char>, i32)],
@@ -275,7 +275,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected =
-            crate::puzzle::util::tests::to_option_bool_2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+            crate::util::tests::to_option_bool_2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
         assert_eq!(ans, expected);
     }
 

@@ -1,6 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::{graph::InnerGridEdges, puzzle::polyominous};
+use cspuz_rs::graph::InnerGridEdges;
+use cspuz_rs_puzzles::puzzles::polyominous;
 
 const PENTOMINO_NAMES: [&'static str; 12] =
     ["F", "I", "L", "N", "P", "T", "U", "V", "W", "X", "Y", "Z"];

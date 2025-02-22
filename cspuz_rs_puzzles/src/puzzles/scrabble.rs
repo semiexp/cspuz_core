@@ -1,6 +1,6 @@
-use super::util;
-use crate::graph;
-use crate::solver::{all, IntVarArray2D, Solver};
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::solver::{all, IntVarArray2D, Solver};
 
 pub fn solve_scrabble(
     board: &[Vec<Option<i32>>],

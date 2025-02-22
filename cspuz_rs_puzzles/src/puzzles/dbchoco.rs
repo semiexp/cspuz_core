@@ -1,12 +1,12 @@
 use std::ops::Index;
 
-use super::util::{self, Grid};
-use crate::graph;
-use crate::serializer::{
+use crate::util::{self, Grid};
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     HexInt, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
 
@@ -1103,14 +1103,14 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 0, 0, 0, 1, 0],
                 [0, 1, 0, 1, 0, 0],
                 [1, 0, 1, 0, 1, 0],
                 [0, 1, 0, 1, 1, 1],
                 [0, 1, 1, 1, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 0],
                 [1, 0, 0, 0, 1],
                 [1, 1, 1, 1, 1],

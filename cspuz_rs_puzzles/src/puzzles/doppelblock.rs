@@ -1,8 +1,8 @@
-use crate::serializer::{
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     HexInt, Optionalize, Seq, Sequencer, Size, Spaces,
 };
-use crate::solver::{sum, IntVarArray1D, Solver};
+use cspuz_rs::solver::{sum, IntVarArray1D, Solver};
 
 pub fn solve_doppelblock(
     clues_up: &[Option<i32>],
@@ -99,7 +99,7 @@ pub struct DoppelblockCombinator;
 impl Combinator<Problem> for DoppelblockCombinator {
     fn serialize(
         &self,
-        ctx: &crate::serializer::Context,
+        ctx: &cspuz_rs::serializer::Context,
         input: &[Problem],
     ) -> Option<(usize, Vec<u8>)> {
         if input.len() == 0 {
@@ -129,7 +129,7 @@ impl Combinator<Problem> for DoppelblockCombinator {
 
     fn deserialize(
         &self,
-        ctx: &crate::serializer::Context,
+        ctx: &cspuz_rs::serializer::Context,
         input: &[u8],
     ) -> Option<(usize, Vec<Problem>)> {
         let mut sequencer = Sequencer::new(input);
@@ -185,7 +185,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::util;
+    use crate::util;
     use super::*;
 
     fn problem_for_tests1() -> Problem {
@@ -217,7 +217,7 @@ mod tests {
             let ans = solve_doppelblock(&clues_up, &clues_left, &cells);
             assert!(ans.is_some());
             let ans = ans.unwrap();
-            let expected = crate::puzzle::util::tests::to_option_2d([
+            let expected = crate::util::tests::to_option_2d([
                 [0, 2, 0, 1, 3],
                 [2, 0, 1, 3, 0],
                 [3, 1, 0, 2, 0],
@@ -232,7 +232,7 @@ mod tests {
             let ans = solve_doppelblock(&clues_up, &clues_left, &cells);
             assert!(ans.is_some());
             let ans = ans.unwrap();
-            let expected = crate::puzzle::util::tests::to_option_2d([
+            let expected = crate::util::tests::to_option_2d([
                 [2, 3, 0, 1, 0],
                 [0, 2, 1, 0, 3],
                 [1, 0, 3, 2, 0],

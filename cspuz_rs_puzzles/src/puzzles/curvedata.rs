@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph::{self, BoolGridEdges};
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph::{self, BoolGridEdges};
+use cspuz_rs::serializer::{
     strip_prefix, Choice, Combinator, Context, ContextBasedGrid, Dict, HexInt, Map, Rooms, Spaces,
 };
-use crate::solver::{IntVarArray2D, Solver};
+use cspuz_rs::solver::{IntVarArray2D, Solver};
 
 type AdjacencyEntry = Option<(usize, usize)>;
 
@@ -411,14 +411,14 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 1, 1],
                 [0, 0, 1],
                 [1, 0, 0],
                 [0, 0, 1],
                 [0, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 1, 0, 0],
                 [1, 1, 1, 1],
                 [1, 1, 1, 1],

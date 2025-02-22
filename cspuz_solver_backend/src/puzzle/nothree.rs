@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::nothree;
+use cspuz_rs_puzzles::puzzles::nothree;
 
 pub fn solve_nothree(url: &str) -> Result<Board, &'static str> {
     let problem = nothree::deserialize_problem(url).ok_or("invalid url")?;

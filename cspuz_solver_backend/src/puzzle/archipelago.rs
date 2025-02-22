@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::archipelago;
+use cspuz_rs_puzzles::puzzles::archipelago;
 
 pub fn solve_archipelago(url: &str) -> Result<Board, &'static str> {
     let clues = archipelago::deserialize_problem(url).ok_or("invalid url")?;

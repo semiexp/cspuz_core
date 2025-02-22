@@ -1,8 +1,8 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context,
 };
-use crate::solver::{int_constant, BoolExpr, BoolVarArray1D, IntExpr, Solver, FALSE, TRUE};
+use cspuz_rs::solver::{int_constant, BoolExpr, BoolVarArray1D, IntExpr, Solver, FALSE, TRUE};
 
 pub fn solve_the_longest(
     clues: &graph::GridEdges<Vec<Vec<bool>>>,
@@ -332,14 +332,14 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [0, 1, 1, 1, 0],
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
                 [1, 1, 1, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [1, 0, 0, 0, 0, 1],
                 [1, 0, 1, 0, 0, 1],
                 [0, 0, 1, 0, 0, 1],
@@ -356,12 +356,12 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::BoolInnerGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 1, 0, 1, 0],
                 [1, 0, 0, 1, 0],
                 [0, 1, 1, 0, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 0, 0, 1],
                 [0, 1, 1, 0],
                 [1, 1, 0, 1],

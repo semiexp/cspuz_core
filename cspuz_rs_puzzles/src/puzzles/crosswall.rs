@@ -1,7 +1,7 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{get_kudamono_url_info, kudamono_order, Context, DecInt, Sequencer};
-use crate::solver::{any, int_constant, Solver, TRUE};
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{get_kudamono_url_info, kudamono_order, Context, DecInt, Sequencer};
+use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
 
 pub fn solve_crosswall(
     clues: &[Vec<Option<(i32, i32)>>],
@@ -247,7 +247,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 1],
                 [1, 0, 1, 1, 0],
                 [0, 1, 1, 1, 0],
@@ -255,7 +255,7 @@ mod tests {
                 [1, 1, 1, 0, 1],
                 [1, 1, 0, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 0, 1],
                 [1, 1, 1, 1, 1, 1],
                 [1, 0, 1, 1, 0, 1],

@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use crate::solver::{BoolVarArray2D, Solver};
+use cspuz_rs::solver::{BoolVarArray2D, Solver};
 
 pub fn solve_nurikabe(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);

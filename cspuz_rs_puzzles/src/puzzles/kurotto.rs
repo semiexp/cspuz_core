@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_kurotto(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -99,7 +99,7 @@ mod tests {
         let ans = solve_kurotto(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 1, 0, 1, 0, 0],
             [1, 0, 1, 0, 0, 1],
             [1, 0, 1, 1, 1, 0],

@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Map, Spaces,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PencilsClue {
@@ -358,7 +358,7 @@ mod tests {
         let ans = ans.unwrap();
         #[rustfmt::skip]
         let expected = (
-            crate::puzzle::util::tests::to_option_2d([
+            crate::util::tests::to_option_2d([
                 [PencilsAnswer::Empty, PencilsAnswer::Down, PencilsAnswer::Right, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty],
                 [PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Down],
                 [PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Left, PencilsAnswer::Empty],
@@ -367,7 +367,7 @@ mod tests {
                 [PencilsAnswer::Right, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Empty, PencilsAnswer::Left, PencilsAnswer::Empty],
             ]),
             graph::BoolGridEdgesIrrefutableFacts {
-                horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+                horizontal: crate::util::tests::to_option_bool_2d([
                     [1, 0, 0, 0, 1],
                     [0, 0, 0, 1, 0],
                     [0, 0, 0, 0, 0],
@@ -375,7 +375,7 @@ mod tests {
                     [0, 1, 0, 0, 1],
                     [0, 0, 0, 0, 1],
                 ]),
-                vertical: crate::puzzle::util::tests::to_option_bool_2d([
+                vertical: crate::util::tests::to_option_bool_2d([
                     [1, 0, 1, 0, 0, 1],
                     [1, 0, 0, 0, 1, 0],
                     [0, 0, 0, 0, 0, 0],
@@ -384,14 +384,14 @@ mod tests {
                 ]),
             },
             graph::BoolInnerGridEdgesIrrefutableFacts {
-                horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+                horizontal: crate::util::tests::to_option_bool_2d([
                     [0, 0, 0, 1, 0, 0],
                     [0, 0, 1, 1, 0, 0],
                     [0, 0, 1, 1, 1, 0],
                     [0, 1, 0, 1, 1, 1],
                     [0, 1, 1, 1, 0, 0],
                 ]),
-                vertical: crate::puzzle::util::tests::to_option_bool_2d([
+                vertical: crate::util::tests::to_option_bool_2d([
                     [0, 0, 0, 1, 0],
                     [1, 1, 0, 0, 0],
                     [1, 1, 0, 0, 1],

@@ -1,9 +1,9 @@
-use crate::graph::InnerGridEdges;
-use crate::serializer::{
+use cspuz_rs::graph::InnerGridEdges;
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Choice, Combinator, Context, DecInt,
     Dict, KudamonoGrid, KudamonoSequence, Optionalize, PrefixAndSuffix,
 };
-use crate::solver::{IntVar, IntVarArray1D, Solver};
+use cspuz_rs::solver::{IntVar, IntVarArray1D, Solver};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum KropkiClue {
@@ -184,7 +184,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected =
-            crate::puzzle::util::tests::to_option_2d([[0, 3, 4, 1], [3, 1, 2, 4], [4, 2, 1, 3]]);
+            crate::util::tests::to_option_2d([[0, 3, 4, 1], [3, 1, 2, 4], [4, 2, 1, 3]]);
         assert_eq!(ans, expected);
     }
 

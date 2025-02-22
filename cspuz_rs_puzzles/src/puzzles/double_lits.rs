@@ -1,8 +1,8 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context, KudamonoBorder,
 };
-use crate::solver::{any, count_true, Solver, FALSE};
+use cspuz_rs::solver::{any, count_true, Solver, FALSE};
 
 pub fn solve_double_lits(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -196,14 +196,14 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [0, 1, 1, 1, 0, 0],
                 [0, 0, 0, 0, 1, 0],
                 [0, 0, 0, 1, 1, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 1, 1, 0, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [0, 1, 0, 0, 0],
                 [1, 0, 0, 1, 0],
                 [1, 0, 0, 0, 1],
@@ -221,7 +221,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 1, 0, 2, 1, 1],
             [1, 0, 1, 1, 0, 1],
             [1, 1, 0, 1, 1, 2],

@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, DecInt,
     Dict, Map, MultiDigit, Seq, Sequencer, Size, Tuple2,
 };
-use crate::solver::{any, count_true, Solver};
+use cspuz_rs::solver::{any, count_true, Solver};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StatueParkClue {
@@ -289,7 +289,7 @@ struct PieceCombinator;
 impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
     fn serialize(
         &self,
-        ctx: &crate::serializer::Context,
+        ctx: &cspuz_rs::serializer::Context,
         input: &[Vec<Vec<bool>>],
     ) -> Option<(usize, Vec<u8>)> {
         if input.len() == 0 {
@@ -327,7 +327,7 @@ impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
 
     fn deserialize(
         &self,
-        ctx: &crate::serializer::Context,
+        ctx: &cspuz_rs::serializer::Context,
         input: &[u8],
     ) -> Option<(usize, Vec<Vec<Vec<bool>>>)> {
         let mut sequencer = Sequencer::new(input);
@@ -512,7 +512,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 1, 1, 1, 0, 0, 0],
             [0, 0, 0, 0, 1, 1, 0],
             [0, 1, 1, 0, 1, 1, 0],
@@ -530,7 +530,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 0, 0, 0, 0],
             [0, 0, 1, 1, 1, 0],
             [0, 0, 1, 0, 0, 0],

@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::evolmino;
+use cspuz_rs_puzzles::puzzles::evolmino;
 
 pub fn solve_evolmino(url: &str) -> Result<Board, &'static str> {
     let problem = evolmino::deserialize_problem(url).ok_or("invalid url")?;

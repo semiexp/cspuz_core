@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::inverse_litso;
+use cspuz_rs_puzzles::puzzles::inverse_litso;
 
 pub fn solve_inverse_litso(url: &str) -> Result<Board, &'static str> {
     let borders = inverse_litso::deserialize_problem(url).ok_or("invalid url")?;

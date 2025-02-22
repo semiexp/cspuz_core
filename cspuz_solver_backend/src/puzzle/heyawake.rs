@@ -1,7 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::graph;
-use cspuz_rs::puzzle::{ayeheya, heyawake};
+use cspuz_rs_puzzles::puzzles::{ayeheya, heyawake};
 
 pub fn solve_heyawake(url: &str, is_ayeheya: bool) -> Result<Board, &'static str> {
     let borders;

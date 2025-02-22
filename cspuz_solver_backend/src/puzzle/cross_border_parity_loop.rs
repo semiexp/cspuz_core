@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::cross_border_parity_loop::{self, CBPLCell};
+use cspuz_rs_puzzles::puzzles::cross_border_parity_loop::{self, CBPLCell};
 
 pub fn solve_cross_border_parity_loop(url: &str) -> Result<Board, &'static str> {
     let (cells, clues_black, clues_white, borders) =

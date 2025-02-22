@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, AlphaToNum, Choice, Combinator, Context,
     ContextBasedGrid, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
-use crate::solver::{any, count_true, Solver};
+use cspuz_rs::solver::{any, count_true, Solver};
 
 pub fn solve_tontonbeya(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -124,13 +124,13 @@ mod tests {
     fn problem_for_tests() -> Problem {
         (
             graph::InnerGridEdges {
-                horizontal: crate::puzzle::util::tests::to_bool_2d([
+                horizontal: crate::util::tests::to_bool_2d([
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 1, 1, 0, 0],
                     [1, 0, 1, 0, 0, 0],
                     [0, 1, 1, 1, 0, 0],
                 ]),
-                vertical: crate::puzzle::util::tests::to_bool_2d([
+                vertical: crate::util::tests::to_bool_2d([
                     [0, 1, 0, 1, 0],
                     [1, 0, 0, 1, 0],
                     [1, 1, 0, 1, 0],
@@ -155,7 +155,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_2d([
+        let expected = crate::util::tests::to_option_2d([
             [0, 0, 0, 0, 1, 1],
             [1, 2, 0, 0, 1, 1],
             [1, 2, 2, 1, 1, 0],

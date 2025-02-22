@@ -1,8 +1,8 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_sudoku(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -164,7 +164,7 @@ mod tests {
         let ans = solve_sudoku(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_2d([
+        let expected = crate::util::tests::to_option_2d([
             [2, 6, 4, 7, 9, 8, 3, 1, 5],
             [7, 3, 5, 1, 2, 4, 8, 6, 9],
             [9, 8, 1, 6, 5, 3, 2, 7, 4],

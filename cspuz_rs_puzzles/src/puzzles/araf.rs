@@ -1,9 +1,9 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Grid, HexInt, Optionalize, Spaces,
 };
-use crate::solver::{any, count_true, Solver};
+use cspuz_rs::solver::{any, count_true, Solver};
 
 pub fn solve_araf(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);

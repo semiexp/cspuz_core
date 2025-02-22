@@ -1,4 +1,4 @@
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_star_battle(
     n: usize,
@@ -45,7 +45,7 @@ mod tests {
         let ans = solve_star_battle(n, k, &rooms);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0],
             [0, 0, 1, 0, 0, 0],

@@ -1,8 +1,8 @@
-use super::util;
-use crate::graph;
-use crate::puzzle::slitherlink::combinator;
-use crate::serializer::{problem_to_url, url_to_problem};
-use crate::solver::{Solver, TRUE};
+use crate::util;
+use cspuz_rs::graph;
+use crate::puzzles::slitherlink::combinator;
+use cspuz_rs::serializer::{problem_to_url, url_to_problem};
+use cspuz_rs::solver::{Solver, TRUE};
 
 pub fn solve_litherslink(
     clues: &[Vec<Option<i32>>],
@@ -141,13 +141,13 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 0, 1, 1],
                 [0, 1, 1, 1],
                 [0, 1, 1, 1],
                 [1, 0, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 0],
                 [1, 0, 1, 0, 0],
                 [0, 0, 0, 1, 0],
@@ -161,12 +161,12 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0],
                 [1, 1, 1],
                 [0, 1, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([[1, 1, 1, 1], [1, 0, 0, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 1, 1, 1], [1, 0, 0, 1]]),
         };
         assert_eq!(ans, expected);
     }

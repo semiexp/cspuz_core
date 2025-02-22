@@ -1,9 +1,9 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     from_base16, problem_to_url, to_base16, url_to_problem, Choice, Combinator, Context, Dict,
     Grid, Spaces,
 };
-use crate::solver::{BoolVar, Solver};
+use cspuz_rs::solver::{BoolVar, Solver};
 
 pub fn solve_akari(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -170,7 +170,7 @@ mod tests {
         let ans = solve_akari(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 1, 0, 0, 0, 1, 0],

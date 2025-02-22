@@ -1,8 +1,8 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
-use crate::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver, FALSE};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ShakashakaCell {

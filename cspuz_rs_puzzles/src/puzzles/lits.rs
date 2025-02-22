@@ -1,8 +1,8 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, Rooms, Size,
 };
-use crate::solver::{any, count_true, Solver, FALSE};
+use cspuz_rs::solver::{any, count_true, Solver, FALSE};
 
 pub fn solve_lits(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -160,7 +160,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::util;
+    use crate::util;
     use super::*;
 
     fn problem_for_tests() -> graph::InnerGridEdges<Vec<Vec<bool>>> {
@@ -205,7 +205,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
             [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
             [1, 1, 1, 0, 0, 0, 1, 0, 0, 0],

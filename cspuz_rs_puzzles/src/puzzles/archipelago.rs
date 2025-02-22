@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, Grid,
     HexInt, Optionalize, Spaces,
 };
-use crate::solver::{Solver, TRUE};
+use cspuz_rs::solver::{Solver, TRUE};
 use std::collections::VecDeque;
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
@@ -382,7 +382,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 1, 1, 1, 0, 0],
             [1, 0, 0, 0, 1, 0],
             [1, 0, 1, 0, 0, 0],

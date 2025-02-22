@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     from_base16, problem_to_url, to_base16, url_to_problem, Choice, Combinator, Context, Grid,
     Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_slitherlink(
     clues: &[Vec<Option<i32>>],
@@ -129,14 +129,14 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 1],
                 [1, 0, 1, 0],
                 [1, 0, 0, 0],
                 [0, 1, 0, 1],
                 [1, 0, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 0, 0, 0, 1],
                 [0, 1, 1, 1, 1],
                 [1, 0, 1, 1, 1],

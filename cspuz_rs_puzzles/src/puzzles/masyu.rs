@@ -1,7 +1,7 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{problem_to_url, url_to_problem, Combinator, Grid, Map, MultiDigit};
-use crate::solver::Solver;
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{problem_to_url, url_to_problem, Combinator, Grid, Map, MultiDigit};
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MasyuClue {

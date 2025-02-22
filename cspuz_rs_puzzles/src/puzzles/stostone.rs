@@ -1,9 +1,9 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
     RoomsWithValues, Size, Spaces,
 };
-use crate::solver::{any, count_true, Solver};
+use cspuz_rs::solver::{any, count_true, Solver};
 
 pub fn solve_stostone(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -100,14 +100,14 @@ mod tests {
     fn problem_for_tests() -> Problem {
         (
             graph::InnerGridEdges {
-                horizontal: crate::puzzle::util::tests::to_bool_2d([
+                horizontal: crate::util::tests::to_bool_2d([
                     [1, 1, 1, 1, 1, 1],
                     [0, 0, 0, 0, 0, 0],
                     [0, 0, 1, 1, 1, 1],
                     [1, 1, 0, 1, 1, 1],
                     [0, 0, 1, 0, 0, 0],
                 ]),
-                vertical: crate::puzzle::util::tests::to_bool_2d([
+                vertical: crate::util::tests::to_bool_2d([
                     [0, 0, 0, 1, 0],
                     [0, 0, 0, 1, 0],
                     [0, 0, 0, 1, 0],
@@ -136,7 +136,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 1, 1, 1, 0, 1],
             [1, 0, 0, 0, 1, 0],
             [1, 1, 0, 0, 1, 0],
@@ -151,7 +151,7 @@ mod tests {
     fn test_moonsun_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?stostone/6/6/222ac4vg1ve831h3g23";
-        crate::puzzle::util::tests::serializer_test(
+        crate::util::tests::serializer_test(
             problem,
             url,
             serialize_problem,

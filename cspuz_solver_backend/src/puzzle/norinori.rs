@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::norinori;
+use cspuz_rs_puzzles::puzzles::norinori;
 
 pub fn solve_norinori(url: &str) -> Result<Board, &'static str> {
     let borders = norinori::deserialize_problem(url).ok_or("invalid url")?;

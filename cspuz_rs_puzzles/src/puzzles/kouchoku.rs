@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, AlphaToNum, Choice, Combinator, Context,
     ContextBasedGrid, Dict, Optionalize, Size, Spaces,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub type Pt = (usize, usize);
 

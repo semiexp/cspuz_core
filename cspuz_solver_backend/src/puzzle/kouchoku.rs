@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
-use cspuz_rs::puzzle::kouchoku;
+use cspuz_rs_puzzles::puzzles::kouchoku;
 
 pub fn solve_kouchoku(url: &str) -> Result<Board, &'static str> {
     let problem = kouchoku::deserialize_problem(url).ok_or("invalid url")?;

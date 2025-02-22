@@ -1,7 +1,7 @@
-use crate::graph;
-use crate::puzzle::heyawake;
-use crate::serializer::{problem_to_url_with_context, url_to_problem, Context};
-use crate::solver::Solver;
+use cspuz_rs::graph;
+use crate::puzzles::heyawake;
+use cspuz_rs::serializer::{problem_to_url_with_context, url_to_problem, Context};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_ayeheya(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,

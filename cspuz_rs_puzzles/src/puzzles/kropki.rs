@@ -1,9 +1,9 @@
-use crate::graph::InnerGridEdges;
-use crate::serializer::{
+use cspuz_rs::graph::InnerGridEdges;
+use cspuz_rs::serializer::{
     map_2d, problem_to_url_with_context, url_to_problem, Combinator, Context, MultiDigit,
     Sequencer, Size,
 };
-use crate::solver::{IntVar, Solver};
+use cspuz_rs::solver::{IntVar, Solver};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum KropkiClue {
@@ -238,7 +238,7 @@ mod tests {
             assert!(ans.is_some());
             let ans = ans.unwrap();
 
-            let expected = crate::puzzle::util::tests::to_option_2d([
+            let expected = crate::util::tests::to_option_2d([
                 [4, 2, 1, 3],
                 [1, 3, 2, 4],
                 [3, 1, 4, 2],
@@ -252,7 +252,7 @@ mod tests {
             assert!(ans.is_some());
             let ans = ans.unwrap();
 
-            let expected = crate::puzzle::util::tests::to_option_2d([
+            let expected = crate::util::tests::to_option_2d([
                 [1, 2, 3, 4, 5],
                 [2, 5, 4, 1, 3],
                 [5, 3, 1, 2, 4],

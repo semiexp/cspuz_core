@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::statue_park::{self, StatueParkClue};
+use cspuz_rs_puzzles::puzzles::statue_park::{self, StatueParkClue};
 
 pub fn solve_statue_park(url: &str) -> Result<Board, &'static str> {
     let (problem, pieces) = statue_park::deserialize_problem(url).ok_or("invalid url")?;

@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     from_base36, problem_to_url, to_base36, url_to_problem, Choice, Combinator, Context, Grid,
     Optionalize, Spaces,
 };
-use crate::solver::{all, any, count_true, Solver, FALSE};
+use cspuz_rs::solver::{all, any, count_true, Solver, FALSE};
 
 const EIGHT_NEIGHBORS: [(i32, i32); 8] = [
     (-1, -1),
@@ -270,7 +270,7 @@ mod tests {
         let ans = solve_tapa(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 1, 1, 0, 0, 0],
             [1, 0, 1, 1, 1, 0],
             [0, 0, 0, 0, 1, 0],

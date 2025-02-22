@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Choice, Combinator, Context, DecInt,
     Dict, KudamonoBorder, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CBPLCell {
@@ -202,13 +202,13 @@ mod tests {
         clues_white[3][3] = Some(3);
 
         let borders = graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [1, 0, 0, 0, 1, 0],
                 [1, 1, 1, 0, 0, 0],
                 [0, 0, 1, 1, 1, 1],
                 [0, 0, 0, 0, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [1, 1, 0, 1, 1],
                 [0, 1, 0, 1, 0],
                 [0, 1, 1, 1, 0],
@@ -228,14 +228,14 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected_loop = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 1],
                 [0, 1, 1, 0, 0],
                 [0, 0, 0, 1, 1],
                 [0, 1, 0, 1, 0],
                 [0, 0, 1, 1, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 0, 0, 1, 0, 1],
                 [0, 1, 0, 0, 0, 1],
                 [0, 1, 0, 1, 0, 0],
@@ -243,7 +243,7 @@ mod tests {
             ]),
         };
 
-        let expected_cell = crate::puzzle::util::tests::to_option_2d([
+        let expected_cell = crate::util::tests::to_option_2d([
             [0, 0, 0, 1, 2, 1],
             [0, 2, 1, 1, 0, 1],
             [0, 1, 0, 2, 1, 1],

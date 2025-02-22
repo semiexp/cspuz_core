@@ -1,9 +1,9 @@
 use std::vec;
 
-use super::util;
-use crate::graph;
-use crate::serializer::{problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Spaces};
-use crate::solver::{count_true, Solver};
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Spaces};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_coffeemilk(clues: &[Vec<i32>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
@@ -201,14 +201,14 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 1, 1, 1, 0],
                 [1, 0, 0, 0, 0],
                 [0, 0, 1, 1, 0],
                 [0, 0, 0, 0, 1],
                 [0, 0, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 1, 0, 0, 0, 0],
                 [1, 0, 1, 0, 0, 0],
                 [1, 0, 0, 0, 1, 0],

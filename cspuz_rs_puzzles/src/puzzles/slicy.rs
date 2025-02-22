@@ -1,7 +1,7 @@
-use crate::graph;
-use crate::hex::{borders_to_rooms, BoolHexGridIrrefutableFacts, HexGrid, HexInnerGridEdges};
-use crate::serializer::get_kudamono_url_info_detailed;
-use crate::solver::{all, any, Solver};
+use cspuz_rs::graph;
+use cspuz_rs::hex::{borders_to_rooms, BoolHexGridIrrefutableFacts, HexGrid, HexInnerGridEdges};
+use cspuz_rs::serializer::get_kudamono_url_info_detailed;
+use cspuz_rs::solver::{all, any, Solver};
 
 pub fn solve_slicy(borders: &HexInnerGridEdges<bool>) -> Option<BoolHexGridIrrefutableFacts> {
     let mut solver = Solver::new();
@@ -371,7 +371,7 @@ mod tests {
             dims: (5, 3, 4, 4),
             to_right: HexGrid::from_grid(
                 (5, 3, 4, 4),
-                crate::puzzle::util::tests::to_bool_2d([
+                crate::util::tests::to_bool_2d([
                     [1, 0, 0, 0, 0, 0],
                     [1, 0, 0, 0, 0, 0],
                     [1, 1, 1, 0, 0, 0],
@@ -384,7 +384,7 @@ mod tests {
             ),
             to_bottom_left: HexGrid::from_grid(
                 (5, 3, 4, 4),
-                crate::puzzle::util::tests::to_bool_2d([
+                crate::util::tests::to_bool_2d([
                     [0, 0, 0, 0, 0, 0],
                     [0, 1, 0, 1, 0, 0],
                     [0, 0, 1, 0, 0, 0],
@@ -397,7 +397,7 @@ mod tests {
             ),
             to_bottom_right: HexGrid::from_grid(
                 (5, 3, 4, 4),
-                crate::puzzle::util::tests::to_bool_2d([
+                crate::util::tests::to_bool_2d([
                     [1, 0, 0, 0, 0, 0],
                     [1, 0, 1, 1, 0, 0],
                     [1, 0, 1, 0, 0, 0],
@@ -420,7 +420,7 @@ mod tests {
 
         let expected = HexGrid::from_grid(
             (5, 3, 4, 4),
-            crate::puzzle::util::tests::to_option_bool_2d([
+            crate::util::tests::to_option_bool_2d([
                 [1, 1, 0, 0, 0, 0],
                 [1, 0, 1, 1, 0, 0],
                 [1, 0, 1, 0, 2, 0],

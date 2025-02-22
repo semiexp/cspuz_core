@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, AlphaToNum, Choice, Combinator, Dict, Grid, HexInt, Map,
     Spaces, Tuple2,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ReflectLinkClue {
@@ -147,7 +147,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 1],
                 [0, 1, 0, 1],
                 [1, 1, 0, 0],
@@ -155,7 +155,7 @@ mod tests {
                 [1, 1, 1, 0],
                 [0, 1, 1, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 0, 0, 0, 1],
                 [1, 1, 1, 1, 0],
                 [0, 1, 0, 1, 0],

@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
-use cspuz_rs::puzzle::sudoku;
+use cspuz_rs_puzzles::puzzles::sudoku;
 
 pub fn solve_sudoku(url: &str) -> Result<Board, &'static str> {
     let problem = sudoku::deserialize_problem(url).ok_or("invalid url")?;

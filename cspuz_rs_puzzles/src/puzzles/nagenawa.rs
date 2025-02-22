@@ -1,9 +1,9 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
     RoomsWithValues, Size, Spaces,
 };
-use crate::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver, FALSE};
 
 pub fn solve_nagenawa(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -120,19 +120,19 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::util;
+    use crate::util;
     use super::*;
 
     fn problem_for_tests() -> Problem {
         let borders = graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [1, 1, 1, 1, 0, 0],
                 [0, 1, 0, 0, 0, 0],
                 [1, 0, 0, 0, 0, 0],
                 [0, 0, 1, 0, 0, 0],
                 [1, 1, 0, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [0, 0, 0, 1, 0],
                 [1, 1, 1, 1, 0],
                 [0, 0, 1, 1, 0],
@@ -163,7 +163,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 1, 0, 0, 0],
                 [0, 0, 0, 1, 1],
                 [0, 1, 1, 1, 0],
@@ -171,7 +171,7 @@ mod tests {
                 [0, 0, 0, 1, 1],
                 [0, 1, 1, 1, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 0, 1, 0, 0, 0],
                 [1, 0, 1, 1, 0, 1],
                 [1, 1, 1, 1, 1, 1],

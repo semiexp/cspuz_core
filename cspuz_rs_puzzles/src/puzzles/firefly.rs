@@ -1,11 +1,11 @@
-use super::util;
-use crate::graph;
-use crate::items::{Arrow, NumberedArrow};
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::items::{Arrow, NumberedArrow};
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Grid, MaybeSkip, NumberedArrowCombinator,
     Optionalize, Spaces,
 };
-use crate::solver::{count_true, BoolVar, IntVar, Solver};
+use cspuz_rs::solver::{count_true, BoolVar, IntVar, Solver};
 
 pub fn solve_firefly(
     clues: &[Vec<Option<NumberedArrow>>],
@@ -202,7 +202,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [0, 1, 0, 1],
                 [1, 0, 1, 1],
                 [0, 1, 1, 1],
@@ -210,7 +210,7 @@ mod tests {
                 [0, 0, 0, 0],
                 [1, 1, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [0, 1, 1, 1, 1],
                 [1, 0, 0, 0, 0],
                 [1, 0, 0, 0, 1],

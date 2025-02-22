@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::coral;
+use cspuz_rs_puzzles::puzzles::coral;
 
 pub fn solve_coral(url: &str) -> Result<Board, &'static str> {
     let (vertical, horizontal) = coral::deserialize_problem(url).ok_or("invalid url")?;

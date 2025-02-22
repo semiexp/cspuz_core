@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::hashi;
+use cspuz_rs_puzzles::puzzles::hashi;
 
 pub fn solve_hashi(url: &str) -> Result<Board, &'static str> {
     let clues = hashi::deserialize_problem(url).ok_or("invalid url")?;

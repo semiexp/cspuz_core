@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::aquapelago;
+use cspuz_rs_puzzles::puzzles::aquapelago;
 
 pub fn solve_aquapelago(url: &str) -> Result<Board, &'static str> {
     let clues = aquapelago::deserialize_problem(url).ok_or("invalid url")?;

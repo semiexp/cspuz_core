@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     url_to_problem, Choice, Combinator, Context, ContextBasedGrid, DecInt, Dict, FixedLengthHexInt,
     MaybeSkip, Seq, Sequencer, Size, Spaces, Tuple2,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub enum GateDir {
     Horizontal,
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn test_slalom_problem() {
         // https://puzsq.jp/main/puzzle_play.php?pid=9522
-        let is_black = crate::puzzle::util::tests::to_bool_2d([
+        let is_black = crate::util::tests::to_bool_2d([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
             [0, 0, 1, 0, 1, 0, 0, 0, 0, 0],

@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, Map,
     MultiDigit, Rooms, Size, Tuple2,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_barns(
     icebarn: &[Vec<bool>],
@@ -99,11 +99,11 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::InnerGridEdges;
+    use cspuz_rs::graph::InnerGridEdges;
 
     fn problem_for_tests() -> Problem {
         (
-            crate::puzzle::util::tests::to_bool_2d([
+            crate::util::tests::to_bool_2d([
                 [0, 0, 0, 0, 0],
                 [1, 0, 0, 0, 0],
                 [0, 1, 1, 0, 0],
@@ -112,14 +112,14 @@ mod tests {
                 [0, 0, 0, 0, 0],
             ]),
             InnerGridEdges {
-                horizontal: crate::puzzle::util::tests::to_bool_2d([
+                horizontal: crate::util::tests::to_bool_2d([
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
                     [1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
                 ]),
-                vertical: crate::puzzle::util::tests::to_bool_2d([
+                vertical: crate::util::tests::to_bool_2d([
                     [0, 0, 0, 0],
                     [0, 1, 0, 0],
                     [0, 0, 0, 0],
@@ -139,7 +139,7 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = graph::GridEdges {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 0, 1, 1],
                 [0, 0, 1, 0],
                 [1, 1, 1, 0],
@@ -147,7 +147,7 @@ mod tests {
                 [0, 1, 1, 1],
                 [1, 1, 1, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 0, 1],
                 [1, 1, 0, 1, 1],
                 [0, 1, 0, 0, 1],

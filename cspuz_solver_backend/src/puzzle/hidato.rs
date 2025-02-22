@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::hidato;
+use cspuz_rs_puzzles::puzzles::hidato;
 
 pub fn solve_hidato(url: &str) -> Result<Board, &'static str> {
     let problem = hidato::deserialize_problem(url).ok_or("invalid url")?;

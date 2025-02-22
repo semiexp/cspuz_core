@@ -1,9 +1,9 @@
-use crate::graph;
-use crate::serializer::{
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Choice, Combinator, Context, DecInt,
     Dict, KudamonoBorder, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use crate::solver::{count_true, BoolVar, Solver};
+use cspuz_rs::solver::{count_true, BoolVar, Solver};
 
 pub fn solve_akari_region(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -187,13 +187,13 @@ mod tests {
         // https://pedros.works/paper-puzzle-player?W=6x5&L=z7z6z8&L-N=(2)3(2)1(1)15(0)4&LF=g2g4g2g4g2g4g7&X=x22x2x2x1x2&SIE=9UL3UU9RURR1U4U5R&G=akari-regional
 
         let borders = graph::InnerGridEdges {
-            horizontal: crate::puzzle::util::tests::to_bool_2d([
+            horizontal: crate::util::tests::to_bool_2d([
                 [1, 0, 0, 0, 1, 1],
                 [0, 0, 0, 1, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 1],
             ]),
-            vertical: crate::puzzle::util::tests::to_bool_2d([
+            vertical: crate::util::tests::to_bool_2d([
                 [0, 0, 1, 0, 0],
                 [1, 0, 0, 1, 0],
                 [0, 0, 0, 1, 0],
@@ -210,7 +210,7 @@ mod tests {
             vec![None, None, None, None, None, None],
         ];
 
-        let has_block = crate::puzzle::util::tests::to_bool_2d([
+        let has_block = crate::util::tests::to_bool_2d([
             [0, 0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0],
             [0, 1, 0, 0, 0, 0],
@@ -228,7 +228,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 1, 0, 0, 0],
             [0, 1, 0, 1, 0, 0],
             [1, 0, 1, 0, 0, 0],

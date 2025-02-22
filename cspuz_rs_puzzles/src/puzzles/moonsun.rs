@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, MultiDigit,
     Rooms, Size, Tuple2,
 };
-use crate::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_moonsun(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -154,7 +154,7 @@ mod tests {
 
         #[rustfmt::skip]
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::puzzle::util::tests::to_option_bool_2d([
+            horizontal: crate::util::tests::to_option_bool_2d([
                 [1, 1, 1, 0, 0],
                 [1, 1, 0, 0, 0],
                 [1, 0, 0, 1, 1],
@@ -162,7 +162,7 @@ mod tests {
                 [0, 0, 0, 0, 1],
                 [1, 1, 1, 0, 0],
             ]),
-            vertical: crate::puzzle::util::tests::to_option_bool_2d([
+            vertical: crate::util::tests::to_option_bool_2d([
                 [1, 0, 0, 1, 0, 0],
                 [0, 0, 1, 1, 0, 0],
                 [1, 1, 1, 0, 0, 1],

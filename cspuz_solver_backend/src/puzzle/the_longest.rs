@@ -1,6 +1,6 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs::puzzle::the_longest;
+use cspuz_rs_puzzles::puzzles::the_longest;
 
 pub fn solve_the_longest(url: &str) -> Result<Board, &'static str> {
     let problem = the_longest::deserialize_problem(url).ok_or("invalid url")?;

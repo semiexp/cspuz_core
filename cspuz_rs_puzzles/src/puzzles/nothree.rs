@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     from_base16, problem_to_url_with_context, to_base16, url_to_problem, Choice, Combinator,
     Context, ContextBasedGrid, Size, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_nothree(clues: &[Vec<bool>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -163,7 +163,7 @@ mod tests {
     use super::*;
 
     fn problem_for_tests() -> Problem {
-        crate::puzzle::util::tests::to_bool_2d([
+        crate::util::tests::to_bool_2d([
             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
@@ -183,7 +183,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 0, 0, 0, 0, 1],
             [0, 1, 0, 1, 0, 0],
             [0, 0, 0, 0, 0, 1],

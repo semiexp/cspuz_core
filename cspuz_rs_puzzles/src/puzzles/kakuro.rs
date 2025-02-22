@@ -1,9 +1,9 @@
-use super::util;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, Optionalize, Size, Spaces, Tuple2, UnlimitedSeq,
 };
-use crate::solver::{all, any, IntVarArray1D, Solver};
+use cspuz_rs::solver::{all, any, IntVarArray1D, Solver};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct KakuroClue {
@@ -362,7 +362,7 @@ mod tests {
         let ans = solve_kakuro(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
-        let expected = crate::puzzle::util::tests::to_option_2d([
+        let expected = crate::util::tests::to_option_2d([
             [0, 0, 0, 0, 0, 0, 0],
             [0, 0, 3, 9, 0, 3, 1],
             [0, 6, 4, 5, 3, 1, 2],

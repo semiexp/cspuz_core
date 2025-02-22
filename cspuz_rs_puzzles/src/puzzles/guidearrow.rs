@@ -1,10 +1,10 @@
-use super::util;
-use crate::graph;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     from_base16, problem_to_url_with_context, to_base16, url_to_problem, Choice, Combinator,
     Context, ContextBasedGrid, Dict, HexInt, Size, Spaces, Tuple3,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GuidearrowClue {
@@ -190,7 +190,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 1, 0, 0, 1, 0, 0],
             [0, 0, 1, 0, 0, 1, 0],
             [1, 0, 0, 1, 0, 0, 0],

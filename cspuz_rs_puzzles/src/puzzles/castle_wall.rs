@@ -1,11 +1,11 @@
-use super::util;
-use crate::graph;
-use crate::items::{Arrow, NumberedArrow};
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use cspuz_rs::items::{Arrow, NumberedArrow};
+use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumberedArrowCombinator,
     Optionalize, Spaces, Tuple2,
 };
-use crate::solver::{Solver, FALSE};
+use cspuz_rs::solver::{Solver, FALSE};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {

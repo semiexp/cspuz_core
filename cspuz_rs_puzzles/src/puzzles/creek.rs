@@ -1,11 +1,11 @@
-use super::util;
-use crate::graph;
-use crate::puzzle::slitherlink::SlitherlinkClueCombinator;
-use crate::serializer::{
+use crate::util;
+use cspuz_rs::graph;
+use crate::puzzles::slitherlink::SlitherlinkClueCombinator;
+use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Size, Spaces,
 };
-use crate::solver::Solver;
+use cspuz_rs::solver::Solver;
 
 pub fn solve_creek(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h1, w1) = util::infer_shape(clues);
@@ -88,7 +88,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [0, 0, 0, 1, 1, 1],
             [0, 1, 0, 0, 0, 0],
             [0, 0, 1, 1, 1, 0],

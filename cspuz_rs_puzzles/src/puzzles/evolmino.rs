@@ -1,12 +1,12 @@
 use std::ops::Index;
 
-use super::util::{self, Grid};
-use crate::graph;
-use crate::serializer::{
+use crate::util::{self, Grid};
+use cspuz_rs::graph;
+use cspuz_rs::serializer::{
     from_base36, problem_to_url_with_context, to_base36, url_to_problem, Combinator, Context,
     ContextBasedGrid, Map, MultiDigit, Size, Tuple3,
 };
-use crate::solver::{any, Solver};
+use cspuz_rs::solver::{any, Solver};
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
 
@@ -1250,7 +1250,7 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::puzzle::util::tests::to_option_bool_2d([
+        let expected = crate::util::tests::to_option_bool_2d([
             [1, 1, 1, 0, 1, 1],
             [0, 0, 0, 0, 0, 0],
             [1, 1, 1, 0, 1, 1],
