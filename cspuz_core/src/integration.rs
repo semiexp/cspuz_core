@@ -549,7 +549,7 @@ mod tests {
                     Stmt::Circuit(values) => {
                         let values = values
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         if !test_util::check_circuit(&values) {
                             return false;
@@ -558,7 +558,7 @@ mod tests {
                     Stmt::ExtensionSupports(vars, supports) => {
                         let values = vars
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         let mut isok = false;
                         for support in supports {

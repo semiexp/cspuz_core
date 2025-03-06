@@ -351,9 +351,19 @@ fn normalize_stmt(env: &mut NormalizerEnv, stmt: Stmt) {
                     edges,
                 ));
         }
-        Stmt::Circuit(vars) => normalize_circuit(env, vars),
-        Stmt::ExtensionSupports(vars, supports) => {
-            normalize_extension_supports(env, vars, supports)
+        Stmt::Circuit(exprs) => {
+            let exprs_converted = exprs
+                .into_iter()
+                .map(|e| equivalent_int_var(env, &e))
+                .collect::<Vec<_>>();
+            normalize_circuit(env, exprs_converted)
+        }
+        Stmt::ExtensionSupports(exprs, supports) => {
+            let exprs_converted = exprs
+                .into_iter()
+                .map(|e| equivalent_int_var(env, &e))
+                .collect::<Vec<_>>();
+            normalize_extension_supports(env, exprs_converted, supports)
         }
         Stmt::GraphDivision(sizes, edges, edge_lits) => {
             let sizes = sizes
@@ -811,7 +821,7 @@ fn normalize_circuit(_: &mut NormalizerEnv, _: Vec<IntVar>) {
 }
 
 #[cfg(feature = "csp-extra-constraints")]
-fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<IntVar>) {
+fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<NIntVar>) {
     let n = vars.len();
 
     let mut edges = vec![];
@@ -820,10 +830,9 @@ fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<IntVar>) {
     let mut self_edge: Vec<Option<NBoolLit>> = vec![None; n];
 
     for i in 0..n {
-        let nv = env.convert_int_var(vars[i]);
         let mut valid_domain = vec![];
         let mut has_out_of_range = false;
-        match env.norm.vars.int_var(nv) {
+        match env.norm.vars.int_var(vars[i]) {
             IntVarRepresentation::Domain(domain) => {
                 for v in domain.enumerate() {
                     if v >= 0 && v < n as i32 {
@@ -847,8 +856,11 @@ fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<IntVar>) {
             }
         }
         if has_out_of_range {
-            normalize_and_register_expr(env, vars[i].expr().ge(IntExpr::Const(0)));
-            normalize_and_register_expr(env, vars[i].expr().le(IntExpr::Const(n as i32 - 1)));
+            normalize_and_register_expr(env, IntExpr::NVar(vars[i]).ge(IntExpr::Const(0)));
+            normalize_and_register_expr(
+                env,
+                IntExpr::NVar(vars[i]).le(IntExpr::Const(n as i32 - 1)),
+            );
         }
         for j in valid_domain {
             let j = j.get() as usize;
@@ -857,7 +869,7 @@ fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<IntVar>) {
             let lit = NBoolLit::new(v, false);
             normalize_and_register_expr(
                 env,
-                BoolExpr::NVar(v).iff(vars[i].expr().eq(IntExpr::Const(j as i32))),
+                BoolExpr::NVar(v).iff(IntExpr::NVar(vars[i]).eq(IntExpr::Const(j as i32))),
             );
 
             if i != j {
@@ -951,14 +963,10 @@ fn normalize_extension_supports(_: &mut NormalizerEnv, _: Vec<IntVar>, _: Vec<Ve
 #[cfg(feature = "csp-extra-constraints")]
 fn normalize_extension_supports(
     env: &mut NormalizerEnv,
-    vars: Vec<IntVar>,
+    vars: Vec<NIntVar>,
     supports: Vec<Vec<Option<i32>>>,
 ) {
     if env.config.use_native_extension_supports {
-        let vars = vars
-            .into_iter()
-            .map(|v| env.convert_int_var(v))
-            .collect::<Vec<_>>();
         let supports = supports
             .into_iter()
             .map(|row| {
@@ -1007,7 +1015,7 @@ fn normalize_extension_supports(
             assert_eq!(s.len(), vars.len());
             for i in 0..vars.len() {
                 if let Some(n) = s[i] {
-                    c.push(Box::new(vars[i].expr().eq(IntExpr::Const(n))));
+                    c.push(Box::new(IntExpr::NVar(vars[i]).eq(IntExpr::Const(n))));
                 }
             }
             exprs.push(Box::new(BoolExpr::And(c)));
@@ -1016,10 +1024,6 @@ fn normalize_extension_supports(
         return;
     }
 
-    let vars = vars
-        .into_iter()
-        .map(|v| env.convert_int_var(v))
-        .collect::<Vec<_>>();
     let domains = vars
         .iter()
         .map(|&v| {
@@ -1295,7 +1299,7 @@ mod tests {
                     Stmt::Circuit(vars) => {
                         let values = vars
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         if !test_util::check_circuit(&values) {
                             return false;
@@ -1304,7 +1308,7 @@ mod tests {
                     Stmt::ExtensionSupports(vars, supports) => {
                         let values = vars
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         let mut isok = false;
                         for support in supports {
@@ -1673,7 +1677,7 @@ mod tests {
             let b = tester.new_int_var(Domain::range(0, 2));
             let c = tester.new_int_var(Domain::range(0, 2));
             tester.add_constraint(Stmt::ExtensionSupports(
-                vec![a, b, c],
+                vec![a.expr(), b.expr(), c.expr()],
                 vec![
                     vec![Some(0), Some(0), Some(1)],
                     vec![Some(0), Some(1), Some(1)],
@@ -1698,7 +1702,7 @@ mod tests {
             let b = tester.new_int_var(Domain::range(0, 3));
             let c = tester.new_int_var(Domain::range(0, 3));
             tester.add_constraint(Stmt::ExtensionSupports(
-                vec![a, b, c],
+                vec![a.expr(), b.expr(), c.expr()],
                 vec![
                     vec![None, Some(0), Some(1)],
                     vec![Some(0), Some(1), Some(1)],
@@ -1720,7 +1724,7 @@ mod tests {
         let a = tester.new_int_var(Domain::range(0, 2));
         let b = tester.new_int_var(Domain::range(0, 2));
         let c = tester.new_int_var(Domain::range(-1, 2));
-        tester.add_constraint(Stmt::Circuit(vec![a, b, c]));
+        tester.add_constraint(Stmt::Circuit(vec![a.expr(), b.expr(), c.expr()]));
         tester.check();
     }
 }

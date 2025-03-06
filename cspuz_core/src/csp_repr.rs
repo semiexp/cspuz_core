@@ -47,8 +47,8 @@ pub enum Stmt {
     Expr(BoolExpr),
     AllDifferent(Vec<IntExpr>),
     ActiveVerticesConnected(Vec<BoolExpr>, Vec<(usize, usize)>),
-    Circuit(Vec<IntVar>),
-    ExtensionSupports(Vec<IntVar>, Vec<Vec<Option<i32>>>),
+    Circuit(Vec<IntExpr>),
+    ExtensionSupports(Vec<IntExpr>, Vec<Vec<Option<i32>>>),
     GraphDivision(Vec<Option<IntExpr>>, Vec<(usize, usize)>, Vec<BoolExpr>),
     CustomConstraint(Vec<BoolExpr>, Box<dyn PropagatorGenerator>),
 }
@@ -61,9 +61,9 @@ impl std::fmt::Debug for Stmt {
             Stmt::ActiveVerticesConnected(exprs, edges) => {
                 write!(f, "ActiveVerticesConnected({:?}, {:?})", exprs, edges)
             }
-            Stmt::Circuit(vars) => write!(f, "Circuit({:?})", vars),
-            Stmt::ExtensionSupports(vars, supports) => {
-                write!(f, "ExtensionSupports({:?}, {:?})", vars, supports)
+            Stmt::Circuit(exprs) => write!(f, "Circuit({:?})", exprs),
+            Stmt::ExtensionSupports(exprs, supports) => {
+                write!(f, "ExtensionSupports({:?}, {:?})", exprs, supports)
             }
             Stmt::GraphDivision(sizes, edges, edges_lit) => {
                 write!(
@@ -107,10 +107,11 @@ impl Stmt {
                 }
                 write!(out, "])")?;
             }
-            Stmt::Circuit(vars) => {
+            Stmt::Circuit(exprs) => {
                 write!(out, "(circuit")?;
-                for v in vars {
-                    write!(out, " <i{}>", v.0)?;
+                for e in exprs {
+                    write!(out, " ")?;
+                    e.pretty_print(out)?;
                 }
                 write!(out, ")")?;
             }
@@ -381,9 +382,9 @@ pub mod tests {
             Stmt::ActiveVerticesConnected(exprs, edges) => {
                 Stmt::ActiveVerticesConnected(exprs.clone(), edges.clone())
             }
-            Stmt::Circuit(vars) => Stmt::Circuit(vars.clone()),
-            Stmt::ExtensionSupports(vars, supports) => {
-                Stmt::ExtensionSupports(vars.clone(), supports.clone())
+            Stmt::Circuit(exprs) => Stmt::Circuit(exprs.clone()),
+            Stmt::ExtensionSupports(exprs, supports) => {
+                Stmt::ExtensionSupports(exprs.clone(), supports.clone())
             }
             Stmt::GraphDivision(sizes, edges, edges_lit) => {
                 Stmt::GraphDivision(sizes.clone(), edges.clone(), edges_lit.clone())
