@@ -816,7 +816,7 @@ fn normalize_int_expr(env: &mut NormalizerEnv, expr: &IntExpr) -> LinearSum {
 }
 
 #[cfg(not(feature = "csp-extra-constraints"))]
-fn normalize_circuit(_: &mut NormalizerEnv, _: Vec<IntVar>) {
+fn normalize_circuit(_: &mut NormalizerEnv, _: Vec<NIntVar>) {
     panic!("feature not enabled");
 }
 
@@ -956,7 +956,7 @@ fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<NIntVar>) {
 }
 
 #[cfg(not(feature = "csp-extra-constraints"))]
-fn normalize_extension_supports(_: &mut NormalizerEnv, _: Vec<IntVar>, _: Vec<Vec<Option<i32>>>) {
+fn normalize_extension_supports(_: &mut NormalizerEnv, _: Vec<NIntVar>, _: Vec<Vec<Option<i32>>>) {
     panic!("feature not enabled");
 }
 
