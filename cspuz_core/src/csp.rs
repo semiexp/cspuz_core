@@ -423,8 +423,12 @@ impl CSP {
                         .iter_mut()
                         .for_each(|e| vars.constant_folding_bool(e));
                 }
-                Stmt::Circuit(_) => todo!(),
-                Stmt::ExtensionSupports(_, _) => todo!(),
+                Stmt::Circuit(exprs) => {
+                    exprs.iter_mut().for_each(|e| vars.constant_folding_int(e));
+                }
+                Stmt::ExtensionSupports(exprs, _) => {
+                    exprs.iter_mut().for_each(|e| vars.constant_folding_int(e));
+                }
                 Stmt::GraphDivision(sizes, _edges, edge_lits) => {
                     sizes.iter_mut().for_each(|e| {
                         e.as_mut().map(|e| vars.constant_folding_int(e));
