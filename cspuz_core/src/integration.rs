@@ -549,7 +549,7 @@ mod tests {
                     Stmt::Circuit(values) => {
                         let values = values
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         if !test_util::check_circuit(&values) {
                             return false;
@@ -558,7 +558,7 @@ mod tests {
                     Stmt::ExtensionSupports(vars, supports) => {
                         let values = vars
                             .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
+                            .map(|e| assignment.eval_int_expr(e))
                             .collect::<Vec<_>>();
                         let mut isok = false;
                         for support in supports {
@@ -1510,8 +1510,6 @@ mod tests {
         }
     }
 
-    // TODO: Re-enable these tests
-    /*
     #[cfg(feature = "csp-extra-constraints")]
     #[test]
     fn test_integration_exhaustive_circuit1() {
@@ -1522,7 +1520,7 @@ mod tests {
         let c = tester.new_int_var(Domain::range(0, 3));
         let d = tester.new_int_var(Domain::range(1, 3));
 
-        tester.add_constraint(Stmt::Circuit(vec![a, b, c, d]));
+        tester.add_constraint(Stmt::Circuit(vec![a.expr(), b.expr(), c.expr(), d.expr()]));
 
         tester.check();
     }
@@ -1538,7 +1536,13 @@ mod tests {
         let d = tester.new_int_var_from_list(vec![0, 2, 4]);
         let e = tester.new_int_var_from_list(vec![0, 1, 2, 3]);
 
-        tester.add_constraint(Stmt::Circuit(vec![a, b, c, d, e]));
+        tester.add_constraint(Stmt::Circuit(vec![
+            a.expr(),
+            b.expr(),
+            c.expr(),
+            d.expr(),
+            e.expr(),
+        ]));
 
         tester.check();
     }
@@ -1557,7 +1561,7 @@ mod tests {
             let d = tester.new_int_var(Domain::range(1, 4));
 
             tester.add_constraint(Stmt::ExtensionSupports(
-                vec![a, b, c],
+                vec![a.expr(), b.expr(), c.expr()],
                 vec![
                     vec![Some(0), Some(0), Some(1)],
                     vec![Some(0), Some(2), Some(1)],
@@ -1571,7 +1575,7 @@ mod tests {
                 ],
             ));
             tester.add_constraint(Stmt::ExtensionSupports(
-                vec![b, c, d],
+                vec![b.expr(), c.expr(), d.expr()],
                 vec![
                     vec![Some(0), None, None],
                     vec![None, Some(1), None],
@@ -1583,7 +1587,6 @@ mod tests {
             tester.check();
         }
     }
-    */
 
     #[test]
     fn test_integration_active_vertices_connected1() {

@@ -182,14 +182,11 @@ pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
             .collect::<Vec<_>>();
         ParseResult::Stmt(Stmt::AllDifferent(exprs))
     } else if op_name == "circuit" {
-        let mut vars = vec![];
-        for c in &child[1..] {
-            match var_map.get_var(c.as_ident()) {
-                Some(Var::Int(v)) => vars.push(v),
-                _ => panic!(),
-            }
-        }
-        ParseResult::Stmt(Stmt::Circuit(vars))
+        let exprs = child[1..]
+            .iter()
+            .map(|c| parse_int_expr(var_map, c))
+            .collect::<Vec<_>>();
+        ParseResult::Stmt(Stmt::Circuit(exprs))
     } else if op_name == "graph-active-vertices-connected" {
         let num_vertices = child[1].as_usize();
         let num_edges = child[2].as_usize();
@@ -237,12 +234,9 @@ pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
         ParseResult::Stmt(Stmt::GraphDivision(vertices, edges, edge_exprs))
     } else if op_name == "extension-supports" {
         assert_eq!(child.len(), 3);
-        let mut vars = vec![];
+        let mut exprs = vec![];
         for c in child[1].as_node() {
-            match var_map.get_var(c.as_ident()) {
-                Some(Var::Int(v)) => vars.push(v),
-                _ => panic!(),
-            }
+            exprs.push(parse_int_expr(var_map, c));
         }
         let mut supports = vec![];
         for s in child[2].as_node() {
@@ -256,7 +250,7 @@ pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
             }
             supports.push(support);
         }
-        ParseResult::Stmt(Stmt::ExtensionSupports(vars, supports))
+        ParseResult::Stmt(Stmt::ExtensionSupports(exprs, supports))
     } else {
         ParseResult::Stmt(Stmt::Expr(parse_bool_expr(var_map, &tree)))
     }
