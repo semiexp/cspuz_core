@@ -74,8 +74,7 @@ pub enum OrderEncodingLinearMode {
     RustOptimized,
 }
 
-// TODO: remove Clone + Copy
-pub unsafe trait SolverManipulator: Clone + Copy {
+pub unsafe trait SolverManipulator {
     unsafe fn value(&self, lit: Lit) -> Option<bool>;
     unsafe fn add_watch(&mut self, lit: Lit);
     unsafe fn enqueue(&mut self, lit: Lit) -> bool;
@@ -83,10 +82,10 @@ pub unsafe trait SolverManipulator: Clone + Copy {
 }
 
 pub unsafe trait CustomPropagator<T: SolverManipulator> {
-    fn initialize(&mut self, solver: T) -> bool;
-    fn propagate(&mut self, solver: T, p: Lit, num_pending_propagations: i32) -> bool;
-    fn calc_reason(&mut self, solver: T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit>;
-    fn undo(&mut self, solver: T, p: Lit);
+    fn initialize(&mut self, solver: &mut T) -> bool;
+    fn propagate(&mut self, solver: &mut T, p: Lit, num_pending_propagations: i32) -> bool;
+    fn calc_reason(&mut self, solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit>;
+    fn undo(&mut self, solver: &mut T, p: Lit);
 }
 
 impl SAT {

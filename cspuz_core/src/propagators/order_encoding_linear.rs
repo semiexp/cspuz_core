@@ -74,7 +74,7 @@ impl OrderEncodingLinear {
 }
 
 unsafe impl<T: SolverManipulator> CustomPropagator<T> for OrderEncodingLinear {
-    fn initialize(&mut self, mut solver: T) -> bool {
+    fn initialize(&mut self, solver: &mut T) -> bool {
         let mut unique_watchers = vec![];
         for &(lit, _, _) in &self.lits {
             unique_watchers.push(!lit);
@@ -104,7 +104,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for OrderEncodingLinear {
         true
     }
 
-    fn propagate(&mut self, mut solver: T, p: Lit, _num_pending_propagations: i32) -> bool {
+    fn propagate(&mut self, solver: &mut T, p: Lit, _num_pending_propagations: i32) -> bool {
         self.active_lits.push(p);
         self.undo_list.push(None);
 
@@ -143,7 +143,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for OrderEncodingLinear {
         true
     }
 
-    fn calc_reason(&mut self, _: T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
+    fn calc_reason(&mut self, _: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         let mut p_idx: Option<usize> = None;
         if self.use_optimize {
             if let Some(p) = p {
@@ -167,7 +167,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for OrderEncodingLinear {
         ret
     }
 
-    fn undo(&mut self, _: T, _: Lit) {
+    fn undo(&mut self, _: &mut T, _: Lit) {
         while let Some((i, j)) = self.undo_list.pop().unwrap() {
             self.total_ub += self.terms[i].domain[j] - self.terms[i].domain[self.ub_index[i]];
             self.ub_index[i] = j;

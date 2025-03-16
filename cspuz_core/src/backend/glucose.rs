@@ -407,7 +407,7 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorInitialize(
             trait_object,
         )
     };
-    let res = trait_object.initialize(GlucoseSolverManipulator {
+    let res = trait_object.initialize(&mut GlucoseSolverManipulator {
         ptr: solver,
         wrapper_object: Some(wrapper_object),
     });
@@ -432,7 +432,7 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorPropagate(
         )
     };
     let res = trait_object.propagate(
-        GlucoseSolverManipulator {
+        &mut GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: Some(wrapper_object),
         },
@@ -460,7 +460,7 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
         )
     };
     let res = trait_object.calc_reason(
-        GlucoseSolverManipulator {
+        &mut GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: None,
         },
@@ -488,7 +488,7 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorUndo(
         )
     };
     trait_object.undo(
-        GlucoseSolverManipulator {
+        &mut GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: None,
         },
@@ -564,7 +564,7 @@ mod tests {
     }
 
     unsafe impl<T: SolverManipulator> CustomPropagator<T> for Xor {
-        fn initialize(&mut self, mut solver: T) -> bool {
+        fn initialize(&mut self, solver: &mut T) -> bool {
             for &var in &self.vars {
                 unsafe {
                     solver.add_watch(var.as_lit(false));
@@ -584,7 +584,7 @@ mod tests {
             true
         }
 
-        fn propagate(&mut self, mut solver: T, p: Lit, _num_pending_propagations: i32) -> bool {
+        fn propagate(&mut self, solver: &mut T, p: Lit, _num_pending_propagations: i32) -> bool {
             let s = !p.is_negated();
             let v = p.var();
 
@@ -612,7 +612,7 @@ mod tests {
             true
         }
 
-        fn calc_reason(&mut self, _: T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
+        fn calc_reason(&mut self, _: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
             let mut ret = vec![];
             for i in 0..self.vars.len() {
                 if let Some(v) = self.values[i] {
@@ -625,7 +625,7 @@ mod tests {
             ret
         }
 
-        fn undo(&mut self, _: T, p: Lit) {
+        fn undo(&mut self, _: &mut T, p: Lit) {
             let v = p.var();
 
             let idx = self.var_index(v).unwrap();

@@ -104,7 +104,7 @@ impl<T: SimpleCustomConstraint> CustomConstraintWrapperForGlucose<T> {
 unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
     for CustomConstraintWrapperForGlucose<T>
 {
-    fn initialize(&mut self, mut solver: M) -> bool {
+    fn initialize(&mut self, solver: &mut M) -> bool {
         for i in 0..self.all_lits.len() {
             if i == 0 || self.all_lits[i].0 != self.all_lits[i - 1].0 {
                 unsafe {
@@ -122,7 +122,7 @@ unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
         self.constraint.find_inconsistency().is_none()
     }
 
-    fn propagate(&mut self, _solver: M, p: Lit, num_pending_propations: i32) -> bool {
+    fn propagate(&mut self, _solver: &mut M, p: Lit, num_pending_propations: i32) -> bool {
         let mut idx = self.all_lits.partition_point(|(lit, _, _)| *lit < p);
         while idx < self.all_lits.len() && self.all_lits[idx].0 == p {
             let (_, i, value) = self.all_lits[idx];
@@ -187,7 +187,7 @@ unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
         }
     }
 
-    fn calc_reason(&mut self, _solver: M, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
+    fn calc_reason(&mut self, _solver: &mut M, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         assert!(self.reason.is_some());
         assert!(p.is_none());
         let mut reason = self.reason.take().unwrap();
@@ -196,7 +196,7 @@ unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
         reason
     }
 
-    fn undo(&mut self, _solver: M, p: Lit) {
+    fn undo(&mut self, _solver: &mut M, p: Lit) {
         let mut idx = self.all_lits.partition_point(|(lit, _, _)| *lit < p);
         while idx < self.all_lits.len() && self.all_lits[idx].0 == p {
             self.constraint.undo();
