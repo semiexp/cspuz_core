@@ -1,5 +1,6 @@
-use crate::backend::glucose::{CustomPropagator, SolverManipulator};
+use crate::backend::glucose::GlucoseSolverManipulator;
 use crate::sat::Lit;
+use crate::sat::{CustomPropagator, SolverManipulator};
 
 /// To make the CSP solver more flexible, we provide a way to define custom constraints (propagators).
 /// Currently, custom constraints are supported only in the Glucose backend.
@@ -44,7 +45,10 @@ use crate::sat::Lit;
 /// TODO: support int values
 
 pub trait PropagatorGenerator {
-    fn generate<'a>(self: Box<Self>, proxy_map: Vec<Lit>) -> Box<dyn CustomPropagator + 'a>
+    fn generate<'a>(
+        self: Box<Self>,
+        proxy_map: Vec<Lit>,
+    ) -> Box<dyn CustomPropagator<GlucoseSolverManipulator> + 'a>
     where
         Self: 'a;
 }
@@ -61,7 +65,10 @@ pub trait SimpleCustomConstraint {
 }
 
 impl<T: SimpleCustomConstraint> PropagatorGenerator for T {
-    fn generate<'a>(self: Box<Self>, proxy_map: Vec<Lit>) -> Box<dyn CustomPropagator + 'a>
+    fn generate<'a>(
+        self: Box<Self>,
+        proxy_map: Vec<Lit>,
+    ) -> Box<dyn CustomPropagator<GlucoseSolverManipulator> + 'a>
     where
         Self: 'a,
     {
@@ -94,8 +101,10 @@ impl<T: SimpleCustomConstraint> CustomConstraintWrapperForGlucose<T> {
     }
 }
 
-unsafe impl<T: SimpleCustomConstraint> CustomPropagator for CustomConstraintWrapperForGlucose<T> {
-    fn initialize(&mut self, mut solver: SolverManipulator) -> bool {
+unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
+    for CustomConstraintWrapperForGlucose<T>
+{
+    fn initialize(&mut self, mut solver: M) -> bool {
         for i in 0..self.all_lits.len() {
             if i == 0 || self.all_lits[i].0 != self.all_lits[i - 1].0 {
                 unsafe {
@@ -113,12 +122,7 @@ unsafe impl<T: SimpleCustomConstraint> CustomPropagator for CustomConstraintWrap
         self.constraint.find_inconsistency().is_none()
     }
 
-    fn propagate(
-        &mut self,
-        _solver: SolverManipulator,
-        p: Lit,
-        num_pending_propations: i32,
-    ) -> bool {
+    fn propagate(&mut self, _solver: M, p: Lit, num_pending_propations: i32) -> bool {
         let mut idx = self.all_lits.partition_point(|(lit, _, _)| *lit < p);
         while idx < self.all_lits.len() && self.all_lits[idx].0 == p {
             let (_, i, value) = self.all_lits[idx];
@@ -183,12 +187,7 @@ unsafe impl<T: SimpleCustomConstraint> CustomPropagator for CustomConstraintWrap
         }
     }
 
-    fn calc_reason(
-        &mut self,
-        _solver: SolverManipulator,
-        p: Option<Lit>,
-        extra: Option<Lit>,
-    ) -> Vec<Lit> {
+    fn calc_reason(&mut self, _solver: M, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         assert!(self.reason.is_some());
         assert!(p.is_none());
         let mut reason = self.reason.take().unwrap();
@@ -197,7 +196,7 @@ unsafe impl<T: SimpleCustomConstraint> CustomPropagator for CustomConstraintWrap
         reason
     }
 
-    fn undo(&mut self, _solver: SolverManipulator, p: Lit) {
+    fn undo(&mut self, _solver: M, p: Lit) {
         let mut idx = self.all_lits.partition_point(|(lit, _, _)| *lit < p);
         while idx < self.all_lits.len() && self.all_lits[idx].0 == p {
             self.constraint.undo();

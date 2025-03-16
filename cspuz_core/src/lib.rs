@@ -10,6 +10,7 @@ pub mod encoder;
 pub mod integration;
 pub mod norm_csp;
 pub mod normalizer;
+pub mod propagators;
 
 #[cfg(feature = "parser")]
 pub mod csugar_cli;
