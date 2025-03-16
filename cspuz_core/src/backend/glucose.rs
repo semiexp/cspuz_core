@@ -64,7 +64,6 @@ extern "C-unwind" {
 pub struct Solver {
     ptr: *mut Opaque,
     custom_constraints: Vec<Box<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>>,
-    order_encoding_linear_mode: OrderEncodingLinearMode,
 }
 
 const NUM_VAR_MAX: i32 = 0x3fffffff;
@@ -74,7 +73,6 @@ impl Solver {
         Solver {
             ptr: unsafe { Glucose_CreateSolver() },
             custom_constraints: vec![],
-            order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
         }
     }
 
@@ -111,6 +109,7 @@ impl Solver {
         domain: &[Vec<i32>],
         coefs: &[i32],
         constant: i32,
+        mode: OrderEncodingLinearMode,
     ) -> bool {
         assert!(lits.len() <= i32::max_value() as usize);
         assert_eq!(lits.len(), domain.len());
@@ -121,7 +120,7 @@ impl Solver {
             assert_eq!(lits[i].len() + 1, domain[i].len());
         }
 
-        match self.order_encoding_linear_mode {
+        match mode {
             OrderEncodingLinearMode::Cpp => {
                 let n_terms = lits.len() as i32;
                 let domain_size = domain.iter().map(|x| x.len() as i32).collect::<Vec<_>>();
@@ -149,17 +148,12 @@ impl Solver {
                         coefs[i],
                     ));
                 }
-                let optimized =
-                    self.order_encoding_linear_mode == OrderEncodingLinearMode::RustOptimized;
+                let optimized = mode == OrderEncodingLinearMode::RustOptimized;
                 self.add_custom_constraint(Box::new(
                     order_encoding_linear::OrderEncodingLinear::new(terms, constant, optimized),
                 ))
             }
         }
-    }
-
-    pub fn set_order_encoding_linear_mode(&mut self, mode: OrderEncodingLinearMode) {
-        self.order_encoding_linear_mode = mode;
     }
 
     pub fn add_active_vertices_connected(
