@@ -233,28 +233,15 @@ impl SAT {
         domain: Vec<Vec<i32>>,
         coefs: Vec<i32>,
         constant: i32,
+        mode: OrderEncodingLinearMode,
     ) -> bool {
         match self {
             SAT::Glucose(solver) => {
-                solver.add_order_encoding_linear(&lits, &domain, &coefs, constant)
+                solver.add_order_encoding_linear(&lits, &domain, &coefs, constant, mode)
             }
             #[cfg(feature = "backend-external")]
             SAT::External(_) => {
                 panic!("add_order_encoding_linear is not supported in external backend")
-            }
-            #[cfg(feature = "backend-cadical")]
-            SAT::CaDiCaL(_) => todo!(),
-        }
-    }
-
-    pub fn set_order_encoding_linear_mode(&mut self, mode: OrderEncodingLinearMode) {
-        match self {
-            SAT::Glucose(solver) => {
-                solver.set_order_encoding_linear_mode(mode);
-            }
-            #[cfg(feature = "backend-external")]
-            SAT::External(_) => {
-                panic!("set_order_encoding_linear_mode is not supported in external backend")
             }
             #[cfg(feature = "backend-cadical")]
             SAT::CaDiCaL(_) => todo!(),
