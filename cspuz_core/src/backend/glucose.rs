@@ -2,7 +2,7 @@ use std::ffi::{c_void, CString};
 use std::ops::Drop;
 use std::os::raw::c_char;
 
-use crate::sat::{Lit, OrderEncodingLinearMode, Var};
+use crate::sat::{CustomPropagator, Lit, OrderEncodingLinearMode, SolverManipulator, Var};
 
 #[repr(C)]
 struct Opaque {
@@ -62,7 +62,7 @@ extern "C-unwind" {
 
 pub struct Solver {
     ptr: *mut Opaque,
-    custom_constraints: Vec<Box<Box<dyn CustomPropagator>>>,
+    custom_constraints: Vec<Box<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>>,
     order_encoding_linear_mode: OrderEncodingLinearMode,
 }
 
@@ -277,9 +277,12 @@ impl Solver {
         res != 0
     }
 
-    pub fn add_custom_constraint(&mut self, constraint: Box<dyn CustomPropagator>) -> bool {
+    pub fn add_custom_constraint(
+        &mut self,
+        constraint: Box<dyn CustomPropagator<GlucoseSolverManipulator>>,
+    ) -> bool {
         self.custom_constraints.push(Box::new(constraint));
-        let c: &Box<dyn CustomPropagator> =
+        let c: &Box<dyn CustomPropagator<GlucoseSolverManipulator>> =
             &self.custom_constraints[self.custom_constraints.len() - 1];
         let c = unsafe { std::mem::transmute::<_, *mut c_void>(c) };
         let res = unsafe { Glucose_AddRustExtraConstraint(self.ptr, c) };
@@ -367,13 +370,13 @@ extern "C-unwind" {
 }
 
 #[derive(Clone, Copy)]
-pub struct SolverManipulator {
+pub struct GlucoseSolverManipulator {
     ptr: *mut Opaque,
     wrapper_object: Option<*mut c_void>,
 }
 
-impl SolverManipulator {
-    pub unsafe fn value(&self, lit: Lit) -> Option<bool> {
+unsafe impl SolverManipulator for GlucoseSolverManipulator {
+    unsafe fn value(&self, lit: Lit) -> Option<bool> {
         let v = Glucose_SolverValue(self.ptr, lit);
         match v {
             0 => Some(true),
@@ -383,36 +386,19 @@ impl SolverManipulator {
         }
     }
 
-    pub unsafe fn add_watch(&mut self, lit: Lit) {
+    unsafe fn add_watch(&mut self, lit: Lit) {
         assert!(self.wrapper_object.is_some());
         Glucose_SolverAddWatch(self.ptr, lit, self.wrapper_object.unwrap());
     }
 
-    pub unsafe fn enqueue(&mut self, lit: Lit) -> bool {
+    unsafe fn enqueue(&mut self, lit: Lit) -> bool {
         assert!(self.wrapper_object.is_some());
         Glucose_SolverEnqueue(self.ptr, lit, self.wrapper_object.unwrap()) != 0
     }
 
-    pub unsafe fn is_current_level(&self, lit: Lit) -> bool {
+    unsafe fn is_current_level(&self, lit: Lit) -> bool {
         Glucose_IsCurrentLevel(self.ptr, lit) != 0
     }
-}
-
-pub unsafe trait CustomPropagator {
-    fn initialize(&mut self, solver: SolverManipulator) -> bool;
-    fn propagate(
-        &mut self,
-        solver: SolverManipulator,
-        p: Lit,
-        num_pending_propagations: i32,
-    ) -> bool;
-    fn calc_reason(
-        &mut self,
-        solver: SolverManipulator,
-        p: Option<Lit>,
-        extra: Option<Lit>,
-    ) -> Vec<Lit>;
-    fn undo(&mut self, solver: SolverManipulator, p: Lit);
 }
 
 #[no_mangle]
@@ -421,9 +407,12 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorInitialize(
     wrapper_object: *mut c_void,
     trait_object: *mut c_void,
 ) -> i32 {
-    let trait_object =
-        unsafe { std::mem::transmute::<_, &mut Box<dyn CustomPropagator>>(trait_object) };
-    let res = trait_object.initialize(SolverManipulator {
+    let trait_object = unsafe {
+        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
+            trait_object,
+        )
+    };
+    let res = trait_object.initialize(GlucoseSolverManipulator {
         ptr: solver,
         wrapper_object: Some(wrapper_object),
     });
@@ -442,10 +431,13 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorPropagate(
     p: Lit,
     num_pending_propagations: i32,
 ) -> i32 {
-    let trait_object =
-        unsafe { std::mem::transmute::<_, &mut Box<dyn CustomPropagator>>(trait_object) };
+    let trait_object = unsafe {
+        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
+            trait_object,
+        )
+    };
     let res = trait_object.propagate(
-        SolverManipulator {
+        GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: Some(wrapper_object),
         },
@@ -467,10 +459,13 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
     extra: Lit,
     out_reason: *mut c_void,
 ) {
-    let trait_object =
-        unsafe { std::mem::transmute::<_, &mut Box<dyn CustomPropagator>>(trait_object) };
+    let trait_object = unsafe {
+        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
+            trait_object,
+        )
+    };
     let res = trait_object.calc_reason(
-        SolverManipulator {
+        GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: None,
         },
@@ -492,10 +487,13 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorUndo(
     trait_object: *mut c_void,
     p: Lit,
 ) {
-    let trait_object =
-        unsafe { std::mem::transmute::<_, &mut Box<dyn CustomPropagator>>(trait_object) };
+    let trait_object = unsafe {
+        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
+            trait_object,
+        )
+    };
     trait_object.undo(
-        SolverManipulator {
+        GlucoseSolverManipulator {
             ptr: solver,
             wrapper_object: None,
         },
@@ -568,8 +566,8 @@ impl OrderEncodingLinear {
     }
 }
 
-unsafe impl CustomPropagator for OrderEncodingLinear {
-    fn initialize(&mut self, mut solver: SolverManipulator) -> bool {
+unsafe impl<T: SolverManipulator> CustomPropagator<T> for OrderEncodingLinear {
+    fn initialize(&mut self, mut solver: T) -> bool {
         let mut unique_watchers = vec![];
         for &(lit, _, _) in &self.lits {
             unique_watchers.push(!lit);
@@ -599,12 +597,7 @@ unsafe impl CustomPropagator for OrderEncodingLinear {
         true
     }
 
-    fn propagate(
-        &mut self,
-        mut solver: SolverManipulator,
-        p: Lit,
-        _num_pending_propagations: i32,
-    ) -> bool {
+    fn propagate(&mut self, mut solver: T, p: Lit, _num_pending_propagations: i32) -> bool {
         self.active_lits.push(p);
         self.undo_list.push(None);
 
@@ -643,12 +636,7 @@ unsafe impl CustomPropagator for OrderEncodingLinear {
         true
     }
 
-    fn calc_reason(
-        &mut self,
-        _: SolverManipulator,
-        p: Option<Lit>,
-        extra: Option<Lit>,
-    ) -> Vec<Lit> {
+    fn calc_reason(&mut self, _: T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         let mut p_idx: Option<usize> = None;
         if self.use_optimize {
             if let Some(p) = p {
@@ -672,7 +660,7 @@ unsafe impl CustomPropagator for OrderEncodingLinear {
         ret
     }
 
-    fn undo(&mut self, _: SolverManipulator, _: Lit) {
+    fn undo(&mut self, _: T, _: Lit) {
         while let Some((i, j)) = self.undo_list.pop().unwrap() {
             self.total_ub += self.terms[i].domain[j] - self.terms[i].domain[self.ub_index[i]];
             self.ub_index[i] = j;
@@ -747,8 +735,8 @@ mod tests {
         }
     }
 
-    unsafe impl CustomPropagator for Xor {
-        fn initialize(&mut self, mut solver: SolverManipulator) -> bool {
+    unsafe impl<T: SolverManipulator> CustomPropagator<T> for Xor {
+        fn initialize(&mut self, mut solver: T) -> bool {
             for &var in &self.vars {
                 unsafe {
                     solver.add_watch(var.as_lit(false));
@@ -768,12 +756,7 @@ mod tests {
             true
         }
 
-        fn propagate(
-            &mut self,
-            mut solver: SolverManipulator,
-            p: Lit,
-            _num_pending_propagations: i32,
-        ) -> bool {
+        fn propagate(&mut self, mut solver: T, p: Lit, _num_pending_propagations: i32) -> bool {
             let s = !p.is_negated();
             let v = p.var();
 
@@ -801,12 +784,7 @@ mod tests {
             true
         }
 
-        fn calc_reason(
-            &mut self,
-            _: SolverManipulator,
-            p: Option<Lit>,
-            extra: Option<Lit>,
-        ) -> Vec<Lit> {
+        fn calc_reason(&mut self, _: T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
             let mut ret = vec![];
             for i in 0..self.vars.len() {
                 if let Some(v) = self.values[i] {
@@ -819,7 +797,7 @@ mod tests {
             ret
         }
 
-        fn undo(&mut self, _: SolverManipulator, p: Lit) {
+        fn undo(&mut self, _: T, p: Lit) {
             let v = p.var();
 
             let idx = self.var_index(v).unwrap();
