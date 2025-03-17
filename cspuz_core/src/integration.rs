@@ -1619,6 +1619,42 @@ mod tests {
     }
 
     #[test]
+    fn test_integration_active_vertices_connected2() {
+        for p in 0..7 {
+            for q in 0..7 {
+                let mut tester = IntegrationTester::new();
+
+                let mut vars = vec![];
+                for _ in 0..7 {
+                    vars.push(tester.new_bool_var().expr());
+                }
+                vars.push(vars[p].clone());
+                vars.push(!vars[q].clone());
+
+                tester.add_constraint(Stmt::ActiveVerticesConnected(
+                    vars,
+                    vec![
+                        (0, 1),
+                        (1, 2),
+                        (3, 4),
+                        (4, 5),
+                        (6, 7),
+                        (7, 8),
+                        (0, 3),
+                        (1, 4),
+                        (2, 5),
+                        (3, 6),
+                        (4, 7),
+                        (5, 8),
+                    ],
+                ));
+
+                tester.check();
+            }
+        }
+    }
+
+    #[test]
     fn test_integration_graph_division1() {
         let mut tester = IntegrationTester::new();
 
