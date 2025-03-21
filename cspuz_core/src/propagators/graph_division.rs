@@ -41,6 +41,13 @@ enum Reason {
         /// In the first case, `flip` is false. In the second case, `flip` is true.
         flip: bool,
     },
+
+    /// For edge `disconnected_edge_idx`, if regions which two ends of the edge belong to are merged,
+    /// the resulting regions will be too large.
+    TooLargeIfRegionsAreMerged {
+        disconnected_edge_idx: usize,
+        upper_bound_lit: Option<Lit>,
+    },
 }
 
 pub struct GraphDivision {
@@ -345,6 +352,47 @@ impl GraphDivision {
             }
         }
 
+        let mut region_upper_bound = vec![i32::MAX; decided_regions.len()];
+        let mut region_upper_bound_lit = vec![None; decided_regions.len()];
+        for i in 0..num_vertices {
+            let region_id = decided_region_id[i];
+            if self.upper_bound[i] < region_upper_bound[region_id] {
+                region_upper_bound[region_id] = self.upper_bound[i];
+                region_upper_bound_lit[region_id] = self.upper_bound_lit[i];
+            }
+        }
+
+        for i in 0..num_edges {
+            let (u, v) = self.edges[i];
+
+            if decided_region_id[u] == decided_region_id[v] {
+                continue;
+            }
+
+            if self.edge_state[i] != EdgeState::Undecided {
+                continue;
+            }
+
+            let ui = decided_region_id[u];
+            let vi = decided_region_id[v];
+
+            if region_upper_bound[ui].min(region_upper_bound[vi])
+                < decided_region_weight[ui] + decided_region_weight[vi]
+            {
+                self.register_propagation(
+                    self.edge_lits[i],
+                    Reason::TooLargeIfRegionsAreMerged {
+                        disconnected_edge_idx: i,
+                        upper_bound_lit: if region_upper_bound[ui] < region_upper_bound[vi] {
+                            region_upper_bound_lit[ui]
+                        } else {
+                            region_upper_bound_lit[vi]
+                        },
+                    },
+                );
+            }
+        }
+
         // 3. Within a potential region, weight variable must be at most the weight of the region
         let mut potential_region_weight = vec![];
         for region in &potential_regions {
@@ -601,6 +649,16 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(path);
                 ret.push(self.edge_lits[disconnected_edge_idx]);
 
+                ret
+            }
+            &Reason::TooLargeIfRegionsAreMerged {
+                disconnected_edge_idx,
+                upper_bound_lit,
+            } => {
+                let (u, v) = self.edges[disconnected_edge_idx];
+                let mut ret = self.reason_decided_region(u);
+                ret.extend(self.reason_decided_region(v));
+                ret.extend(upper_bound_lit);
                 ret
             }
         };
