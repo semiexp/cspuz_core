@@ -74,6 +74,12 @@ pub enum OrderEncodingLinearMode {
     RustOptimized,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum GraphDivisionMode {
+    Cpp,
+    Rust,
+}
+
 pub unsafe trait SolverManipulator {
     unsafe fn value(&self, lit: Lit) -> Option<bool>;
     unsafe fn add_watch(&mut self, lit: Lit);
@@ -298,9 +304,12 @@ impl SAT {
         dom_lits: &[Vec<Lit>],
         edges: &[(usize, usize)],
         edge_lits: &[Lit],
+        mode: GraphDivisionMode,
     ) -> bool {
         match self {
-            SAT::Glucose(solver) => solver.add_graph_division(domains, dom_lits, edges, edge_lits),
+            SAT::Glucose(solver) => {
+                solver.add_graph_division(domains, dom_lits, edges, edge_lits, mode)
+            }
             #[cfg(feature = "backend-external")]
             SAT::External(_) => panic!("add_graph_division is not supported in external backend"),
             #[cfg(feature = "backend-cadical")]
