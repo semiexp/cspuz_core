@@ -558,12 +558,99 @@ mod tests {
 
     #[test]
     fn test_graph_division_extra_disconnection() {
+        // 2x2 grid graph
         compare_counts(
             4,
             &vec![None; 4],
             None,
             &[(0, 1), (1, 2), (2, 3), (0, 3)],
             &[None; 4],
+        );
+
+        // 2x3 grid graph
+        compare_counts(
+            6,
+            &vec![None; 6],
+            None,
+            &[(0, 1), (1, 2), (3, 4), (4, 5), (0, 3), (1, 4), (2, 5)],
+            &[None; 7],
+        );
+
+        // 3x3 grid graph
+        compare_counts(
+            9,
+            &vec![None; 9],
+            None,
+            &[
+                (0, 1),
+                (1, 2),
+                (3, 4),
+                (4, 5),
+                (6, 7),
+                (7, 8),
+                (0, 3),
+                (1, 4),
+                (2, 5),
+                (3, 6),
+                (4, 7),
+                (5, 8),
+            ],
+            &[None; 12],
+        );
+    }
+
+    #[test]
+    fn test_graph_division_extra_disconnection_predetermined() {
+        // 2x3 grid graph
+        compare_counts(
+            6,
+            &vec![None; 6],
+            None,
+            &[(0, 1), (1, 2), (3, 4), (4, 5), (0, 3), (1, 4), (2, 5)],
+            &[
+                None,
+                Some(true),
+                None,
+                Some(false),
+                None,
+                Some(false),
+                Some(false),
+            ],
+        );
+
+        // 3x3 grid graph
+        compare_counts(
+            9,
+            &vec![None; 9],
+            None,
+            &[
+                (0, 1),
+                (1, 2),
+                (3, 4),
+                (4, 5),
+                (6, 7),
+                (7, 8),
+                (0, 3),
+                (1, 4),
+                (2, 5),
+                (3, 6),
+                (4, 7),
+                (5, 8),
+            ],
+            &[
+                None,
+                Some(true),
+                None,
+                None,
+                None,
+                None,
+                Some(false),
+                None,
+                None,
+                None,
+                None,
+                None,
+            ],
         );
     }
 }
