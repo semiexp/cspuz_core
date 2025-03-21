@@ -363,8 +363,35 @@ impl GraphDivision {
             }
         }
 
-        // 4. All the weight variables in a decided region must have the same value
-        // TODO: this is not implemented yet
+        // 4. All the weight variables in a decided region must have the same value.
+        // Therefore, in a decided region, it is not allowed that a vertex has the upper bound less than
+        // the lower bound of another vertex.
+        // NOTE: this is not necessary (but sufficient) for consistency
+        for region in &decided_regions {
+            let mut lower_bound = self.lower_bound[region[0]];
+            let mut upper_bound = self.upper_bound[region[0]];
+            let mut lower_bound_idx = region[0];
+            let mut upper_bound_idx = region[0];
+
+            for &c in region {
+                if self.lower_bound[c] > lower_bound {
+                    lower_bound = self.lower_bound[c];
+                    lower_bound_idx = c;
+                }
+                if self.upper_bound[c] < upper_bound {
+                    upper_bound = self.upper_bound[c];
+                    upper_bound_idx = c;
+                }
+            }
+
+            if lower_bound > upper_bound {
+                let mut reason = self.reason_connected_path(lower_bound_idx, upper_bound_idx);
+                reason.extend(self.lower_bound_lit[lower_bound_idx]);
+                reason.extend(self.upper_bound_lit[upper_bound_idx]);
+                self.inconsistency_reason = reason;
+                return false;
+            }
+        }
 
         true
     }
@@ -918,6 +945,38 @@ mod tests {
                 None,
                 None,
                 Some(vec![6]),
+            ],
+            None,
+            &[
+                (0, 1),
+                (1, 2),
+                (3, 4),
+                (4, 5),
+                (6, 7),
+                (7, 8),
+                (0, 3),
+                (1, 4),
+                (2, 5),
+                (3, 6),
+                (4, 7),
+                (5, 8),
+            ],
+            &[None; 12],
+        );
+
+        // 3x3 grid graph, many domain constraints
+        compare_counts(
+            9,
+            &vec![
+                Some(vec![1, 2]),
+                Some(vec![3]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3, 4]),
             ],
             None,
             &[
