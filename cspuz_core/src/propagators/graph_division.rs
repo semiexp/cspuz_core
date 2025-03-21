@@ -739,7 +739,7 @@ mod tests {
                 group_id[i] = id;
 
                 while let Some(p) = queue.pop_front() {
-                    size += 1;
+                    size += vertex_weights[p];
 
                     for &(q, edge_idx) in &adj[p] {
                         if is_border[edge_idx] {
@@ -979,6 +979,41 @@ mod tests {
                 Some(vec![1, 2, 3, 4]),
             ],
             None,
+            &[
+                (0, 1),
+                (1, 2),
+                (3, 4),
+                (4, 5),
+                (6, 7),
+                (7, 8),
+                (0, 3),
+                (1, 4),
+                (2, 5),
+                (3, 6),
+                (4, 7),
+                (5, 8),
+            ],
+            &[None; 12],
+        );
+    }
+
+    #[test]
+    fn test_graph_division_vertex_constraints_weighted() {
+        // 3x3 grid graph, many domain constraints
+        compare_counts(
+            9,
+            &vec![
+                Some(vec![1, 2]),
+                Some(vec![3]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3]),
+                Some(vec![1, 2, 3, 4]),
+                None,
+                Some(vec![1, 2, 3]),
+                Some(vec![1, 2, 3, 4]),
+                Some(vec![1, 2, 3, 4]),
+            ],
+            Some(vec![1, 2, 1, 2, 2, 3, 1, 1, 0]),
             &[
                 (0, 1),
                 (1, 2),
