@@ -424,7 +424,7 @@ mod tests {
             all_vars.push(v);
         }
 
-        for i in 0..num_vertices {
+        for i in 0..num_edges {
             if let Some(v) = predetermined_edges[i] {
                 solver.add_clause(&[if v { edge_lits[i] } else { !edge_lits[i] }]);
             }
