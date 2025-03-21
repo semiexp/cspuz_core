@@ -333,7 +333,14 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             }
         }
 
-        // TODO: handle already decided literals
+        let unique_lits = self.unique_lits.clone();
+        for p in unique_lits {
+            if unsafe { solver.value(p) } == Some(true) {
+                if !self.propagate(solver, p, 0) {
+                    return false;
+                }
+            }
+        }
 
         true
     }
