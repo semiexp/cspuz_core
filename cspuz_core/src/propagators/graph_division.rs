@@ -62,10 +62,16 @@ pub struct GraphDivision {
     propagations: Vec<Lit>,
     propagation_reasons: Vec<Reason>, // the reason why unique_lits[i] is propagated
 
-    // The reason why the current state is inconsistent.
-    // Since this reason will be immediately used to calculate the reason of the next propagation,
-    // we directly store it as a vector of literals.
+    /// The reason why the current state is inconsistent.
+    /// Since this reason will be immediately used to calculate the reason of the next propagation,
+    /// we directly store it as a vector of literals.
     inconsistency_reason: Vec<Lit>,
+
+    /// Since this constraint uses only the information of already propagated literals, it is possible that
+    /// `enqueue` fails due to a conflict with already decided (but not yet propagated) literals.
+    /// In such cases, we do not use `inconsistency_reason` and compute the reason from `propagation_reasons`.
+    /// To do so, we need to store the literal that caused the propagation failure.
+    propagation_failure_lit: Option<Lit>,
 
     undo_stack: Vec<UndoInfo>,
 }
@@ -161,6 +167,7 @@ impl GraphDivision {
             propagations: vec![],
             propagation_reasons: vec![Reason::NotPropagated; num_unique_lits],
             inconsistency_reason: vec![],
+            propagation_failure_lit: None,
             undo_stack: vec![],
         }
     }
@@ -421,6 +428,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             return true;
         }
 
+        self.propagation_failure_lit = None;
         self.inconsistency_reason.clear();
         self.propagations.clear();
 
@@ -430,7 +438,8 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
         for p in &self.propagations {
             if unsafe { solver.value(*p) } == Some(false) {
-                todo!();
+                self.propagation_failure_lit = Some(*p);
+                return false;
             }
 
             assert!(unsafe { solver.enqueue(*p) });
@@ -442,8 +451,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
     fn calc_reason(&mut self, _solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         assert!(extra.is_none());
 
-        if p.is_none() {
-            // TODO: handle the case where the inconsistency is detected on `enqueue`
+        if p.is_none() && self.propagation_failure_lit.is_none() {
             return self.inconsistency_reason.clone();
         }
 
@@ -451,7 +459,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         let idx = self.unique_lits.binary_search(&p).unwrap();
         let reason = &self.propagation_reasons[idx];
 
-        match reason {
+        let mut res = match reason {
             &Reason::NotPropagated => panic!(),
             &Reason::EdgeInSameGroup { edge_idx } => {
                 let (u, v) = self.edges[edge_idx];
@@ -474,7 +482,13 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
                 ret
             }
+        };
+
+        if let Some(p) = self.propagation_failure_lit {
+            res.push(p);
         }
+
+        res
     }
 
     fn undo(&mut self, _solver: &mut T, p: Lit) {
