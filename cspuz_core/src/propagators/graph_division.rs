@@ -32,6 +32,14 @@ enum Reason {
     },
     EdgeBetweenDifferentGroups {
         disconnected_edge_idx: usize,
+        newly_decided_edge_idx: usize,
+
+        /// Let (u1, v1) = edges[disconnected_edge_idx] and (u2, v2) = edges[newly_decided_edge_idx].
+        /// Then one of the following holds:
+        /// - u1 and u2 are in the same group, and v1 and v2 are in the same group.
+        /// - u1 and v2 are in the same group, and v1 and u2 are in the same group.
+        /// In the first case, `flip` is false. In the second case, `flip` is true.
+        flip: bool,
     },
 }
 
@@ -53,6 +61,10 @@ pub struct GraphDivision {
 
     propagations: Vec<Lit>,
     propagation_reasons: Vec<Reason>, // the reason why unique_lits[i] is propagated
+
+    // The reason why the current state is inconsistent.
+    // Since this reason will be immediately used to calculate the reason of the next propagation,
+    // we directly store it as a vector of literals.
     inconsistency_reason: Vec<Lit>,
 
     undo_stack: Vec<UndoInfo>,
@@ -239,16 +251,68 @@ impl GraphDivision {
         let (potential_group_id, potential_groups) = self.compute_groups(true);
 
         // 1.  Both sides of a "disconnected" edge should be in different groups.
+        let mut disconnected_groups = vec![];
         for i in 0..num_edges {
             let (u, v) = self.edges[i];
 
-            if self.edge_state[i] == EdgeState::Disconnected {
-                if decided_group_id[u] == decided_group_id[v] {
-                    let mut reason = self.connected_path(u, v);
-                    reason.push(self.edge_lits[i]);
-                    self.inconsistency_reason = reason;
-                    return false;
+            if decided_group_id[u] == decided_group_id[v] {
+                match self.edge_state[i] {
+                    EdgeState::Disconnected => {
+                        let mut reason = self.connected_path(u, v);
+                        reason.push(self.edge_lits[i]);
+                        self.inconsistency_reason = reason;
+                        return false;
+                    }
+                    EdgeState::Connected => (),
+                    EdgeState::Undecided => {
+                        self.register_propagation(
+                            !self.edge_lits[i],
+                            Reason::EdgeInSameGroup { edge_idx: i },
+                        );
+                    }
                 }
+            } else if self.edge_state[i] == EdgeState::Disconnected {
+                let ui = decided_group_id[u];
+                let vi = decided_group_id[v];
+
+                if ui > vi {
+                    disconnected_groups.push(((vi, ui), i));
+                } else {
+                    disconnected_groups.push(((ui, vi), i));
+                }
+            }
+        }
+
+        disconnected_groups.sort();
+        for i in 0..num_edges {
+            let (u, v) = self.edges[i];
+
+            let ui = decided_group_id[u];
+            let vi = decided_group_id[v];
+
+            if ui == vi {
+                continue;
+            }
+            if self.edge_state[i] != EdgeState::Undecided {
+                continue;
+            }
+
+            let pair = if ui > vi { (vi, ui) } else { (ui, vi) };
+            if let Ok(idx) = disconnected_groups.binary_search_by_key(&pair, |x| x.0) {
+                let (_, edge_idx) = disconnected_groups[idx];
+
+                let (eu, ev) = self.edges[edge_idx];
+                assert!(ui == decided_group_id[eu] || ui == decided_group_id[ev]);
+                assert!(vi == decided_group_id[eu] || vi == decided_group_id[ev]);
+
+                self.register_propagation(
+                    self.edge_lits[i],
+                    Reason::EdgeBetweenDifferentGroups {
+                        disconnected_edge_idx: edge_idx,
+                        newly_decided_edge_idx: i,
+                        flip: ui == decided_group_id[ev],
+                    },
+                );
             }
         }
 
@@ -295,6 +359,10 @@ impl GraphDivision {
     }
 
     fn connected_path(&self, u: usize, v: usize) -> Vec<Lit> {
+        if u == v {
+            return vec![];
+        }
+
         let mut prev: Vec<Option<(usize, Lit)>> = vec![None; self.num_vertices];
         let mut queue = VecDeque::<usize>::new();
         queue.push_back(u);
@@ -361,15 +429,17 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         }
 
         for p in &self.propagations {
-            if unsafe { !solver.enqueue(*p) } {
-                return false;
+            if unsafe { solver.value(*p) } == Some(false) {
+                todo!();
             }
+
+            assert!(unsafe { solver.enqueue(*p) });
         }
 
         true
     }
 
-    fn calc_reason(&mut self, solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
+    fn calc_reason(&mut self, _solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
         assert!(extra.is_none());
 
         if p.is_none() {
@@ -377,7 +447,34 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             return self.inconsistency_reason.clone();
         }
 
-        todo!();
+        let p = p.unwrap();
+        let idx = self.unique_lits.binary_search(&p).unwrap();
+        let reason = &self.propagation_reasons[idx];
+
+        match reason {
+            &Reason::NotPropagated => panic!(),
+            &Reason::EdgeInSameGroup { edge_idx } => {
+                let (u, v) = self.edges[edge_idx];
+                let ret = self.connected_path(u, v);
+                ret
+            }
+            &Reason::EdgeBetweenDifferentGroups {
+                disconnected_edge_idx,
+                newly_decided_edge_idx,
+                flip,
+            } => {
+                let (u1, v1) = self.edges[disconnected_edge_idx];
+                let (u2, v2) = self.edges[newly_decided_edge_idx];
+                let (u2, v2) = if flip { (v2, u2) } else { (u2, v2) };
+
+                let mut ret = self.connected_path(u1, u2);
+                let path = self.connected_path(v1, v2);
+                ret.extend(path);
+                ret.push(self.edge_lits[disconnected_edge_idx]);
+
+                ret
+            }
+        }
     }
 
     fn undo(&mut self, _solver: &mut T, p: Lit) {
