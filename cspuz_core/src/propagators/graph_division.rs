@@ -189,6 +189,8 @@ impl GraphDivision {
                     self.undo_stack.push(UndoInfo::Edge(edge_idx));
                     self.edge_state[edge_idx] = s;
                 }
+                // It is possible that lower_bound[v] > upper_bound[v] holds for some v.
+                // However, since GraphDivision is lazily propagated, we should not run into such cases in `analyze`.
                 LiteralInfo::LowerBound(vertex_idx, value) => {
                     if self.lower_bound[vertex_idx] < value {
                         self.undo_stack.push(UndoInfo::LowerBound(
@@ -198,13 +200,6 @@ impl GraphDivision {
                         ));
                         self.lower_bound[vertex_idx] = value;
                         self.lower_bound_lit[vertex_idx] = Some(lit);
-
-                        assert!(
-                            self.lower_bound[vertex_idx] <= self.upper_bound[vertex_idx],
-                            "lower_bound[{}] is larger than upper_bound[{}]; since GraphDivision is lazily propagated, this should not happen",
-                            vertex_idx,
-                            vertex_idx
-                        );
                     }
                 }
                 LiteralInfo::UpperBound(vertex_idx, value) => {
@@ -216,13 +211,6 @@ impl GraphDivision {
                         ));
                         self.upper_bound[vertex_idx] = value;
                         self.upper_bound_lit[vertex_idx] = Some(lit);
-
-                        assert!(
-                            self.lower_bound[vertex_idx] <= self.upper_bound[vertex_idx],
-                            "lower_bound[{}] is larger than upper_bound[{}]; since GraphDivision is lazily propagated, this should not happen",
-                            vertex_idx,
-                            vertex_idx
-                        );
                     }
                 }
             }
@@ -341,6 +329,10 @@ impl GraphDivision {
         for region in &decided_regions {
             let weight = region.iter().map(|&i| self.vertex_weights[i]).sum::<i32>();
             decided_region_weight.push(weight);
+        }
+
+        for i in 0..num_vertices {
+            assert!(self.lower_bound[i] <= self.upper_bound[i]);
         }
 
         for i in 0..num_vertices {
@@ -627,6 +619,9 @@ mod tests {
                     let v = solver.new_var();
                     lits.push(v.as_lit(false));
                     all_vars.push(v);
+                }
+                for j in 1..lits.len() {
+                    solver.add_clause(&[lits[j - 1], !lits[j]]);
                 }
                 dom_lits.push(lits);
             } else {
