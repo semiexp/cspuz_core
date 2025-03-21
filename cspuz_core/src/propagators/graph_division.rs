@@ -484,7 +484,6 @@ impl GraphDivision {
 
         let mut ret = vec![];
 
-        // TODO: Use Prim algorithm to find the minimum spanning tree
         while let Some(p) = queue.pop_front() {
             for &(q, edge_idx) in &self.adj[p] {
                 if self.edge_state[edge_idx] == EdgeState::Disconnected {
