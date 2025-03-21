@@ -383,30 +383,68 @@ mod tests {
     use super::*;
     use crate::backend::glucose::Solver;
 
-    #[test]
-    fn test_graph_division_extra_disconnection() {
+    fn compare_counts(
+        num_vertices: usize,
+        domains: &[Option<Vec<i32>>],
+        vertex_weights: Option<Vec<i32>>,
+        edges: &[(usize, usize)],
+        predetermined_edges: &[Option<bool>],
+    ) {
+        let num_edges = edges.len();
+        assert!(num_edges <= 20);
+
         let mut solver = Solver::new();
-        let mut vars = vec![];
-        for _ in 0..4 {
-            vars.push(solver.new_var());
+
+        let mut domains_vec = vec![];
+        let mut dom_lits = vec![];
+        let mut all_vars = vec![];
+
+        for i in 0..num_vertices {
+            if let Some(dom) = &domains[i] {
+                domains_vec.push(dom.clone());
+                let mut lits = vec![];
+                for _ in 0..(dom.len() - 1) {
+                    let v = solver.new_var();
+                    lits.push(v.as_lit(false));
+                    all_vars.push(v);
+                }
+                dom_lits.push(lits);
+            } else {
+                domains_vec.push(vec![]);
+                dom_lits.push(vec![]);
+            }
         }
 
-        let constr = GraphDivision::new(
-            &vec![vec![]; 4],
-            &vec![vec![]; 4],
-            &[1, 1, 1, 1],
-            &[(0, 1), (1, 2), (2, 3), (0, 3)],
-            &vars.iter().map(|&x| x.as_lit(false)).collect::<Vec<_>>(),
-        );
-        assert!(solver.add_custom_constraint(Box::new(constr)));
+        let vertex_weights = &vertex_weights.unwrap_or_else(|| vec![1; num_vertices]);
+        let mut edge_lits = vec![];
 
-        let mut n_assignments = 0;
+        for _ in 0..num_edges {
+            let v = solver.new_var();
+            edge_lits.push(v.as_lit(false));
+            all_vars.push(v);
+        }
+
+        for i in 0..num_vertices {
+            if let Some(v) = predetermined_edges[i] {
+                solver.add_clause(&[if v { edge_lits[i] } else { !edge_lits[i] }]);
+            }
+        }
+
+        solver.add_custom_constraint(Box::new(GraphDivision::new(
+            &domains_vec,
+            &dom_lits,
+            vertex_weights,
+            &edges,
+            &edge_lits,
+        )));
+
+        let mut n_assignments_sat = 0;
         loop {
             match solver.solve() {
                 Some(model) => {
-                    n_assignments += 1;
+                    n_assignments_sat += 1;
                     let mut new_clause = vec![];
-                    for &v in &vars {
+                    for &v in &all_vars {
                         new_clause.push(v.as_lit(model.assignment(v)));
                     }
                     solver.add_clause(&new_clause);
@@ -415,6 +453,110 @@ mod tests {
             }
         }
 
-        assert_eq!(n_assignments, 12);
+        let mut adj = vec![vec![]; num_vertices];
+        for (i, &(u, v)) in edges.iter().enumerate() {
+            adj[u].push((v, i));
+            adj[v].push((u, i));
+        }
+
+        let mut n_assignments_naive = 0;
+        for m in 0u32..(1 << num_edges) {
+            let is_border = (0..num_edges)
+                .map(|i| (m >> i) & 1 == 1)
+                .collect::<Vec<_>>();
+
+            let mut is_consistent = true;
+
+            // consistent with predetermined_edges?
+            for i in 0..num_edges {
+                if let Some(v) = predetermined_edges[i] {
+                    if is_border[i] != v {
+                        is_consistent = false;
+                        break;
+                    }
+                }
+            }
+
+            if !is_consistent {
+                continue;
+            }
+
+            let mut group_id = vec![!0; num_vertices];
+            let mut group_size = vec![];
+
+            for i in 0..num_vertices {
+                if group_id[i] != !0 {
+                    continue;
+                }
+
+                let id = group_size.len();
+                let mut size = 0;
+
+                let mut queue = VecDeque::<usize>::new();
+                queue.push_back(i);
+                group_id[i] = id;
+
+                while let Some(p) = queue.pop_front() {
+                    size += 1;
+
+                    for &(q, edge_idx) in &adj[p] {
+                        if is_border[edge_idx] {
+                            continue;
+                        }
+
+                        if group_id[q] == !0 {
+                            group_id[q] = id;
+                            queue.push_back(q);
+                        }
+                    }
+                }
+
+                group_size.push(size);
+            }
+
+            // no extra border?
+            for i in 0..num_edges {
+                if is_border[i] {
+                    let (u, v) = edges[i];
+                    if group_id[u] == group_id[v] {
+                        is_consistent = false;
+                        break;
+                    }
+                }
+            }
+
+            if !is_consistent {
+                continue;
+            }
+
+            // consistent with domains?
+            for i in 0..num_vertices {
+                if let Some(dom) = &domains[i] {
+                    if !dom.contains(&group_size[group_id[i]]) {
+                        is_consistent = false;
+                        break;
+                    }
+                }
+            }
+
+            if !is_consistent {
+                continue;
+            }
+
+            n_assignments_naive += 1;
+        }
+
+        assert_eq!(n_assignments_sat, n_assignments_naive);
+    }
+
+    #[test]
+    fn test_graph_division_extra_disconnection() {
+        compare_counts(
+            4,
+            &vec![None; 4],
+            None,
+            &[(0, 1), (1, 2), (2, 3), (0, 3)],
+            &[None; 4],
+        );
     }
 }
