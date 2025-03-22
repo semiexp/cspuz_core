@@ -673,7 +673,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         res
     }
 
-    fn undo(&mut self, _solver: &mut T, p: Lit) {
+    fn undo(&mut self, _solver: &mut T, _p: Lit) {
         self.undo_internal();
     }
 }
