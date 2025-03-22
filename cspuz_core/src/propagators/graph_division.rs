@@ -75,6 +75,14 @@ enum Reason {
         /// In the first case, `flip` is false. In the second case, `flip` is true.
         flip: bool,
     },
+
+    /// A bound literal for a vertex `unknown_bound_idx` is propagated because it belongs to the same region
+    /// as the vertex `known_bound_idx` with a known bound represented by `known_bound_lit`.
+    BoundPropagationWithinRegion {
+        known_bound_lit: Option<Lit>,
+        known_bound_idx: usize,
+        unknown_bound_idx: usize,
+    },
 }
 
 pub struct GraphDivision {
@@ -409,9 +417,7 @@ impl GraphDivision {
             if self.lower_bound[i] < decided_region_weight[region_id] {
                 let new_lower_bound_idx =
                     self.domains[i].partition_point(|&x| x < decided_region_weight[region_id]);
-                if new_lower_bound_idx == self.domains[i].len() {
-                    panic!();
-                }
+                assert!(0 < new_lower_bound_idx && new_lower_bound_idx < self.domains[i].len());
                 self.register_propagation(
                     self.dom_lits[i][new_lower_bound_idx - 1],
                     Reason::RegionAlreadyLarge { vertex_idx: i },
@@ -545,6 +551,41 @@ impl GraphDivision {
                         upper_bound_vertex_idx: region_upper_bound_idx[ui],
                         lower_bound_vertex_idx: region_lower_bound_idx[vi],
                         flip: false,
+                    },
+                );
+            }
+        }
+
+        for i in 0..num_vertices {
+            if self.domains[i].is_empty() {
+                continue;
+            }
+
+            if self.lower_bound[i] < region_lower_bound[decided_region_id[i]] {
+                let new_lower_bound_idx = self.domains[i]
+                    .partition_point(|&x| x < region_lower_bound[decided_region_id[i]]);
+                assert!(0 < new_lower_bound_idx && new_lower_bound_idx < self.domains[i].len());
+                self.register_propagation(
+                    self.dom_lits[i][new_lower_bound_idx - 1],
+                    Reason::BoundPropagationWithinRegion {
+                        known_bound_lit: self.lower_bound_lit
+                            [region_lower_bound_idx[decided_region_id[i]]],
+                        known_bound_idx: region_lower_bound_idx[decided_region_id[i]],
+                        unknown_bound_idx: i,
+                    },
+                );
+            }
+            if self.upper_bound[i] > region_upper_bound[decided_region_id[i]] {
+                let new_upper_bound_idx = self.domains[i]
+                    .partition_point(|&x| x <= region_upper_bound[decided_region_id[i]]);
+                assert!(new_upper_bound_idx > 0);
+                self.register_propagation(
+                    !self.dom_lits[i][new_upper_bound_idx - 1],
+                    Reason::BoundPropagationWithinRegion {
+                        known_bound_lit: self.upper_bound_lit
+                            [region_upper_bound_idx[decided_region_id[i]]],
+                        known_bound_idx: region_upper_bound_idx[decided_region_id[i]],
+                        unknown_bound_idx: i,
                     },
                 );
             }
@@ -785,6 +826,15 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(self.reason_connected_path(v1, lower_bound_vertex_idx));
                 ret.extend(self.upper_bound_lit[upper_bound_vertex_idx]);
                 ret.extend(self.lower_bound_lit[lower_bound_vertex_idx]);
+                ret
+            }
+            &Reason::BoundPropagationWithinRegion {
+                known_bound_lit,
+                known_bound_idx,
+                unknown_bound_idx,
+            } => {
+                let mut ret = self.reason_connected_path(known_bound_idx, unknown_bound_idx);
+                ret.extend(known_bound_lit);
                 ret
             }
         };
