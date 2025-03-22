@@ -60,6 +60,21 @@ enum Reason {
     RegionAlreadySmall {
         vertex_idx: usize,
     },
+
+    /// For edge `disconnected_edge_idx`, if regions which two ends of the edge belong to are merged,
+    /// the resulting regions will contain vertices with inconsistent lower / upper bounds.
+    InconsistentBoundsIfRegionsAreMerged {
+        disconnected_edge_idx: usize,
+        upper_bound_vertex_idx: usize,
+        lower_bound_vertex_idx: usize,
+
+        /// Let (u1, v1) = edges[disconnected_edge_idx] and u2 = upper_bound_vertex_idx and v2 = lower_bound_vertex_idx.
+        /// Then one of the following holds:
+        /// - u1 and u2 are in the same group, and v1 and v2 are in the same group.
+        /// - u1 and v2 are in the same group, and v1 and u2 are in the same group.
+        /// In the first case, `flip` is false. In the second case, `flip` is true.
+        flip: bool,
+    },
 }
 
 pub struct GraphDivision {
@@ -371,11 +386,19 @@ impl GraphDivision {
 
         let mut region_upper_bound = vec![i32::MAX; decided_regions.len()];
         let mut region_upper_bound_lit = vec![None; decided_regions.len()];
+        let mut region_upper_bound_idx = vec![!0; decided_regions.len()];
+        let mut region_lower_bound = vec![0; decided_regions.len()];
+        let mut region_lower_bound_idx = vec![!0; decided_regions.len()];
         for i in 0..num_vertices {
             let region_id = decided_region_id[i];
             if self.upper_bound[i] < region_upper_bound[region_id] {
                 region_upper_bound[region_id] = self.upper_bound[i];
                 region_upper_bound_lit[region_id] = self.upper_bound_lit[i];
+                region_upper_bound_idx[region_id] = i;
+            }
+            if self.lower_bound[i] > region_lower_bound[region_id] {
+                region_lower_bound[region_id] = self.lower_bound[i];
+                region_lower_bound_idx[region_id] = i;
             }
         }
 
@@ -487,6 +510,44 @@ impl GraphDivision {
                 reason.extend(self.upper_bound_lit[upper_bound_idx]);
                 self.inconsistency_reason = reason;
                 return false;
+            }
+        }
+
+        for i in 0..num_edges {
+            let (u, v) = self.edges[i];
+
+            if decided_region_id[u] == decided_region_id[v] {
+                continue;
+            }
+
+            if self.edge_state[i] != EdgeState::Undecided {
+                continue;
+            }
+
+            let ui = decided_region_id[u];
+            let vi = decided_region_id[v];
+
+            if region_lower_bound[ui] > region_upper_bound[vi] {
+                self.register_propagation(
+                    self.edge_lits[i],
+                    Reason::InconsistentBoundsIfRegionsAreMerged {
+                        disconnected_edge_idx: i,
+                        upper_bound_vertex_idx: region_upper_bound_idx[vi],
+                        lower_bound_vertex_idx: region_lower_bound_idx[ui],
+                        flip: true,
+                    },
+                );
+            }
+            if region_lower_bound[vi] > region_upper_bound[ui] {
+                self.register_propagation(
+                    self.edge_lits[i],
+                    Reason::InconsistentBoundsIfRegionsAreMerged {
+                        disconnected_edge_idx: i,
+                        upper_bound_vertex_idx: region_upper_bound_idx[ui],
+                        lower_bound_vertex_idx: region_lower_bound_idx[vi],
+                        flip: false,
+                    },
+                );
             }
         }
 
@@ -712,6 +773,21 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             }
             &Reason::RegionAlreadyLarge { vertex_idx } => self.reason_decided_region(vertex_idx),
             &Reason::RegionAlreadySmall { vertex_idx } => self.reason_potential_region(vertex_idx),
+            &Reason::InconsistentBoundsIfRegionsAreMerged {
+                disconnected_edge_idx,
+                upper_bound_vertex_idx,
+                lower_bound_vertex_idx,
+                flip,
+            } => {
+                let (u1, v1) = self.edges[disconnected_edge_idx];
+                let (u1, v1) = if flip { (v1, u1) } else { (u1, v1) };
+
+                let mut ret = self.reason_connected_path(u1, upper_bound_vertex_idx);
+                ret.extend(self.reason_connected_path(v1, lower_bound_vertex_idx));
+                ret.extend(self.upper_bound_lit[upper_bound_vertex_idx]);
+                ret.extend(self.lower_bound_lit[lower_bound_vertex_idx]);
+                ret
+            }
         };
 
         if let Some(p) = self.propagation_failure_lit {
