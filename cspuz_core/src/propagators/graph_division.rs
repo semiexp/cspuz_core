@@ -54,6 +54,12 @@ enum Reason {
     RegionAlreadyLarge {
         vertex_idx: usize,
     },
+
+    /// For vertex `vertex_idx`, the potential region it belongs to is so large that more strict
+    /// upper bound can be propagated.
+    RegionAlreadySmall {
+        vertex_idx: usize,
+    },
 }
 
 pub struct GraphDivision {
@@ -431,13 +437,26 @@ impl GraphDivision {
         }
 
         for i in 0..num_vertices {
-            // NOTE: Vertices with no constraint are ignored because their `lower_bound` is 0.
+            if self.domains[i].is_empty() {
+                continue;
+            }
+
             if self.lower_bound[i] > potential_region_weight[potential_region_id[i]] {
                 // TODO: use DSU-based algorithm to minimize the reason
                 let mut reason = self.reason_potential_region(i);
                 reason.extend(self.lower_bound_lit[i]);
                 self.inconsistency_reason = reason;
                 return false;
+            }
+
+            if self.upper_bound[i] > potential_region_weight[potential_region_id[i]] {
+                let new_upper_bound_idx = self.domains[i]
+                    .partition_point(|&x| x <= potential_region_weight[potential_region_id[i]]);
+                assert!(new_upper_bound_idx > 0);
+                self.register_propagation(
+                    !self.dom_lits[i][new_upper_bound_idx - 1],
+                    Reason::RegionAlreadySmall { vertex_idx: i },
+                );
             }
         }
 
@@ -692,6 +711,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret
             }
             &Reason::RegionAlreadyLarge { vertex_idx } => self.reason_decided_region(vertex_idx),
+            &Reason::RegionAlreadySmall { vertex_idx } => self.reason_potential_region(vertex_idx),
         };
 
         if let Some(p) = self.propagation_failure_lit {
