@@ -107,6 +107,9 @@ impl GraphDivision {
         }
 
         assert_eq!(edges.len(), edge_lits.len());
+        for dom in domains {
+            assert!(dom.is_sorted());
+        }
 
         let num_vertices = domains.len();
         let num_edges = edges.len();
