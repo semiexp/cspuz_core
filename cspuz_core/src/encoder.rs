@@ -625,8 +625,13 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                     .map(|l| env.convert_bool_lit(l))
                     .collect::<Vec<_>>();
 
-                env.sat
-                    .add_graph_division(&domains, &dom_lits, &edges, &edge_lits);
+                env.sat.add_graph_division(
+                    &domains,
+                    &dom_lits,
+                    &edges,
+                    &edge_lits,
+                    config.graph_division_mode,
+                );
             }
             ExtraConstraint::CustomConstraint(lits, constr) => {
                 let lits = lits
