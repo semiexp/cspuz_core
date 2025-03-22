@@ -385,7 +385,6 @@ impl GraphDivision {
         }
 
         let mut region_upper_bound = vec![i32::MAX; decided_regions.len()];
-        let mut region_upper_bound_lit = vec![None; decided_regions.len()];
         let mut region_upper_bound_idx = vec![!0; decided_regions.len()];
         let mut region_lower_bound = vec![0; decided_regions.len()];
         let mut region_lower_bound_idx = vec![!0; decided_regions.len()];
@@ -393,7 +392,6 @@ impl GraphDivision {
             let region_id = decided_region_id[i];
             if self.upper_bound[i] < region_upper_bound[region_id] {
                 region_upper_bound[region_id] = self.upper_bound[i];
-                region_upper_bound_lit[region_id] = self.upper_bound_lit[i];
                 region_upper_bound_idx[region_id] = i;
             }
             if self.lower_bound[i] > region_lower_bound[region_id] {
@@ -438,15 +436,16 @@ impl GraphDivision {
             if region_upper_bound[ui].min(region_upper_bound[vi])
                 < decided_region_weight[ui] + decided_region_weight[vi]
             {
+                let idx = if region_upper_bound[ui] < region_upper_bound[vi] {
+                    region_upper_bound_idx[ui]
+                } else {
+                    region_upper_bound_idx[vi]
+                };
                 self.register_propagation(
                     self.edge_lits[i],
                     Reason::TooLargeIfRegionsAreMerged {
                         disconnected_edge_idx: i,
-                        upper_bound_lit: if region_upper_bound[ui] < region_upper_bound[vi] {
-                            region_upper_bound_lit[ui]
-                        } else {
-                            region_upper_bound_lit[vi]
-                        },
+                        upper_bound_lit: self.upper_bound_lit[idx],
                     },
                 );
             }
