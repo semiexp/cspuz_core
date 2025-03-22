@@ -48,6 +48,12 @@ enum Reason {
         disconnected_edge_idx: usize,
         upper_bound_lit: Option<Lit>,
     },
+
+    /// For vertex `vertex_idx`, the decided region it belongs to is so large that more strict
+    /// lower bound can be propagated.
+    RegionAlreadyLarge {
+        vertex_idx: usize,
+    },
 }
 
 pub struct GraphDivision {
@@ -57,6 +63,7 @@ pub struct GraphDivision {
     vertex_weights: Vec<i32>,
 
     domains: Vec<Vec<i32>>,
+    dom_lits: Vec<Vec<Lit>>,
     edges: Vec<(usize, usize)>,
     edge_lits: Vec<Lit>,
     literals: Vec<(Lit, LiteralInfo)>,
@@ -171,6 +178,7 @@ impl GraphDivision {
             num_edges,
             vertex_weights: vertex_weights.to_vec(),
             domains: domains.iter().cloned().collect(),
+            dom_lits: dom_lits.iter().cloned().collect(),
             edges: edges.iter().cloned().collect(),
             edge_lits: edge_lits.iter().cloned().collect(),
             literals,
@@ -362,6 +370,25 @@ impl GraphDivision {
             if self.upper_bound[i] < region_upper_bound[region_id] {
                 region_upper_bound[region_id] = self.upper_bound[i];
                 region_upper_bound_lit[region_id] = self.upper_bound_lit[i];
+            }
+        }
+
+        for i in 0..num_vertices {
+            if self.domains[i].is_empty() {
+                continue;
+            }
+
+            let region_id = decided_region_id[i];
+            if self.lower_bound[i] < decided_region_weight[region_id] {
+                let new_lower_bound_idx =
+                    self.domains[i].partition_point(|&x| x < decided_region_weight[region_id]);
+                if new_lower_bound_idx == self.domains[i].len() {
+                    panic!();
+                }
+                self.register_propagation(
+                    self.dom_lits[i][new_lower_bound_idx - 1],
+                    Reason::RegionAlreadyLarge { vertex_idx: i },
+                );
             }
         }
 
@@ -664,6 +691,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(upper_bound_lit);
                 ret
             }
+            &Reason::RegionAlreadyLarge { vertex_idx } => self.reason_decided_region(vertex_idx),
         };
 
         if let Some(p) = self.propagation_failure_lit {
