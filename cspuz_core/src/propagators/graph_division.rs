@@ -736,6 +736,10 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             }
         }
 
+        if !self.analyze() {
+            return false;
+        }
+
         true
     }
 
@@ -1026,6 +1030,25 @@ mod tests {
     }
 
     #[test]
+    fn test_graph_division_extra_disconnection_initially_inconsistent() {
+        let mut solver = Solver::new();
+        let edge_lits = (0..4)
+            .map(|_| solver.new_var().as_lit(false))
+            .collect::<Vec<_>>();
+
+        solver.add_clause(&[edge_lits[0]]);
+        solver.add_clause(&[!edge_lits[1]]);
+        solver.add_clause(&[!edge_lits[2]]);
+        assert!(!solver.add_custom_constraint(Box::new(GraphDivision::new(
+            &vec![vec![]; 4],
+            &vec![vec![]; 4],
+            &[1, 1, 1, 1],
+            &[(0, 1), (1, 2), (0, 2), (2, 3)],
+            &edge_lits,
+        ))));
+    }
+
+    #[test]
     fn test_graph_division_extra_disconnection() {
         // 2x2 grid graph
         compare_counts(
@@ -1264,5 +1287,22 @@ mod tests {
             ],
             &[None; 12],
         );
+    }
+
+    #[test]
+    fn test_graph_division_vertex_constraints_initially_inconsistent() {
+        let mut solver = Solver::new();
+        let edge_lits = (0..4)
+            .map(|_| solver.new_var().as_lit(false))
+            .collect::<Vec<_>>();
+
+        assert!(!solver.add_custom_constraint(Box::new(GraphDivision::new(
+            &vec![vec![5], vec![], vec![], vec![]],
+            &vec![vec![], vec![], vec![], vec![]],
+            &[1, 1, 1, 1],
+            &[(0, 1), (1, 2), (0, 2), (2, 3)],
+            &edge_lits,
+        ))));
+        solver.solve();
     }
 }
