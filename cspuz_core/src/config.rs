@@ -1,4 +1,4 @@
-use crate::sat::{Backend, OrderEncodingLinearMode};
+use crate::sat::{Backend, GraphDivisionMode, OrderEncodingLinearMode};
 
 #[derive(Clone, Copy)]
 pub struct Config {
@@ -20,6 +20,7 @@ pub struct Config {
     pub dump_analysis_info: bool,
     pub backend: Backend,
     pub order_encoding_linear_mode: OrderEncodingLinearMode,
+    pub graph_division_mode: GraphDivisionMode,
     pub verbose: bool,
 }
 
@@ -56,6 +57,7 @@ impl Config {
             dump_analysis_info: false,
             backend: Backend::Glucose,
             order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
+            graph_division_mode: GraphDivisionMode::Cpp,
             verbose: false,
         }
     }
