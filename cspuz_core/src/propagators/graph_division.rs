@@ -704,7 +704,6 @@ impl GraphDivision {
         while let Some(p) = queue.pop_front() {
             for &(q, edge_idx) in &self.adj[p] {
                 if self.edge_state[edge_idx] == EdgeState::Disconnected {
-                    ret.push(self.edge_lits[edge_idx]);
                     continue;
                 }
 
@@ -715,6 +714,16 @@ impl GraphDivision {
             }
         }
 
+        for p in 0..self.num_vertices {
+            if !visited[p] {
+                continue;
+            }
+            for &(q, edge_idx) in &self.adj[p] {
+                if self.edge_state[edge_idx] == EdgeState::Disconnected && !visited[q] {
+                    ret.push(self.edge_lits[edge_idx]);
+                }
+            }
+        }
         ret
     }
 }
