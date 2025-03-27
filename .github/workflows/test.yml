@@ -32,7 +32,7 @@ jobs:
     - name: Setup environment
       run: rustup update
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --no-default-features
     - name: Run tests
       run: cargo test --verbose --no-default-features
   rust-wasm-latest:
