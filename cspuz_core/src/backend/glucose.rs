@@ -2,7 +2,7 @@ use std::ffi::{c_void, CString};
 use std::ops::Drop;
 use std::os::raw::c_char;
 
-use crate::propagators::graph_division::GraphDivision;
+use crate::propagators::graph_division::{GraphDivision, GraphDivisionOptions};
 use crate::propagators::order_encoding_linear;
 use crate::sat::{
     CustomPropagator, GraphDivisionMode, Lit, OrderEncodingLinearMode, SolverManipulator, Var,
@@ -235,12 +235,33 @@ impl Solver {
         edge_lits: &[Lit],
         mode: GraphDivisionMode,
     ) -> bool {
+        self.add_graph_division_with_options(
+            domains,
+            dom_lits,
+            edges,
+            edge_lits,
+            mode,
+            &GraphDivisionOptions::default(),
+        )
+    }
+
+    pub fn add_graph_division_with_options(
+        &mut self,
+        domains: &[Vec<i32>],
+        dom_lits: &[Vec<Lit>],
+        edges: &[(usize, usize)],
+        edge_lits: &[Lit],
+        mode: GraphDivisionMode,
+        opts: &GraphDivisionOptions,
+    ) -> bool {
         if mode == GraphDivisionMode::Rust {
             let vertex_weights = vec![1; domains.len()];
-            let constr = GraphDivision::new(domains, dom_lits, &vertex_weights, edges, edge_lits);
+            let constr =
+                GraphDivision::new(domains, dom_lits, &vertex_weights, edges, edge_lits, opts);
             return self.add_custom_constraint(Box::new(constr));
         }
 
+        assert!(!opts.require_extra_constraints());
         assert_eq!(domains.len(), dom_lits.len());
         assert_eq!(edges.len(), edge_lits.len());
 
