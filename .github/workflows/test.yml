@@ -11,6 +11,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  rust-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup environment
+      run: rustup update
+    - num: Run rustfmt
+      run: |
+        rustup component add rustfmt
+        cargo fmt --check
   rust-x86-latest:
     runs-on: ubuntu-latest
     steps:
