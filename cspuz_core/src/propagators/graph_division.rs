@@ -83,6 +83,38 @@ enum Reason {
         known_bound_idx: usize,
         unknown_bound_idx: usize,
     },
+
+    /// (Applicable only for some puzzles like Fillomino)
+    /// A disconnection literal for an edge is propagated because, if the edge is connected,
+    /// two regions with the same size will be adjacent.
+    AdjacentSameSizeRegions {
+        region1_vertex: usize,
+        region1_lower_bound: Option<Lit>,
+        region1_upper_bound: Option<Lit>,
+        region2_vertex: usize,
+        region2_lower_bound: Option<Lit>,
+        region2_upper_bound: Option<Lit>,
+        region3_vertex: usize,
+    },
+}
+
+#[derive(Clone, Copy)]
+pub struct GraphDivisionOptions {
+    pub disallow_adjacent_same_size_regions: bool,
+}
+
+impl Default for GraphDivisionOptions {
+    fn default() -> Self {
+        GraphDivisionOptions {
+            disallow_adjacent_same_size_regions: false,
+        }
+    }
+}
+
+impl GraphDivisionOptions {
+    pub fn require_extra_constraints(&self) -> bool {
+        self.disallow_adjacent_same_size_regions
+    }
 }
 
 pub struct GraphDivision {
@@ -121,6 +153,8 @@ pub struct GraphDivision {
     propagation_failure_lit: Option<Lit>,
 
     undo_stack: Vec<UndoInfo>,
+
+    opts: GraphDivisionOptions,
 }
 
 impl GraphDivision {
@@ -130,6 +164,7 @@ impl GraphDivision {
         vertex_weights: &[i32],
         edges: &[(usize, usize)],
         edge_lits: &[Lit],
+        opts: &GraphDivisionOptions,
     ) -> GraphDivision {
         assert_eq!(domains.len(), dom_lits.len());
         assert_eq!(domains.len(), vertex_weights.len());
@@ -223,6 +258,7 @@ impl GraphDivision {
             inconsistency_reason: vec![],
             propagation_failure_lit: None,
             undo_stack: vec![],
+            opts: opts.clone(),
         }
     }
 
@@ -625,6 +661,82 @@ impl GraphDivision {
             }
         }
 
+        if self.opts.disallow_adjacent_same_size_regions {
+            for u in 0..num_vertices {
+                // TODO: improve time complexity
+                for i in 0..self.adj[u].len() {
+                    for j in 0..i {
+                        let (v1, edge_idx1) = self.adj[u][i];
+                        let (v2, edge_idx2) = self.adj[u][j];
+
+                        let r0 = decided_region_id[u];
+                        let r1 = decided_region_id[v1];
+                        let r2 = decided_region_id[v2];
+
+                        if r0 == r1 || r1 == r2 || r2 == r0 {
+                            continue;
+                        }
+
+                        if !(self.edge_state[edge_idx1] == EdgeState::Undecided
+                            && self.edge_state[edge_idx2] == EdgeState::Undecided)
+                        {
+                            continue;
+                        }
+
+                        if region_lower_bound[r1] != region_upper_bound[r1] {
+                            continue;
+                        }
+                        if region_lower_bound[r2] != region_upper_bound[r2] {
+                            continue;
+                        }
+                        if region_lower_bound[r1] != region_lower_bound[r2] {
+                            continue;
+                        }
+
+                        if decided_region_weight[r1]
+                            + decided_region_weight[r2]
+                            + decided_region_weight[r0]
+                            > region_lower_bound[r1]
+                        {
+                            self.register_propagation(
+                                self.edge_lits[edge_idx1],
+                                Reason::AdjacentSameSizeRegions {
+                                    region1_vertex: v1,
+                                    region1_lower_bound: self.lower_bound_lit
+                                        [region_lower_bound_idx[r1]],
+                                    region1_upper_bound: self.upper_bound_lit
+                                        [region_upper_bound_idx[r1]],
+                                    region2_vertex: v2,
+                                    region2_lower_bound: self.lower_bound_lit
+                                        [region_lower_bound_idx[r2]],
+                                    region2_upper_bound: self.upper_bound_lit
+                                        [region_upper_bound_idx[r2]],
+                                    region3_vertex: u,
+                                },
+                            );
+
+                            self.register_propagation(
+                                self.edge_lits[edge_idx2],
+                                Reason::AdjacentSameSizeRegions {
+                                    region1_vertex: v1,
+                                    region1_lower_bound: self.lower_bound_lit
+                                        [region_lower_bound_idx[r1]],
+                                    region1_upper_bound: self.upper_bound_lit
+                                        [region_upper_bound_idx[r1]],
+                                    region2_vertex: v2,
+                                    region2_lower_bound: self.lower_bound_lit
+                                        [region_lower_bound_idx[r2]],
+                                    region2_upper_bound: self.upper_bound_lit
+                                        [region_upper_bound_idx[r2]],
+                                    region3_vertex: u,
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         true
     }
 
@@ -884,6 +996,24 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(known_bound_lit);
                 ret
             }
+            &Reason::AdjacentSameSizeRegions {
+                region1_vertex,
+                region1_lower_bound,
+                region1_upper_bound,
+                region2_vertex,
+                region2_lower_bound,
+                region2_upper_bound,
+                region3_vertex,
+            } => {
+                let mut ret = self.reason_decided_region(region1_vertex);
+                ret.extend(self.reason_decided_region(region2_vertex));
+                ret.extend(self.reason_decided_region(region3_vertex));
+                ret.extend(region1_lower_bound);
+                ret.extend(region1_upper_bound);
+                ret.extend(region2_lower_bound);
+                ret.extend(region2_upper_bound);
+                ret
+            }
         };
 
         if let Some(p) = self.propagation_failure_lit {
@@ -959,6 +1089,7 @@ mod tests {
             vertex_weights,
             &edges,
             &edge_lits,
+            &GraphDivisionOptions::default(),
         )));
 
         let mut n_assignments_sat = 0;
@@ -1088,6 +1219,7 @@ mod tests {
             &[1, 1, 1, 1],
             &[(0, 1), (1, 2), (0, 2), (2, 3)],
             &edge_lits,
+            &GraphDivisionOptions::default(),
         ))));
     }
 
@@ -1345,6 +1477,7 @@ mod tests {
             &[1, 1, 1, 1],
             &[(0, 1), (1, 2), (0, 2), (2, 3)],
             &edge_lits,
+            &GraphDivisionOptions::default(),
         ))));
         solver.solve();
     }
