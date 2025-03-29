@@ -488,6 +488,40 @@ impl GraphDivision {
             }
         }
 
+        for i in 0..potential_regions.len() {
+            let mut cells = vec![];
+            for &p in &potential_regions[i] {
+                if self.domains[p].is_empty() {
+                    continue;
+                }
+                cells.push((self.upper_bound[p], -self.lower_bound[p], p));
+            }
+            cells.sort();
+
+            let mut cur = 0;
+            let mut min_required = 0;
+            let mut non_overlapping_bounds_cells = vec![];
+
+            for (ub, lb, p) in cells {
+                let lb = -lb;
+                if cur < lb {
+                    min_required += lb;
+                    cur = ub;
+                    non_overlapping_bounds_cells.push(p);
+                }
+            }
+
+            if min_required > potential_region_weight[i] {
+                let mut reason = self.reason_potential_region(potential_regions[i][0]);
+                for &p in &non_overlapping_bounds_cells {
+                    reason.extend(self.lower_bound_lit[p]);
+                    reason.extend(self.upper_bound_lit[p]);
+                }
+                self.inconsistency_reason = reason;
+                return false;
+            }
+        }
+
         // 4. All the weight variables in a decided region must have the same value.
         // Therefore, in a decided region, it is not allowed that a vertex has the upper bound less than
         // the lower bound of another vertex.
