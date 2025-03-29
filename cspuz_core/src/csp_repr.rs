@@ -4,6 +4,7 @@ use std::ops::{Add, BitAnd, BitOr, BitXor, Mul, Not, Sub};
 
 use crate::arithmetic::CmpOp;
 use crate::custom_constraints::PropagatorGenerator;
+use crate::propagators::graph_division::GraphDivisionOptions;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct BoolVar(usize);
@@ -49,7 +50,12 @@ pub enum Stmt {
     ActiveVerticesConnected(Vec<BoolExpr>, Vec<(usize, usize)>),
     Circuit(Vec<IntExpr>),
     ExtensionSupports(Vec<IntExpr>, Vec<Vec<Option<i32>>>),
-    GraphDivision(Vec<Option<IntExpr>>, Vec<(usize, usize)>, Vec<BoolExpr>),
+    GraphDivision(
+        Vec<Option<IntExpr>>,
+        Vec<(usize, usize)>,
+        Vec<BoolExpr>,
+        GraphDivisionOptions,
+    ),
     CustomConstraint(Vec<BoolExpr>, Box<dyn PropagatorGenerator>),
 }
 
@@ -65,7 +71,7 @@ impl std::fmt::Debug for Stmt {
             Stmt::ExtensionSupports(exprs, supports) => {
                 write!(f, "ExtensionSupports({:?}, {:?})", exprs, supports)
             }
-            Stmt::GraphDivision(sizes, edges, edges_lit) => {
+            Stmt::GraphDivision(sizes, edges, edges_lit, _opts) => {
                 write!(
                     f,
                     "GraphDivision({:?}, {:?}, {:?})",
@@ -116,7 +122,7 @@ impl Stmt {
                 write!(out, ")")?;
             }
             Stmt::ExtensionSupports(_, _) => todo!(),
-            Stmt::GraphDivision(_, _, _) => todo!(),
+            Stmt::GraphDivision(_, _, _, _) => todo!(),
             Stmt::CustomConstraint(_, _) => todo!(),
         }
         Ok(())
@@ -386,8 +392,8 @@ pub mod tests {
             Stmt::ExtensionSupports(exprs, supports) => {
                 Stmt::ExtensionSupports(exprs.clone(), supports.clone())
             }
-            Stmt::GraphDivision(sizes, edges, edges_lit) => {
-                Stmt::GraphDivision(sizes.clone(), edges.clone(), edges_lit.clone())
+            Stmt::GraphDivision(sizes, edges, edges_lit, opts) => {
+                Stmt::GraphDivision(sizes.clone(), edges.clone(), edges_lit.clone(), *opts)
             }
             Stmt::CustomConstraint(_, _) => {
                 panic!("CustomConstraint cannot be cloned");

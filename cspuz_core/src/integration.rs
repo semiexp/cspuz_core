@@ -412,6 +412,7 @@ impl<'a> Model<'a> {
 mod tests {
     use super::super::csp;
     use super::*;
+    use crate::propagators::graph_division::GraphDivisionOptions;
     use crate::test_util;
 
     enum DomainOrList {
@@ -578,7 +579,8 @@ mod tests {
                             return false;
                         }
                     }
-                    Stmt::GraphDivision(sizes, edges, edges_lit) => {
+                    Stmt::GraphDivision(sizes, edges, edges_lit, opts) => {
+                        assert!(!opts.require_extra_constraints());
                         let sizes = sizes
                             .iter()
                             .map(|e| e.as_ref().map(|e| assignment.eval_int_expr(e)))
@@ -1693,6 +1695,7 @@ mod tests {
                 (5, 8),
             ],
             vars,
+            GraphDivisionOptions::default(),
         ));
 
         tester.check();
@@ -1723,6 +1726,7 @@ mod tests {
                 (6, 7),
             ],
             vars,
+            GraphDivisionOptions::default(),
         ));
 
         tester.check();
