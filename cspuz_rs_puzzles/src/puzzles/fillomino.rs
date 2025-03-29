@@ -14,7 +14,19 @@ pub fn solve_fillomino(
     let (h, w) = util::infer_shape(clues);
 
     let mut solver = Solver::new();
-    let num = &solver.int_var_2d((h, w), 1, (h * w) as i32);
+    let mut ranges = vec![];
+    for y in 0..h {
+        let mut row = vec![];
+        for x in 0..w {
+            if let Some(n) = clues[y][x] {
+                row.push((n, n));
+            } else {
+                row.push((1, (h * w) as i32));
+            }
+        }
+        ranges.push(row);
+    }
+    let num = &solver.int_var_2d_from_ranges((h, w), &ranges);
     solver.add_answer_key_int(num);
 
     let is_border = graph::BoolInnerGridEdges::new(&mut solver, (h, w));
