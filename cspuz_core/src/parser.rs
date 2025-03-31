@@ -13,6 +13,7 @@ use nom::{
 
 use super::csp::{BoolExpr, BoolVar, IntExpr, IntVar, Stmt};
 use super::domain::Domain;
+use crate::propagators::graph_division::GraphDivisionOptions;
 
 #[derive(PartialEq, Eq, Debug)]
 enum SyntaxTree<'a> {
@@ -231,7 +232,12 @@ pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
         let edge_exprs = (0..num_edges)
             .map(|i| parse_bool_expr(var_map, &child[i + 3 + num_vertices + num_edges * 2]))
             .collect::<Vec<_>>();
-        ParseResult::Stmt(Stmt::GraphDivision(vertices, edges, edge_exprs))
+        ParseResult::Stmt(Stmt::GraphDivision(
+            vertices,
+            edges,
+            edge_exprs,
+            GraphDivisionOptions::default(),
+        ))
     } else if op_name == "extension-supports" {
         assert_eq!(child.len(), 3);
         let mut exprs = vec![];

@@ -11,6 +11,7 @@ use cspuz_core::domain::Domain;
 use cspuz_core::integration::IntegratedSolver;
 use cspuz_core::integration::Model as IntegratedModel;
 pub use cspuz_core::integration::PerfStats;
+pub use cspuz_core::propagators::graph_division::GraphDivisionOptions;
 
 #[derive(Clone)]
 pub struct Value<T>(T);
@@ -1305,6 +1306,24 @@ impl<'a> Solver<'a> {
         T: IntoIterator,
         <T as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
     {
+        self.add_graph_division_with_options(
+            sizes,
+            edges,
+            edge_values,
+            GraphDivisionOptions::default(),
+        );
+    }
+
+    pub fn add_graph_division_with_options<T>(
+        &mut self,
+        sizes: &[Option<Value<Array0DImpl<CSPIntExpr>>>],
+        edges: &[(usize, usize)],
+        edge_values: T,
+        opts: GraphDivisionOptions,
+    ) where
+        T: IntoIterator,
+        <T as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
+    {
         let sizes = sizes
             .into_iter()
             .map(|x| x.clone().map(|x| x.0.data))
@@ -1313,8 +1332,12 @@ impl<'a> Solver<'a> {
             .into_iter()
             .map(|x| x.as_expr_array().data)
             .collect();
-        self.solver
-            .add_constraint(Stmt::GraphDivision(sizes, edges.to_owned(), edge_values));
+        self.solver.add_constraint(Stmt::GraphDivision(
+            sizes,
+            edges.to_owned(),
+            edge_values,
+            opts,
+        ));
     }
 
     pub fn add_custom_constraint<T>(&mut self, constraint: Box<dyn PropagatorGenerator>, vars: T)

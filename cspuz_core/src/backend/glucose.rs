@@ -234,24 +234,6 @@ impl Solver {
         edges: &[(usize, usize)],
         edge_lits: &[Lit],
         mode: GraphDivisionMode,
-    ) -> bool {
-        self.add_graph_division_with_options(
-            domains,
-            dom_lits,
-            edges,
-            edge_lits,
-            mode,
-            &GraphDivisionOptions::default(),
-        )
-    }
-
-    pub fn add_graph_division_with_options(
-        &mut self,
-        domains: &[Vec<i32>],
-        dom_lits: &[Vec<Lit>],
-        edges: &[(usize, usize)],
-        edge_lits: &[Lit],
-        mode: GraphDivisionMode,
         opts: &GraphDivisionOptions,
     ) -> bool {
         if mode == GraphDivisionMode::Rust {

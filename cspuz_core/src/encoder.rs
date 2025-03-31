@@ -605,7 +605,7 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
             ExtraConstraint::ExtensionSupports(_, _) => {
                 panic!("feature not enabled");
             }
-            ExtraConstraint::GraphDivision(sizes, edges, edge_lits) => {
+            ExtraConstraint::GraphDivision(sizes, edges, edge_lits, opts) => {
                 let mut domains = vec![];
                 let mut dom_lits = vec![];
 
@@ -631,6 +631,7 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                     &edges,
                     &edge_lits,
                     config.graph_division_mode,
+                    &opts,
                 );
             }
             ExtraConstraint::CustomConstraint(lits, constr) => {
@@ -701,7 +702,7 @@ fn decide_encode_schemes(
                 }
                 ExtraConstraint::ActiveVerticesConnected(_, _) => (),
                 ExtraConstraint::ExtensionSupports(_, _) => (),
-                ExtraConstraint::GraphDivision(_, _, _) => (),
+                ExtraConstraint::GraphDivision(_, _, _, _) => (),
                 ExtraConstraint::CustomConstraint(_, _) => (),
             }
         }
@@ -756,7 +757,7 @@ fn decide_encode_schemes(
                         }
                     }
                     ExtraConstraint::ExtensionSupports(_, _) => (),
-                    ExtraConstraint::GraphDivision(_, _, _) => (),
+                    ExtraConstraint::GraphDivision(_, _, _, _) => (),
                     ExtraConstraint::CustomConstraint(_, _) => (),
                 }
             }
@@ -792,7 +793,7 @@ fn decide_encode_schemes(
         }
         for ext in new_ext_constraints {
             // GraphDivision requires size variables to be order-encoded
-            if let ExtraConstraint::GraphDivision(sizes, _, _) = ext {
+            if let ExtraConstraint::GraphDivision(sizes, _, _, _) = ext {
                 for v in sizes {
                     if let Some(v) = v {
                         direct_encoding_vars.remove(v);

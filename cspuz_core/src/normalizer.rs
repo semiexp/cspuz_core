@@ -365,7 +365,7 @@ fn normalize_stmt(env: &mut NormalizerEnv, stmt: Stmt) {
                 .collect::<Vec<_>>();
             normalize_extension_supports(env, exprs_converted, supports)
         }
-        Stmt::GraphDivision(sizes, edges, edge_lits) => {
+        Stmt::GraphDivision(sizes, edges, edge_lits, opts) => {
             let sizes = sizes
                 .into_iter()
                 .map(|e| e.map(|e| equivalent_int_var(env, &e)))
@@ -380,6 +380,7 @@ fn normalize_stmt(env: &mut NormalizerEnv, stmt: Stmt) {
                     sizes,
                     edges,
                     edge_lits_converted,
+                    opts,
                 ));
         }
         Stmt::CustomConstraint(inputs, constr) => {
@@ -1328,7 +1329,7 @@ mod tests {
                             return false;
                         }
                     }
-                    Stmt::GraphDivision(_, _, _) => todo!(),
+                    Stmt::GraphDivision(_, _, _, _) => todo!(),
                     Stmt::CustomConstraint(_, _) => todo!(),
                 }
             }
@@ -1385,7 +1386,7 @@ mod tests {
                             return false;
                         }
                     }
-                    ExtraConstraint::GraphDivision(_, _, _) => todo!(),
+                    ExtraConstraint::GraphDivision(_, _, _, _) => todo!(),
                     ExtraConstraint::CustomConstraint(_, _) => todo!(),
                 }
             }
