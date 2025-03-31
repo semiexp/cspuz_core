@@ -1,6 +1,7 @@
 use std::ops::{Add, BitAnd, BitOr, BitXor, Bound, Not, RangeBounds, Sub};
 
 use crate::items::Arrow;
+pub use cspuz_core::config::Config;
 pub use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 pub use cspuz_core::csp::BoolVar as CSPBoolVar;
 pub use cspuz_core::csp::IntExpr as CSPIntExpr;
@@ -1085,6 +1086,15 @@ impl<'a> Solver<'a> {
     pub fn new() -> Solver<'a> {
         Solver {
             solver: IntegratedSolver::new(),
+            answer_key_bool: vec![],
+            answer_key_int: vec![],
+        }
+    }
+
+    /// Creates a new `Solver` instance with a custom configuration.
+    pub fn with_config(config: Config) -> Solver<'a> {
+        Solver {
+            solver: IntegratedSolver::with_config(config),
             answer_key_bool: vec![],
             answer_key_int: vec![],
         }
