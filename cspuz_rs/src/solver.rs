@@ -1,7 +1,7 @@
 use std::ops::{Add, BitAnd, BitOr, BitXor, Bound, Not, RangeBounds, Sub};
 
 use crate::items::Arrow;
-pub use cspuz_core::config::Config;
+pub use cspuz_core::config::{Config, GraphDivisionMode};
 pub use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 pub use cspuz_core::csp::BoolVar as CSPBoolVar;
 pub use cspuz_core::csp::IntExpr as CSPIntExpr;

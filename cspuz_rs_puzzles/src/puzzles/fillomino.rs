@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{Config, GraphDivisionMode, Solver};
 
 pub fn solve_fillomino(
     clues: &[Vec<Option<i32>>],
@@ -13,7 +13,10 @@ pub fn solve_fillomino(
 )> {
     let (h, w) = util::infer_shape(clues);
 
-    let mut solver = Solver::new();
+    let mut config = Config::default();
+    config.graph_division_mode = GraphDivisionMode::Rust;
+
+    let mut solver = Solver::with_config(config);
     let mut ranges = vec![];
     for y in 0..h {
         let mut row = vec![];
