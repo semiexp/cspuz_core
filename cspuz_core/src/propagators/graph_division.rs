@@ -408,7 +408,7 @@ impl GraphDivision {
             }
         }
 
-        disconnected_groups.sort();
+        disconnected_groups.sort_unstable();
         for i in 0..num_edges {
             let (u, v) = self.edges[i];
 
@@ -568,7 +568,7 @@ impl GraphDivision {
                 }
                 cells.push((self.upper_bound[p], -self.lower_bound[p], p));
             }
-            cells.sort();
+            cells.sort_unstable();
 
             let mut cur = 0;
             let mut min_required = 0;
