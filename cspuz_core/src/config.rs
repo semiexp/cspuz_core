@@ -1,4 +1,4 @@
-use crate::sat::{Backend, GraphDivisionMode, OrderEncodingLinearMode};
+pub use crate::sat::{Backend, GraphDivisionMode, OrderEncodingLinearMode};
 
 #[derive(Clone, Copy)]
 pub struct Config {

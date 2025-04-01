@@ -7,6 +7,7 @@ use crate::backend::external;
 use crate::backend::glucose;
 
 use crate::custom_constraints::PropagatorGenerator;
+use crate::propagators::graph_division::GraphDivisionOptions;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub(crate) i32);
@@ -305,10 +306,11 @@ impl SAT {
         edges: &[(usize, usize)],
         edge_lits: &[Lit],
         mode: GraphDivisionMode,
+        opts: &GraphDivisionOptions,
     ) -> bool {
         match self {
             SAT::Glucose(solver) => {
-                solver.add_graph_division(domains, dom_lits, edges, edge_lits, mode)
+                solver.add_graph_division(domains, dom_lits, edges, edge_lits, mode, opts)
             }
             #[cfg(feature = "backend-external")]
             SAT::External(_) => panic!("add_graph_division is not supported in external backend"),

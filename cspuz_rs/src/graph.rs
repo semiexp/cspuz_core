@@ -2,7 +2,8 @@ use std::ops::Index;
 
 use super::solver::{
     count_true, Array0DImpl, Array2DImpl, BoolVar, BoolVarArray1D, BoolVarArray2D, CSPBoolExpr,
-    CSPIntExpr, FromModel, FromOwnedPartialModel, Model, Operand, OwnedPartialModel, Solver, Value,
+    CSPIntExpr, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model, Operand,
+    OwnedPartialModel, Solver, Value,
 };
 
 /// A struct for representing an undirected graph.
@@ -808,6 +809,17 @@ pub fn graph_division_2d<T>(solver: &mut Solver, sizes: &T, edges: &BoolInnerGri
 where
     T: Operand<Output = Array2DImpl<CSPIntExpr>> + Clone,
 {
+    graph_division_2d_with_options(solver, sizes, edges, GraphDivisionOptions::default());
+}
+
+pub fn graph_division_2d_with_options<T>(
+    solver: &mut Solver,
+    sizes: &T,
+    edges: &BoolInnerGridEdges,
+    opts: GraphDivisionOptions,
+) where
+    T: Operand<Output = Array2DImpl<CSPIntExpr>> + Clone,
+{
     let (edges, graph) = edges.clone().dual().representation();
     let sizes = sizes
         .clone()
@@ -815,7 +827,7 @@ where
         .into_iter()
         .map(Some)
         .collect::<Vec<_>>();
-    solver.add_graph_division(&sizes, &graph.edges, edges)
+    solver.add_graph_division_with_options(&sizes, &graph.edges, edges, opts)
 }
 
 /// Adds a constraint that "active" edges in the given graph form a single cycle with self-intersections allowed, or there is no active edge.
