@@ -117,6 +117,40 @@ impl GraphDivisionOptions {
     }
 }
 
+struct Regions {
+    data: Vec<usize>,
+    boundaries: Vec<usize>,
+}
+
+impl Regions {
+    fn new() -> Regions {
+        Regions {
+            data: vec![],
+            boundaries: vec![0],
+        }
+    }
+
+    fn add_vertex(&mut self, vertex: usize) {
+        self.data.push(vertex);
+    }
+
+    fn add_boundary(&mut self) {
+        self.boundaries.push(self.data.len());
+    }
+
+    fn len(&self) -> usize {
+        self.boundaries.len() - 1
+    }
+}
+
+impl std::ops::Index<usize> for Regions {
+    type Output = [usize];
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.data[self.boundaries[idx]..self.boundaries[idx + 1]]
+    }
+}
+
 pub struct GraphDivision {
     num_vertices: usize,
     num_edges: usize,
@@ -374,7 +408,7 @@ impl GraphDivision {
             }
         }
 
-        disconnected_groups.sort();
+        disconnected_groups.sort_unstable();
         for i in 0..num_edges {
             let (u, v) = self.edges[i];
 
@@ -408,8 +442,9 @@ impl GraphDivision {
         }
 
         // 2. Within a decided region, weight variable must be at least the weight of the region
-        let mut decided_region_weight = vec![];
-        for region in &decided_regions {
+        let mut decided_region_weight = Vec::with_capacity(decided_regions.len());
+        for ri in 0..decided_regions.len() {
+            let region = &decided_regions[ri];
             let weight = region.iter().map(|&i| self.vertex_weights[i]).sum::<i32>();
             decided_region_weight.push(weight);
         }
@@ -494,8 +529,9 @@ impl GraphDivision {
         }
 
         // 3. Within a potential region, weight variable must be at most the weight of the region
-        let mut potential_region_weight = vec![];
-        for region in &potential_regions {
+        let mut potential_region_weight = Vec::with_capacity(potential_regions.len());
+        for ri in 0..potential_regions.len() {
+            let region = &potential_regions[ri];
             let weight = region.iter().map(|&i| self.vertex_weights[i]).sum::<i32>();
             potential_region_weight.push(weight);
         }
@@ -532,7 +568,7 @@ impl GraphDivision {
                 }
                 cells.push((self.upper_bound[p], -self.lower_bound[p], p));
             }
-            cells.sort();
+            cells.sort_unstable();
 
             let mut cur = 0;
             let mut min_required = 0;
@@ -562,7 +598,8 @@ impl GraphDivision {
         // Therefore, in a decided region, it is not allowed that a vertex has the upper bound less than
         // the lower bound of another vertex.
         // NOTE: this is not necessary (but sufficient) for consistency
-        for region in &decided_regions {
+        for ri in 0..decided_regions.len() {
+            let region = &decided_regions[ri];
             let mut lower_bound = self.lower_bound[region[0]];
             let mut upper_bound = self.upper_bound[region[0]];
             let mut lower_bound_idx = region[0];
@@ -740,9 +777,9 @@ impl GraphDivision {
         true
     }
 
-    fn compute_regions(&mut self, potential: bool) -> (Vec<usize>, Vec<Vec<usize>>) {
+    fn compute_regions(&mut self, potential: bool) -> (Vec<usize>, Regions) {
         let mut region_id = vec![!0; self.domains.len()];
-        let mut regions = vec![];
+        let mut regions = Regions::new();
 
         let mut queue = VecDeque::<usize>::new();
         for i in 0..self.num_vertices {
@@ -751,13 +788,12 @@ impl GraphDivision {
             }
 
             let id = regions.len();
-            let mut group = vec![];
 
             region_id[i] = id;
             queue.push_back(i);
 
             while let Some(p) = queue.pop_front() {
-                group.push(p);
+                regions.add_vertex(p);
 
                 for &(q, edge_idx) in &self.adj[p] {
                     if self.edge_state[edge_idx] == EdgeState::Disconnected
@@ -773,7 +809,7 @@ impl GraphDivision {
                 }
             }
 
-            regions.push(group);
+            regions.add_boundary();
         }
 
         (region_id, regions)
