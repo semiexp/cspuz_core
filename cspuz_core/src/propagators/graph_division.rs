@@ -442,7 +442,7 @@ impl GraphDivision {
         }
 
         // 2. Within a decided region, weight variable must be at least the weight of the region
-        let mut decided_region_weight = vec![];
+        let mut decided_region_weight = Vec::with_capacity(decided_regions.len());
         for ri in 0..decided_regions.len() {
             let region = &decided_regions[ri];
             let weight = region.iter().map(|&i| self.vertex_weights[i]).sum::<i32>();
@@ -529,7 +529,7 @@ impl GraphDivision {
         }
 
         // 3. Within a potential region, weight variable must be at most the weight of the region
-        let mut potential_region_weight = vec![];
+        let mut potential_region_weight = Vec::with_capacity(potential_regions.len());
         for ri in 0..potential_regions.len() {
             let region = &potential_regions[ri];
             let weight = region.iter().map(|&i| self.vertex_weights[i]).sum::<i32>();
