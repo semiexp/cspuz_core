@@ -422,11 +422,8 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorInitialize(
     wrapper_object: *mut c_void,
     trait_object: *mut c_void,
 ) -> i32 {
-    let trait_object = unsafe {
-        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
-            trait_object,
-        )
-    };
+    let trait_object =
+        unsafe { &mut *trait_object.cast::<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>() };
     let res = trait_object.initialize(&mut GlucoseSolverManipulator {
         ptr: solver,
         wrapper_object: Some(wrapper_object),
@@ -446,11 +443,8 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorPropagate(
     p: Lit,
     num_pending_propagations: i32,
 ) -> i32 {
-    let trait_object = unsafe {
-        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
-            trait_object,
-        )
-    };
+    let trait_object =
+        unsafe { &mut *trait_object.cast::<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>() };
     let res = trait_object.propagate(
         &mut GlucoseSolverManipulator {
             ptr: solver,
@@ -474,11 +468,8 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
     extra: Lit,
     out_reason: *mut c_void,
 ) {
-    let trait_object = unsafe {
-        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
-            trait_object,
-        )
-    };
+    let trait_object =
+        unsafe { &mut *trait_object.cast::<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>() };
     let res = trait_object.calc_reason(
         &mut GlucoseSolverManipulator {
             ptr: solver,
@@ -502,11 +493,8 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorUndo(
     trait_object: *mut c_void,
     p: Lit,
 ) {
-    let trait_object = unsafe {
-        std::mem::transmute::<_, &mut Box<dyn CustomPropagator<GlucoseSolverManipulator>>>(
-            trait_object,
-        )
-    };
+    let trait_object =
+        unsafe { &mut *trait_object.cast::<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>() };
     trait_object.undo(
         &mut GlucoseSolverManipulator {
             ptr: solver,
