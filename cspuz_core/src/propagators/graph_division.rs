@@ -38,6 +38,7 @@ enum Reason {
         /// Then one of the following holds:
         /// - u1 and u2 are in the same group, and v1 and v2 are in the same group.
         /// - u1 and v2 are in the same group, and v1 and u2 are in the same group.
+        ///
         /// In the first case, `flip` is false. In the second case, `flip` is true.
         flip: bool,
     },
@@ -72,6 +73,7 @@ enum Reason {
         /// Then one of the following holds:
         /// - u1 and u2 are in the same group, and v1 and v2 are in the same group.
         /// - u1 and v2 are in the same group, and v1 and u2 are in the same group.
+        ///
         /// In the first case, `flip` is false. In the second case, `flip` is true.
         flip: bool,
     },
@@ -103,6 +105,7 @@ pub struct GraphDivisionOptions {
     pub disallow_adjacent_same_size_regions: bool,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for GraphDivisionOptions {
     fn default() -> Self {
         GraphDivisionOptions {
@@ -275,10 +278,10 @@ impl GraphDivision {
             num_vertices,
             num_edges,
             vertex_weights: vertex_weights.to_vec(),
-            domains: domains.iter().cloned().collect(),
-            dom_lits: dom_lits.iter().cloned().collect(),
-            edges: edges.iter().cloned().collect(),
-            edge_lits: edge_lits.iter().cloned().collect(),
+            domains: domains.to_vec(),
+            dom_lits: dom_lits.to_vec(),
+            edges: edges.to_vec(),
+            edge_lits: edge_lits.to_vec(),
             literals,
             adj,
             edge_state: vec![EdgeState::Undecided; num_edges],
@@ -292,7 +295,7 @@ impl GraphDivision {
             inconsistency_reason: vec![],
             propagation_failure_lit: None,
             undo_stack: vec![],
-            opts: opts.clone(),
+            opts: *opts,
         }
     }
 
@@ -973,14 +976,13 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         let idx = self.unique_lits.binary_search(&p).unwrap();
         let reason = &self.propagation_reasons[idx];
 
-        let mut res = match reason {
-            &Reason::NotPropagated => panic!(),
-            &Reason::EdgeInSameGroup { edge_idx } => {
+        let mut res = match *reason {
+            Reason::NotPropagated => panic!(),
+            Reason::EdgeInSameGroup { edge_idx } => {
                 let (u, v) = self.edges[edge_idx];
-                let ret = self.reason_connected_path(u, v);
-                ret
+                self.reason_connected_path(u, v)
             }
-            &Reason::EdgeBetweenDifferentGroups {
+            Reason::EdgeBetweenDifferentGroups {
                 disconnected_edge_idx,
                 newly_decided_edge_idx,
                 flip,
@@ -996,7 +998,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
                 ret
             }
-            &Reason::TooLargeIfRegionsAreMerged {
+            Reason::TooLargeIfRegionsAreMerged {
                 disconnected_edge_idx,
                 upper_bound_lit,
             } => {
@@ -1006,9 +1008,9 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(upper_bound_lit);
                 ret
             }
-            &Reason::RegionAlreadyLarge { vertex_idx } => self.reason_decided_region(vertex_idx),
-            &Reason::RegionAlreadySmall { vertex_idx } => self.reason_potential_region(vertex_idx),
-            &Reason::InconsistentBoundsIfRegionsAreMerged {
+            Reason::RegionAlreadyLarge { vertex_idx } => self.reason_decided_region(vertex_idx),
+            Reason::RegionAlreadySmall { vertex_idx } => self.reason_potential_region(vertex_idx),
+            Reason::InconsistentBoundsIfRegionsAreMerged {
                 disconnected_edge_idx,
                 upper_bound_vertex_idx,
                 lower_bound_vertex_idx,
@@ -1023,7 +1025,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(self.lower_bound_lit[lower_bound_vertex_idx]);
                 ret
             }
-            &Reason::BoundPropagationWithinRegion {
+            Reason::BoundPropagationWithinRegion {
                 known_bound_lit,
                 known_bound_idx,
                 unknown_bound_idx,
@@ -1032,7 +1034,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 ret.extend(known_bound_lit);
                 ret
             }
-            &Reason::AdjacentSameSizeRegions {
+            Reason::AdjacentSameSizeRegions {
                 region1_vertex,
                 region1_lower_bound,
                 region1_upper_bound,

@@ -150,20 +150,11 @@ impl SAT {
 
     pub fn all_vars(&self) -> Vec<Var> {
         match self {
-            SAT::Glucose(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::Glucose(solver) => solver.all_vars(),
             #[cfg(feature = "backend-external")]
-            SAT::External(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::External(solver) => solver.all_vars(),
             #[cfg(feature = "backend-cadical")]
-            SAT::CaDiCaL(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::CaDiCaL(solver) => solver.all_vars(),
         }
     }
 
@@ -289,7 +280,7 @@ impl SAT {
         supports: &[Vec<Option<usize>>],
     ) -> bool {
         match self {
-            SAT::Glucose(solver) => solver.add_direct_encoding_extension_supports(&vars, supports),
+            SAT::Glucose(solver) => solver.add_direct_encoding_extension_supports(vars, supports),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => panic!(
                 "add_direct_encoding_extension_supports is not supported in external backend"
@@ -364,13 +355,13 @@ impl SAT {
         }
     }
 
-    pub fn solve<'a>(&'a mut self) -> Option<SATModel<'a>> {
+    pub fn solve(&mut self) -> Option<SATModel<'_>> {
         match self {
-            SAT::Glucose(solver) => solver.solve().map(|model| SATModel::Glucose(model)),
+            SAT::Glucose(solver) => solver.solve().map(SATModel::Glucose),
             #[cfg(feature = "backend-external")]
-            SAT::External(solver) => solver.solve().map(|model| SATModel::External(model)),
+            SAT::External(solver) => solver.solve().map(SATModel::External),
             #[cfg(feature = "backend-cadical")]
-            SAT::CaDiCaL(solver) => solver.solve().map(|model| SATModel::CaDiCaL(model)),
+            SAT::CaDiCaL(solver) => solver.solve().map(SATModel::CaDiCaL),
         }
     }
 
@@ -384,7 +375,7 @@ impl SAT {
         }
     }
 
-    pub(crate) unsafe fn model<'a>(&'a self) -> SATModel<'a> {
+    pub(crate) unsafe fn model(&self) -> SATModel<'_> {
         match self {
             SAT::Glucose(solver) => SATModel::Glucose(solver.model()),
             #[cfg(feature = "backend-external")]
@@ -425,7 +416,7 @@ pub enum SATModel<'a> {
     CaDiCaL(cadical::Model<'a>),
 }
 
-impl<'a> SATModel<'a> {
+impl SATModel<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         match self {
             SATModel::Glucose(model) => model.assignment(var),
