@@ -66,6 +66,12 @@ extern "C-unwind" {
 
 pub struct Solver {
     ptr: *mut Opaque,
+
+    // We have to pass pointers to `dyn CustomPropagator` to the C++ code.
+    // Since Box<dyn ...> uses a fat pointer and its representation is not specified,
+    // we deliberately use `Box<Box<dyn ...>>` to make it a thin pointer.
+    // https://users.rust-lang.org/t/thin-pointers-fat-pointers-alignment-oh-my/50261
+    #[allow(clippy::vec_box)]
     custom_constraints: Vec<Box<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>>,
 }
 
@@ -81,14 +87,14 @@ impl Solver {
 
     pub fn new_var(&mut self) -> Var {
         let var_id = unsafe { Glucose_NewVar(self.ptr) };
-        assert!(0 <= var_id && var_id <= NUM_VAR_MAX);
+        assert!((0..=NUM_VAR_MAX).contains(&var_id));
         Var(var_id)
     }
 
     pub fn new_named_var(&mut self, name: &str) -> Var {
         let c_string = CString::new(name).unwrap();
         let var_id = unsafe { Glucose_NewNamedVar(self.ptr, c_string.as_ptr()) };
-        assert!(0 <= var_id && var_id <= NUM_VAR_MAX);
+        assert!((0..=NUM_VAR_MAX).contains(&var_id));
         Var(var_id)
     }
 
@@ -97,11 +103,11 @@ impl Solver {
     }
 
     pub fn all_vars(&self) -> Vec<Var> {
-        (0..self.num_var()).map(|i| Var(i)).collect()
+        (0..self.num_var()).map(Var).collect()
     }
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {
-        assert!(clause.len() <= i32::max_value() as usize);
+        assert!(clause.len() <= i32::MAX as usize);
         let res = unsafe { Glucose_AddClause(self.ptr, clause.as_ptr(), clause.len() as i32) };
         res != 0
     }
@@ -114,12 +120,12 @@ impl Solver {
         constant: i32,
         mode: OrderEncodingLinearMode,
     ) -> bool {
-        assert!(lits.len() <= i32::max_value() as usize);
+        assert!(lits.len() <= i32::MAX as usize);
         assert_eq!(lits.len(), domain.len());
         assert_eq!(lits.len(), coefs.len());
 
         for i in 0..lits.len() {
-            assert!(domain[i].len() <= i32::max_value() as usize);
+            assert!(domain[i].len() <= i32::MAX as usize);
             assert_eq!(lits[i].len() + 1, domain[i].len());
         }
 
@@ -164,8 +170,8 @@ impl Solver {
         lits: &[Lit],
         edges: &[(usize, usize)],
     ) -> bool {
-        assert!(lits.len() <= i32::max_value() as usize);
-        assert!(edges.len() <= i32::max_value() as usize);
+        assert!(lits.len() <= i32::MAX as usize);
+        assert!(edges.len() <= i32::MAX as usize);
 
         let mut edges_flat = vec![];
         for &(u, v) in edges {
@@ -196,8 +202,8 @@ impl Solver {
         for v in vars {
             len_total += v.len();
         }
-        assert!(len_total <= i32::max_value() as usize);
-        assert!(vars.len() * supports.len() <= i32::max_value() as usize);
+        assert!(len_total <= i32::MAX as usize);
+        assert!(vars.len() * supports.len() <= i32::MAX as usize);
 
         let domain_size = vars.iter().map(|v| v.len() as i32).collect::<Vec<_>>();
         let vars_flat = vars.iter().flatten().copied().collect::<Vec<_>>();
@@ -290,6 +296,7 @@ impl Solver {
         constraint: Box<dyn CustomPropagator<GlucoseSolverManipulator>>,
     ) -> bool {
         self.custom_constraints.push(Box::new(constraint));
+        #[allow(clippy::borrowed_box)]
         let c: &Box<dyn CustomPropagator<GlucoseSolverManipulator>> =
             &self.custom_constraints[self.custom_constraints.len() - 1];
         let c = unsafe { std::mem::transmute::<_, *mut c_void>(c) };
@@ -313,7 +320,7 @@ impl Solver {
         unsafe { Glucose_Set_dump_analysis_info(self.ptr, if dump_analysis_info { 1 } else { 0 }) }
     }
 
-    pub fn solve<'a>(&'a mut self) -> Option<Model<'a>> {
+    pub fn solve(&mut self) -> Option<Model<'_>> {
         if self.solve_without_model() {
             Some(unsafe { self.model() })
         } else {
@@ -326,7 +333,7 @@ impl Solver {
         res != 0
     }
 
-    pub(crate) unsafe fn model<'a>(&'a self) -> Model<'a> {
+    pub(crate) unsafe fn model(&self) -> Model<'_> {
         Model { solver: self }
     }
 
@@ -358,7 +365,7 @@ pub struct Model<'a> {
     solver: &'a Solver,
 }
 
-impl<'a> Model<'a> {
+impl Model<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         assert!(0 <= var.0 && var.0 < self.solver.num_var());
         unsafe { Glucose_GetModelValueVar(self.solver.ptr, var.0) != 0 }
