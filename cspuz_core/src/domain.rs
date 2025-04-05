@@ -123,7 +123,7 @@ impl Domain {
                 }
             }
             Domain::Enumerative(cands) => {
-                if cands.len() == 0 || cands[cands.len() - 1] <= v {
+                if cands.is_empty() || cands[cands.len() - 1] <= v {
                     UpdateStatus::NotUpdated
                 } else {
                     while !cands.is_empty() && cands[cands.len() - 1] > v {
@@ -154,7 +154,7 @@ impl Domain {
                 }
             }
             Domain::Enumerative(cands) => {
-                if cands.len() == 0 || cands[0] >= v {
+                if cands.is_empty() || cands[0] >= v {
                     UpdateStatus::NotUpdated
                 } else {
                     let mut start = 0;
@@ -213,7 +213,7 @@ impl Mul<CheckedInt> for Domain {
             }
             Domain::Enumerative(mut cands) => {
                 if rhs == 0 {
-                    if cands.len() == 0 {
+                    if cands.is_empty() {
                         Domain::empty()
                     } else {
                         Domain::range(0, 0)

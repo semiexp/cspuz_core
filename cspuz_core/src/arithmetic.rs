@@ -65,11 +65,11 @@ impl CheckedInt {
     }
 
     pub fn min_value() -> CheckedInt {
-        CheckedInt(i32::min_value())
+        CheckedInt(i32::MIN)
     }
 
     pub fn max_value() -> CheckedInt {
-        CheckedInt(i32::max_value())
+        CheckedInt(i32::MAX)
     }
 
     pub fn get(self) -> i32 {

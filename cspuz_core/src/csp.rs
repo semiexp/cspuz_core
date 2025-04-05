@@ -76,11 +76,11 @@ pub(super) struct CSPVars {
 
 impl CSPVars {
     pub(super) fn bool_vars_iter(&self) -> impl Iterator<Item = BoolVar> {
-        (0..self.bool_var.len()).map(|x| BoolVar::new(x))
+        (0..self.bool_var.len()).map(BoolVar::new)
     }
 
     pub(super) fn int_vars_iter(&self) -> impl Iterator<Item = IntVar> {
-        (0..self.int_var.len()).map(|x| IntVar::new(x))
+        (0..self.int_var.len()).map(IntVar::new)
     }
 
     pub(super) fn int_var(&self, var: IntVar) -> &IntVarData {
@@ -105,7 +105,7 @@ impl CSPVars {
                     *expr = BoolExpr::Const(false);
                 } else {
                     exprs.retain(|e| e.is_const().is_none());
-                    if exprs.len() == 0 {
+                    if exprs.is_empty() {
                         *expr = BoolExpr::Const(true);
                     } else if exprs.len() == 1 {
                         *expr = *exprs.remove(0);
@@ -118,7 +118,7 @@ impl CSPVars {
                     *expr = BoolExpr::Const(true);
                 } else {
                     exprs.retain(|e| e.is_const().is_none());
-                    if exprs.len() == 0 {
+                    if exprs.is_empty() {
                         *expr = BoolExpr::Const(false);
                     } else if exprs.len() == 1 {
                         *expr = *exprs.remove(0);
@@ -127,9 +127,8 @@ impl CSPVars {
             }
             BoolExpr::Not(e) => {
                 self.constant_folding_bool(e);
-                match e.is_const() {
-                    Some(b) => *expr = BoolExpr::Const(!b),
-                    _ => (),
+                if let Some(b) = e.is_const() {
+                    *expr = BoolExpr::Const(!b);
                 }
             }
             BoolExpr::Xor(e1, e2) => {
@@ -223,7 +222,7 @@ impl CSPVars {
                 terms
                     .iter_mut()
                     .for_each(|(e, _)| self.constant_folding_int(e));
-                if terms.len() == 0 {
+                if terms.is_empty() {
                     *expr = IntExpr::Const(0);
                 } else if terms.len() == 1 && terms[0].1 == 1 {
                     *expr = *terms.remove(0).0;
@@ -376,7 +375,7 @@ impl CSP {
     }
 
     pub fn new_int_var_from_list(&mut self, domain_list: Vec<CheckedInt>) -> IntVar {
-        assert!(domain_list.len() > 0);
+        assert!(!domain_list.is_empty());
         let mut domain_list = domain_list;
         domain_list.sort();
         domain_list.dedup();

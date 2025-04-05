@@ -49,12 +49,12 @@ impl Solver {
     }
 
     pub fn all_vars(&self) -> Vec<Var> {
-        (0..self.num_var()).map(|i| Var(i)).collect()
+        (0..self.num_var()).map(Var).collect()
     }
 
     pub fn add_clause(&mut self, clause: &[Lit]) {
-        assert!(clause.len() <= i32::max_value() as usize);
-        let clause = unsafe { std::mem::transmute::<_, &[i32]>(clause) };
+        assert!(clause.len() <= i32::MAX as usize);
+        let clause = unsafe { std::mem::transmute::<&[Lit], &[i32]>(clause) };
         for &c in clause {
             assert!(0 <= c && c < 2 * self.num_var);
         }
@@ -62,10 +62,10 @@ impl Solver {
     }
 
     pub fn add_active_vertices_connected(&mut self, lits: &[Lit], edges: &[(usize, usize)]) {
-        assert!(lits.len() <= i32::max_value() as usize);
-        assert!(edges.len() <= i32::max_value() as usize);
+        assert!(lits.len() <= i32::MAX as usize);
+        assert!(edges.len() <= i32::MAX as usize);
 
-        let lits = unsafe { std::mem::transmute::<_, &[i32]>(lits) };
+        let lits = unsafe { std::mem::transmute::<&[Lit], &[i32]>(lits) };
         for &l in lits {
             assert!(0 <= l && l < 2 * self.num_var);
         }
@@ -89,7 +89,7 @@ impl Solver {
         };
     }
 
-    pub fn solve<'a>(&'a mut self) -> Option<Model<'a>> {
+    pub fn solve(&mut self) -> Option<Model<'_>> {
         if self.solve_without_model() {
             Some(unsafe { self.model() })
         } else {
@@ -102,7 +102,7 @@ impl Solver {
         res != 0
     }
 
-    pub(crate) unsafe fn model<'a>(&'a self) -> Model<'a> {
+    pub(crate) unsafe fn model(&self) -> Model<'_> {
         Model { solver: self }
     }
 }
@@ -120,7 +120,7 @@ pub struct Model<'a> {
     solver: &'a Solver,
 }
 
-impl<'a> Model<'a> {
+impl Model<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         assert!(0 <= var.0 && var.0 < self.solver.num_var());
         unsafe { CaDiCaL_GetModelValueVar(self.solver.ptr, var.0) != 0 }

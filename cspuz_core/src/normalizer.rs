@@ -49,25 +49,16 @@ pub(crate) enum ConvertedBoolVar {
 impl ConvertedBoolVar {
     #[allow(unused)]
     fn is_removed(&self) -> bool {
-        match self {
-            ConvertedBoolVar::Removed => true,
-            _ => false,
-        }
+        matches!(self, ConvertedBoolVar::Removed)
     }
 
     #[allow(unused)]
     fn is_lit(&self) -> bool {
-        match self {
-            ConvertedBoolVar::Lit(_) => true,
-            _ => false,
-        }
+        matches!(self, ConvertedBoolVar::Lit(_))
     }
 
     fn is_not_converted(&self) -> bool {
-        match self {
-            ConvertedBoolVar::NotConverted => true,
-            _ => false,
-        }
+        matches!(self, ConvertedBoolVar::NotConverted)
     }
 }
 
@@ -110,9 +101,8 @@ impl NormalizeMap {
     }
 
     fn mark_removed(&mut self, var: BoolVar) {
-        match self.bool_map[var] {
-            ConvertedBoolVar::Lit(_) => panic!(),
-            _ => (),
+        if let ConvertedBoolVar::Lit(_) = self.bool_map[var] {
+            panic!();
         }
 
         self.bool_map[var] = ConvertedBoolVar::Removed;
@@ -154,7 +144,7 @@ struct NormalizerEnv<'a, 'b, 'c, 'd> {
     config: &'d Config,
 }
 
-impl<'a, 'b, 'c, 'd> NormalizerEnv<'a, 'b, 'c, 'd> {
+impl NormalizerEnv<'_, '_, '_, '_> {
     fn convert_bool_var(&mut self, var: BoolVar) -> NBoolLit {
         self.map.convert_bool_var(self.csp_vars, self.norm, var)
     }
@@ -177,47 +167,41 @@ pub fn normalize(csp: &mut CSP, norm: &mut NormCSP, map: &mut NormalizeMap, conf
         for constr in &csp.constraints {
             if let Stmt::Expr(e) = constr {
                 if let BoolExpr::Iff(x, y) = e {
-                    match (x.as_var(), y.as_var()) {
-                        (Some(x), Some(y)) => {
-                            match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
-                                (Some(_), Some(_)) => (),
-                                (Some(xl), None) => {
-                                    assert!(env.map.bool_map[y].is_not_converted());
-                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
-                                }
-                                (None, Some(yl)) => {
-                                    assert!(env.map.bool_map[x].is_not_converted());
-                                    env.map.bool_map[x] = ConvertedBoolVar::Lit(yl);
-                                }
-                                (None, None) => {
-                                    let xl = env.convert_bool_var(x);
-                                    assert!(env.map.bool_map[y].is_not_converted());
-                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
-                                }
+                    if let (Some(x), Some(y)) = (x.as_var(), y.as_var()) {
+                        match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
+                            (Some(_), Some(_)) => (),
+                            (Some(xl), None) => {
+                                assert!(env.map.bool_map[y].is_not_converted());
+                                env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
+                            }
+                            (None, Some(yl)) => {
+                                assert!(env.map.bool_map[x].is_not_converted());
+                                env.map.bool_map[x] = ConvertedBoolVar::Lit(yl);
+                            }
+                            (None, None) => {
+                                let xl = env.convert_bool_var(x);
+                                assert!(env.map.bool_map[y].is_not_converted());
+                                env.map.bool_map[y] = ConvertedBoolVar::Lit(xl);
                             }
                         }
-                        _ => (),
                     }
                 } else if let BoolExpr::Xor(x, y) = e {
-                    match (x.as_var(), y.as_var()) {
-                        (Some(x), Some(y)) => {
-                            match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
-                                (Some(_), Some(_)) => (),
-                                (Some(xl), None) => {
-                                    assert!(env.map.bool_map[y].is_not_converted());
-                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
-                                }
-                                (None, Some(yl)) => {
-                                    assert!(env.map.bool_map[x].is_not_converted());
-                                    env.map.bool_map[x] = ConvertedBoolVar::Lit(!yl);
-                                }
-                                (None, None) => {
-                                    let xl = env.convert_bool_var(x);
-                                    env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
-                                }
+                    if let (Some(x), Some(y)) = (x.as_var(), y.as_var()) {
+                        match (env.map.get_bool_var(x), env.map.get_bool_var(y)) {
+                            (Some(_), Some(_)) => (),
+                            (Some(xl), None) => {
+                                assert!(env.map.bool_map[y].is_not_converted());
+                                env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
+                            }
+                            (None, Some(yl)) => {
+                                assert!(env.map.bool_map[x].is_not_converted());
+                                env.map.bool_map[x] = ConvertedBoolVar::Lit(!yl);
+                            }
+                            (None, None) => {
+                                let xl = env.convert_bool_var(x);
+                                env.map.bool_map[y] = ConvertedBoolVar::Lit(!xl);
                             }
                         }
-                        _ => (),
                     }
                 }
             }
@@ -226,9 +210,8 @@ pub fn normalize(csp: &mut CSP, norm: &mut NormCSP, map: &mut NormalizeMap, conf
 
     for var in env.csp_vars.bool_vars_iter() {
         let data = &env.csp_vars[var];
-        match data.get_status() {
-            BoolVarStatus::Fixed(_) => env.map.mark_removed(var),
-            _ => (),
+        if let BoolVarStatus::Fixed(_) = data.get_status() {
+            env.map.mark_removed(var);
         }
     }
 
@@ -268,7 +251,7 @@ fn equivalent_int_var(env: &mut NormalizerEnv, expr: &IntExpr) -> NIntVar {
         IntExpr::Var(v) => env.convert_int_var(*v),
         IntExpr::NVar(v) => *v,
         _ => {
-            let x = normalize_int_expr(env, &expr);
+            let x = normalize_int_expr(env, expr);
             let dom = env.norm.get_domain_linear_sum(&x);
             let xvar = env.norm.new_int_var(dom);
             {
@@ -299,11 +282,8 @@ fn normalize_stmt(env: &mut NormalizerEnv, stmt: Stmt) {
                     normalize_and_register_expr(env, diff_expr);
                 }
             }
-            let is_all_var = _exprs.iter().all(|e| match e {
-                IntExpr::Var(_) => true,
-                _ => false,
-            });
-            if env.config.alldifferent_bijection_constraints && is_all_var && _exprs.len() > 0 {
+            let is_all_var = _exprs.iter().all(|e| matches!(e, IntExpr::Var(_)));
+            if env.config.alldifferent_bijection_constraints && is_all_var && !_exprs.is_empty() {
                 let mut domain: Option<Vec<CheckedInt>> = None;
                 let mut isok = true;
                 for e in &_exprs {
@@ -505,13 +485,13 @@ fn normalize_bool_expr(env: &mut NormalizerEnv, expr: &BoolExpr, neg: bool) -> V
             vec![constraint]
         }
         (BoolExpr::And(es), false) | (BoolExpr::Or(es), true) => normalize_conjunction(
-            es.into_iter()
+            es.iter()
                 .map(|e| normalize_bool_expr(env, e, neg))
                 .collect(),
         ),
         (BoolExpr::And(es), true) | (BoolExpr::Or(es), false) => {
             let constrs = es
-                .into_iter()
+                .iter()
                 .map(|e| normalize_bool_expr(env, e, neg))
                 .collect();
             normalize_disjunction(env, constrs)
@@ -567,7 +547,7 @@ fn normalize_bool_expr(env: &mut NormalizerEnv, expr: &BoolExpr, neg: bool) -> V
 
             let mut constraint = Constraint::new();
             constraint.add_linear(LinearLit::new(v1 - v2, op));
-            return vec![constraint];
+            vec![constraint]
         }
     }
 }
@@ -585,7 +565,7 @@ fn normalize_disjunction(
     constrs: Vec<Vec<Constraint>>,
 ) -> Vec<Constraint> {
     let mut constrs = constrs;
-    if constrs.len() == 0 {
+    if constrs.is_empty() {
         vec![]
     } else if constrs.len() == 1 {
         constrs.remove(0)
@@ -593,13 +573,13 @@ fn normalize_disjunction(
         let mut ret = vec![];
         let mut aux = Constraint::new();
 
-        if constrs.iter().any(|constr| constr.len() == 0) {
+        if constrs.iter().any(|constr| constr.is_empty()) {
             return vec![];
         }
 
         let mut complex_constr = vec![];
         for mut constr in constrs {
-            if constr.len() == 0 {
+            if constr.is_empty() {
                 unreachable!();
             } else if constr.len() == 1 {
                 let c = constr.remove(0);
@@ -609,7 +589,7 @@ fn normalize_disjunction(
                 complex_constr.push(constr);
             }
         }
-        if complex_constr.len() == 2 && aux.bool_lit.len() == 0 && aux.linear_lit.len() == 0 {
+        if complex_constr.len() == 2 && aux.bool_lit.is_empty() && aux.linear_lit.is_empty() {
             let v = env.norm.new_bool_var();
             for (i, constr) in complex_constr.into_iter().enumerate() {
                 for mut con in constr {
@@ -619,7 +599,7 @@ fn normalize_disjunction(
             }
             return ret;
         }
-        if complex_constr.len() == 1 && aux.bool_lit.len() <= 1 && aux.linear_lit.len() == 0 {
+        if complex_constr.len() == 1 && aux.bool_lit.len() <= 1 && aux.linear_lit.is_empty() {
             for constr in complex_constr {
                 for mut con in constr {
                     for &lit in &aux.bool_lit {
@@ -670,13 +650,13 @@ fn normalize_int_expr(env: &mut NormalizerEnv, expr: &IntExpr) -> LinearSum {
             if t.is_constant() && f.is_constant() {
                 let val_true = t.constant;
                 let val_false = f.constant;
-                match c.as_ref() {
-                    &BoolExpr::Var(c) => {
+                match *c.as_ref() {
+                    BoolExpr::Var(c) => {
                         let c = env.convert_bool_var(c);
                         let v = env.norm.new_binary_int_var(c, val_true, val_false);
                         return LinearSum::singleton(v);
                     }
-                    &BoolExpr::NVar(c) => {
+                    BoolExpr::NVar(c) => {
                         let v = env.norm.new_binary_int_var(
                             NBoolLit::new(c, false),
                             val_true,
@@ -738,7 +718,7 @@ fn normalize_int_expr(env: &mut NormalizerEnv, expr: &IntExpr) -> LinearSum {
                 Box::new(IntExpr::NVar(xvar)),
                 Box::new(IntExpr::NVar(xvar) * -1),
             );
-            return normalize_int_expr(env, &aux_expr);
+            normalize_int_expr(env, &aux_expr)
         }
         IntExpr::Mul(x, y) => {
             let x = normalize_int_expr(env, x);
@@ -1069,7 +1049,7 @@ fn normalize_extension_supports(
         while left < supports_idx.len() {
             let mut right = left + 1;
             while right < supports_idx.len()
-                && &supports_idx[left][0..n_prefix] == &supports_idx[right][0..n_prefix]
+                && supports_idx[left][0..n_prefix] == supports_idx[right][0..n_prefix]
             {
                 right += 1;
             }
