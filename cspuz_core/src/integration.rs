@@ -185,7 +185,7 @@ impl<'a> IntegratedSolver<'a> {
         true
     }
 
-    pub fn solve<'b>(&'b mut self) -> Option<Model<'b>> {
+    pub fn solve(&mut self) -> Option<Model<'_>> {
         if !self.encode() {
             return None;
         }
@@ -301,8 +301,8 @@ impl<'a> IntegratedSolver<'a> {
     pub fn answer_iter(self, bool_vars: &[BoolVar], int_vars: &[IntVar]) -> AnswerIterator<'a> {
         AnswerIterator {
             solver: self,
-            key_bool: bool_vars.iter().cloned().collect(),
-            key_int: int_vars.iter().cloned().collect(),
+            key_bool: bool_vars.to_vec(),
+            key_int: int_vars.to_vec(),
         }
     }
 
@@ -311,7 +311,7 @@ impl<'a> IntegratedSolver<'a> {
     }
 
     pub fn perf_stats(&self) -> Option<PerfStats> {
-        self.perf_stats.as_deref().cloned()
+        self.perf_stats.cloned()
     }
 }
 
@@ -321,7 +321,7 @@ pub struct AnswerIterator<'a> {
     key_int: Vec<IntVar>,
 }
 
-impl<'a> Iterator for AnswerIterator<'a> {
+impl Iterator for AnswerIterator<'_> {
     type Item = Assignment;
 
     fn next(&mut self) -> Option<Assignment> {
@@ -356,7 +356,7 @@ pub struct Model<'a> {
     model: SATModel<'a>,
 }
 
-impl<'a> Model<'a> {
+impl Model<'_> {
     pub fn get_bool(&self, var: BoolVar) -> bool {
         match self.normalize_map.get_bool_var_raw(var) {
             ConvertedBoolVar::Lit(norm_lit) => {

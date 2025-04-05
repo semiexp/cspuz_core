@@ -445,7 +445,7 @@ impl EncodeMap {
                     right = mid - 1;
                 }
             }
-            Some(encoding.domain[left as usize])
+            Some(encoding.domain[left])
         } else if let Some(encoding) = &encoding.direct_encoding {
             let mut ret = None;
             for i in 0..encoding.lits.len() {
@@ -454,7 +454,7 @@ impl EncodeMap {
                         ret.is_none(),
                         "multiple indicator bits are set for a direct-encoded variable"
                     );
-                    ret = Some(encoding.domain[i as usize]);
+                    ret = Some(encoding.domain[i]);
                 }
             }
             assert!(
@@ -487,7 +487,7 @@ struct EncoderEnv<'a, 'b, 'c, 'd> {
     config: &'d Config,
 }
 
-impl<'a, 'b, 'c, 'd> EncoderEnv<'a, 'b, 'c, 'd> {
+impl EncoderEnv<'_, '_, '_, '_> {
     fn convert_bool_lit(&mut self, lit: BoolLit) -> Lit {
         self.map.convert_bool_lit(self.norm_vars, self.sat, lit)
     }
@@ -503,9 +503,9 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
 
     for &var in &new_vars {
         match scheme.get(&var).unwrap() {
-            EncodeScheme::Direct => map.convert_int_var_direct_encoding(&mut norm.vars, sat, var),
-            EncodeScheme::Order => map.convert_int_var_order_encoding(&mut norm.vars, sat, var),
-            EncodeScheme::Log => map.convert_int_var_log_encoding(&mut norm.vars, sat, var),
+            EncodeScheme::Direct => map.convert_int_var_direct_encoding(&norm.vars, sat, var),
+            EncodeScheme::Order => map.convert_int_var_order_encoding(&norm.vars, sat, var),
+            EncodeScheme::Log => map.convert_int_var_log_encoding(&norm.vars, sat, var),
         }
     }
 
@@ -709,14 +709,11 @@ fn decide_encode_schemes(
 
         for &var in new_vars {
             let repr = norm_vars.int_var(var);
-            match repr {
-                IntVarRepresentation::Domain(domain) => {
-                    if domain.num_candidates() > 500 && complex_constraints_vars.contains(&var) {
-                        // TODO: make this configurable
-                        scheme.insert(var, EncodeScheme::Log);
-                    }
+            if let IntVarRepresentation::Domain(domain) = repr {
+                if domain.num_candidates() > 500 && complex_constraints_vars.contains(&var) {
+                    // TODO: make this configurable
+                    scheme.insert(var, EncodeScheme::Log);
                 }
-                _ => (),
             }
         }
 
@@ -726,9 +723,10 @@ fn decide_encode_schemes(
 
             for constraint in new_constraints {
                 for lit in &constraint.linear_lit {
-                    let has_log = lit.sum.iter().any(|(var, _)| {
-                        scheme.get(&var).map_or(false, |&x| x == EncodeScheme::Log)
-                    });
+                    let has_log = lit
+                        .sum
+                        .iter()
+                        .any(|(var, _)| scheme.get(var).map_or(false, |&x| x == EncodeScheme::Log));
                     if has_log {
                         for (var, _) in lit.sum.iter() {
                             if !scheme.contains_key(var) {
@@ -746,7 +744,7 @@ fn decide_encode_schemes(
                         let vars = [*a, *b, *m];
                         let has_log = vars
                             .iter()
-                            .any(|var| scheme.get(&var).map_or(false, |&x| x == EncodeScheme::Log));
+                            .any(|var| scheme.get(var).map_or(false, |&x| x == EncodeScheme::Log));
                         if has_log {
                             for var in &vars {
                                 if !scheme.contains_key(var) {
@@ -794,10 +792,8 @@ fn decide_encode_schemes(
         for ext in new_ext_constraints {
             // GraphDivision requires size variables to be order-encoded
             if let ExtraConstraint::GraphDivision(sizes, _, _, _) = ext {
-                for v in sizes {
-                    if let Some(v) = v {
-                        direct_encoding_vars.remove(v);
-                    }
+                for v in sizes.iter().flatten() {
+                    direct_encoding_vars.remove(v);
                 }
             }
         }
@@ -1588,7 +1584,7 @@ fn encode_linear_ge_mixed_from_info(info: &[LinearInfo], constant: CheckedInt) -
                     return;
                 }
             }
-            clauses_buf.push(&clause);
+            clauses_buf.push(clause);
             return;
         }
         if idx == info.len() {
