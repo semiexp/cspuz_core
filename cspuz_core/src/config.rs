@@ -25,7 +25,9 @@ pub struct Config {
 }
 
 thread_local! {
-    static DEFAULT_CONFIG: std::cell::Cell<Config> = std::cell::Cell::new(Config::initial_default());
+    static DEFAULT_CONFIG: std::cell::Cell<Config> = const {
+        std::cell::Cell::new(Config::initial_default())
+    };
 }
 
 impl Config {

@@ -43,7 +43,6 @@ use crate::sat::{CustomPropagator, SolverManipulator};
 /// Even though, it is permissive that the constraint does not find the inconsistency until all values are decided.
 ///
 /// TODO: support int values
-
 pub trait PropagatorGenerator {
     fn generate<'a>(
         self: Box<Self>,

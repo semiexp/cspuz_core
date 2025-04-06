@@ -430,7 +430,9 @@ impl CSP {
                 }
                 Stmt::GraphDivision(sizes, _edges, edge_lits, _opts) => {
                     sizes.iter_mut().for_each(|e| {
-                        e.as_mut().map(|e| vars.constant_folding_int(e));
+                        if let Some(e) = e {
+                            vars.constant_folding_int(e);
+                        }
                     });
                     edge_lits
                         .iter_mut()
@@ -458,11 +460,8 @@ impl CSP {
                 let vars = &mut self.vars;
                 let mut update_status = UpdateStatus::NotUpdated;
                 for stmt in &self.constraints {
-                    match stmt {
-                        Stmt::Expr(e) => {
-                            update_status |= vars.constant_prop_bool(e, true);
-                        }
-                        _ => (),
+                    if let Stmt::Expr(e) = stmt {
+                        update_status |= vars.constant_prop_bool(e, true);
                     }
                 }
                 match update_status {
