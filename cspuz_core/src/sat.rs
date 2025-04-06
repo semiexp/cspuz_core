@@ -82,9 +82,20 @@ pub enum GraphDivisionMode {
 }
 
 pub unsafe trait SolverManipulator {
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn value(&self, lit: Lit) -> Option<bool>;
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn add_watch(&mut self, lit: Lit);
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn enqueue(&mut self, lit: Lit) -> bool;
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn is_current_level(&self, lit: Lit) -> bool;
 }
 

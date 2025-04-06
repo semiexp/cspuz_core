@@ -571,8 +571,9 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                 let mut vars_encoded = vec![];
                 let mut supports_encoded = vec![];
 
-                for i in 0..vars.len() {
-                    vars_encoded.push(encodings[i].lits.clone());
+                assert_eq!(vars.len(), encodings.len());
+                for enc in &encodings {
+                    vars_encoded.push(enc.lits.clone());
                 }
                 for support in &supports {
                     let mut encoded = vec![];
@@ -2572,11 +2573,10 @@ fn log_encoding_multiplier(
     let mut clause_set = ClauseSet::new();
 
     let mut sum_values = vec![];
-    for i in 0..value1.len() {
+    for (i, &x) in value1.iter().enumerate() {
         let mut row = vec![];
-        for j in 0..value2.len() {
-            let x = value1[i];
-            let y = value2[j];
+        #[allow(unused)]
+        for (j, &y) in value2.iter().enumerate() {
             let m = new_var!(env.sat, "mul.{}.{}.{}", env.sat.num_var(), i, j).as_lit(false);
             row.push(m);
 

@@ -144,7 +144,7 @@ impl VarMap {
     }
 }
 
-pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
+pub fn parse<'a>(var_map: &VarMap, input: &'a str) -> ParseResult<'a> {
     // TODO: return error info
     let tree = parse_to_tree(input).unwrap();
     let child = match &tree {

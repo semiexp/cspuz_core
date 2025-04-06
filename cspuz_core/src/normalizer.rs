@@ -39,10 +39,12 @@ type HashMap<K, V> = std::collections::HashMap<K, V, deterministic_hash_map::Det
 #[cfg(target_arch = "wasm32")]
 use deterministic_hash_map::new_hash_map;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub(crate) enum ConvertedBoolVar {
     Lit(NBoolLit),
     Removed, // Variable is removed during constant folding
+
+    #[default]
     NotConverted,
 }
 
@@ -59,12 +61,6 @@ impl ConvertedBoolVar {
 
     fn is_not_converted(&self) -> bool {
         matches!(self, ConvertedBoolVar::NotConverted)
-    }
-}
-
-impl Default for ConvertedBoolVar {
-    fn default() -> ConvertedBoolVar {
-        ConvertedBoolVar::NotConverted
     }
 }
 
