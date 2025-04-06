@@ -70,7 +70,7 @@ pub struct Solver {
     // We have to pass pointers to `dyn CustomPropagator` to the C++ code.
     // Since Box<dyn ...> uses a fat pointer and its representation is not specified,
     // we deliberately use `Box<Box<dyn ...>>` to make it a thin pointer.
-    // https://users.rust-lang.org/t/thin-pointers-fat-pointers-alignment-oh-my/50261
+    // https://doc.rust-lang.org/reference/type-layout.html#r-layout.pointer.unsized
     #[allow(clippy::vec_box)]
     custom_constraints: Vec<Box<Box<dyn CustomPropagator<GlucoseSolverManipulator>>>>,
 }
