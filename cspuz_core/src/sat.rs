@@ -150,7 +150,10 @@ pub unsafe trait CustomPropagator<T: SolverManipulator> {
     /// This function should return a vector of literals from which `p` can be propagated.
     ///
     /// # Safety
-    /// The returned vector must contain only literals that are currently assigned to `true`.
+    /// The returned vector must contain only literals that are assigned to `true` at the
+    /// moment of the propagation.
+    /// It should be noted that, during `calc_reason`, `solver.value(lit)` may return `Some(...)`
+    /// for `lit` whose assignment has been undone.
     /// Also, at least one literal in the returned vector must be from the current decision level.
     /// Violating this rule causes undefined behavior.
     fn calc_reason(&mut self, solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit>;
@@ -495,5 +498,144 @@ impl SATModel<'_> {
 
     pub fn assignment_lit(&self, lit: Lit) -> bool {
         self.assignment(lit.var()) ^ lit.is_negated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct RandomPropagator {
+        vars: Vec<Var>,
+        num_decisions: usize,
+        counter: u32,
+        reason_inconsistency: Vec<Lit>,
+        reason_propagate: std::collections::BTreeMap<Lit, Vec<Lit>>,
+    }
+
+    impl RandomPropagator {
+        fn random_value(&mut self) -> f64 {
+            self.counter += 1;
+            self.counter.wrapping_mul(0x87654321) as f64 / 0xFFFFFFFFu32 as f64
+        }
+
+        fn fake_reason<T: SolverManipulator>(&mut self, solver: &mut T) -> Vec<Lit> {
+            let mut cur_level = vec![];
+            let mut not_cur_level = vec![];
+
+            for &var in &self.vars {
+                for neg in [false, true] {
+                    let lit = var.as_lit(neg);
+                    if unsafe { solver.value(lit) } != Some(true) {
+                        continue;
+                    }
+                    if unsafe { solver.is_current_level(lit) } {
+                        cur_level.push(lit);
+                    } else {
+                        not_cur_level.push(lit);
+                    }
+                }
+            }
+
+            let mut ret = vec![];
+            ret.push(cur_level[(self.random_value() * cur_level.len() as f64) as usize]);
+
+            for &lit in &not_cur_level {
+                if self.random_value() < 0.5 {
+                    ret.push(lit);
+                }
+            }
+            ret
+        }
+    }
+
+    unsafe impl<T: SolverManipulator> CustomPropagator<T> for RandomPropagator {
+        fn initialize(&mut self, solver: &mut T) -> bool {
+            for &var in &self.vars {
+                unsafe {
+                    solver.add_watch(var.as_lit(false));
+                    solver.add_watch(var.as_lit(true));
+                }
+            }
+            true
+        }
+
+        fn propagate(&mut self, solver: &mut T, _p: Lit, _num_pending_propagations: i32) -> bool {
+            self.num_decisions += 1;
+
+            if self.num_decisions == 0 {
+                return true;
+            }
+
+            for var in self.vars.clone() {
+                let lit = var.as_lit(false);
+                if unsafe { solver.value(lit) }.is_some() {
+                    continue;
+                }
+
+                if self.random_value() < 0.01 {
+                    let reason = self.fake_reason(solver);
+                    self.reason_propagate.insert(lit, reason.clone());
+                    assert!(unsafe { solver.enqueue(lit) });
+                }
+            }
+
+            if self.random_value() < 0.01 {
+                let reason = self.fake_reason(solver);
+                self.reason_inconsistency = reason;
+                false
+            } else {
+                true
+            }
+        }
+
+        fn calc_reason(&mut self, _solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
+            assert!(extra.is_none());
+            if let Some(p) = p {
+                self.reason_propagate.get(&p).unwrap().clone()
+            } else {
+                self.reason_inconsistency.clone()
+            }
+        }
+
+        fn undo(&mut self, _solver: &mut T, _p: Lit) {
+            self.num_decisions -= 1;
+        }
+    }
+
+    #[test]
+    fn test_random_propagator() {
+        let mut solver = crate::backend::glucose::Solver::new();
+        let mut vars = vec![];
+        let n_vars = 14;
+
+        for _ in 0..n_vars {
+            vars.push(solver.new_var());
+        }
+
+        assert!(solver.add_custom_constraint(Box::new(RandomPropagator {
+            vars: vars.clone(),
+            num_decisions: 0,
+            counter: 0,
+            reason_inconsistency: vec![],
+            reason_propagate: std::collections::BTreeMap::new(),
+        })));
+
+        let mut n_assignments = 0;
+        loop {
+            match solver.solve() {
+                Some(model) => {
+                    n_assignments += 1;
+                    let mut new_clause = vec![];
+                    for &v in &vars {
+                        new_clause.push(v.as_lit(model.assignment(v)));
+                    }
+                    solver.add_clause(&new_clause);
+                }
+                None => break,
+            }
+        }
+
+        assert!(n_assignments < (1 << n_vars));
     }
 }
