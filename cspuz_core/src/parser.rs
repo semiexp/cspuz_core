@@ -139,19 +139,19 @@ impl VarMap {
         self.0.get(name).copied()
     }
 
-    pub fn iter<'a>(&'a self) -> btree_map::Iter<'a, String, Var> {
+    pub fn iter(&self) -> btree_map::Iter<'_, String, Var> {
         self.0.iter()
     }
 }
 
-pub fn parse<'a, 'b>(var_map: &'a VarMap, input: &'b str) -> ParseResult<'b> {
+pub fn parse<'a>(var_map: &VarMap, input: &'a str) -> ParseResult<'a> {
     // TODO: return error info
     let tree = parse_to_tree(input).unwrap();
     let child = match &tree {
         SyntaxTree::Node(child) => child,
         _ => return ParseResult::Stmt(Stmt::Expr(parse_bool_expr(var_map, &tree))),
     };
-    assert!(child.len() >= 1);
+    assert!(!child.is_empty());
     let op_name = child[0].as_op_name();
 
     if op_name == "bool" {

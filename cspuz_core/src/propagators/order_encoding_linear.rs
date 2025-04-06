@@ -55,9 +55,9 @@ impl OrderEncodingLinear {
                 .map(|x| x.domain[x.domain.len() - 1])
                 .sum::<i32>();
         let mut lits = vec![];
-        for i in 0..terms.len() {
-            for j in 0..terms[i].lits.len() {
-                lits.push((terms[i].lits[j], i, j));
+        for (i, term) in terms.iter().enumerate() {
+            for (j, lit) in term.lits.iter().enumerate() {
+                lits.push((*lit, i, j));
             }
         }
         lits.sort();

@@ -82,16 +82,82 @@ pub enum GraphDivisionMode {
 }
 
 pub unsafe trait SolverManipulator {
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn value(&self, lit: Lit) -> Option<bool>;
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn add_watch(&mut self, lit: Lit);
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn enqueue(&mut self, lit: Lit) -> bool;
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn is_current_level(&self, lit: Lit) -> bool;
 }
 
+/// A trait for custom propagators.
+///
+/// # Safety
+/// See the "Safety" section of `calc_reason`.
+///
+/// Note that, inappropriate implementation of this trait will be "safe" (i.e. not causing undefined
+/// behavior) as long as it follows the conditions in the "Safety" section, but it can be
+/// logically unsound.
+/// TODO: is this really "safe"?
 pub unsafe trait CustomPropagator<T: SolverManipulator> {
+    /// Initializes the propagator.
+    ///
+    /// This function is called when the propagator is added to the solver.
+    /// Then it should register the propagator to the watch list of any literals it uses by calling
+    /// `add_watch`.
+    /// It should return `true` if the propagator did not find any conflict, or `false` otherwise.
     fn initialize(&mut self, solver: &mut T) -> bool;
+
+    /// Notifies the propagator of a new assignment.
+    ///
+    /// This function is called when a literal `p` is assigned to `true`.
+    /// The propagator should check if the assignment so far is consistent with the constraints
+    /// it represents.
+    /// It should return `true` if the propagator did not find any conflict, or `false` otherwise.
+    ///
+    /// Also, this function should check for any immediate propagation. That is, if the propagator
+    /// can deduce the value of any other literal, it should enqueue the literal using `enqueue`.
+    ///
+    /// `num_pending_propagations` is the number of pending propagations of this propagator.
+    /// If this number is greater than 0, the propagator may skip checks for inconsistencies.
+    /// This is useful for propagators that are expensive to check.
     fn propagate(&mut self, solver: &mut T, p: Lit, num_pending_propagations: i32) -> bool;
+
+    /// Calculates the reason for a conflict.
+    ///
+    /// When this function is called, it is guaranteed that the propagator has already found
+    /// a conflict or a propagation with the current decisions.
+    ///
+    /// - If both `p` and `extra` is `None`, there is a conflict in the current decision.
+    ///   This function should return a vector of literals that causes the conflict.
+    /// - If `p` is `None`, but `extra` is `None`, `!extra` could be propagated
+    ///   from the current decision, but `extra` has already been added, causing a conflict.
+    ///   This function should return a vector of literals that causes the conflict.
+    ///   Note that this is NOT the reason why `!extra` is propagated. Thus, the returned vector
+    ///   typically contains `extra` itself.
+    /// - If `p` is not `None` and `extra` is `None`, `p` can be propagated from the current
+    ///   decision, and `p` has already been `enqueue`'d.
+    ///
+    /// This function should return a vector of literals from which `p` can be propagated.
+    ///
+    /// # Safety
+    /// The returned vector must contain only literals that are currently assigned to `true`.
+    /// Also, at least one literal in the returned vector must be from the current decision level.
+    /// Violating this rule causes undefined behavior.
     fn calc_reason(&mut self, solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit>;
+
+    /// Notifies the propagator of a backtrack.
+    ///
+    /// This function is called when the solver undos the decision of a literal `p`.
     fn undo(&mut self, solver: &mut T, p: Lit);
 }
 
@@ -150,20 +216,11 @@ impl SAT {
 
     pub fn all_vars(&self) -> Vec<Var> {
         match self {
-            SAT::Glucose(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::Glucose(solver) => solver.all_vars(),
             #[cfg(feature = "backend-external")]
-            SAT::External(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::External(solver) => solver.all_vars(),
             #[cfg(feature = "backend-cadical")]
-            SAT::CaDiCaL(solver) => {
-                let ret = solver.all_vars();
-                unsafe { std::mem::transmute::<_, Vec<Var>>(ret) }
-            }
+            SAT::CaDiCaL(solver) => solver.all_vars(),
         }
     }
 
@@ -289,7 +346,7 @@ impl SAT {
         supports: &[Vec<Option<usize>>],
     ) -> bool {
         match self {
-            SAT::Glucose(solver) => solver.add_direct_encoding_extension_supports(&vars, supports),
+            SAT::Glucose(solver) => solver.add_direct_encoding_extension_supports(vars, supports),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => panic!(
                 "add_direct_encoding_extension_supports is not supported in external backend"
@@ -364,13 +421,13 @@ impl SAT {
         }
     }
 
-    pub fn solve<'a>(&'a mut self) -> Option<SATModel<'a>> {
+    pub fn solve(&mut self) -> Option<SATModel<'_>> {
         match self {
-            SAT::Glucose(solver) => solver.solve().map(|model| SATModel::Glucose(model)),
+            SAT::Glucose(solver) => solver.solve().map(SATModel::Glucose),
             #[cfg(feature = "backend-external")]
-            SAT::External(solver) => solver.solve().map(|model| SATModel::External(model)),
+            SAT::External(solver) => solver.solve().map(SATModel::External),
             #[cfg(feature = "backend-cadical")]
-            SAT::CaDiCaL(solver) => solver.solve().map(|model| SATModel::CaDiCaL(model)),
+            SAT::CaDiCaL(solver) => solver.solve().map(SATModel::CaDiCaL),
         }
     }
 
@@ -384,7 +441,7 @@ impl SAT {
         }
     }
 
-    pub(crate) unsafe fn model<'a>(&'a self) -> SATModel<'a> {
+    pub(crate) unsafe fn model(&self) -> SATModel<'_> {
         match self {
             SAT::Glucose(solver) => SATModel::Glucose(solver.model()),
             #[cfg(feature = "backend-external")]
@@ -425,7 +482,7 @@ pub enum SATModel<'a> {
     CaDiCaL(cadical::Model<'a>),
 }
 
-impl<'a> SATModel<'a> {
+impl SATModel<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         match self {
             SATModel::Glucose(model) => model.assignment(var),

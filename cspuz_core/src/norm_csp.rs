@@ -166,10 +166,7 @@ impl IntVarRepresentation {
 
     #[allow(dead_code)]
     pub(super) fn is_domain(&self) -> bool {
-        match self {
-            IntVarRepresentation::Domain(_) => true,
-            _ => false,
-        }
+        matches!(self, IntVarRepresentation::Domain(_))
     }
 
     #[allow(dead_code)]
@@ -210,11 +207,11 @@ impl NormCSPVars {
     }
 
     pub(super) fn bool_vars_iter(&self) -> impl Iterator<Item = BoolVar> {
-        (0..self.num_bool_var).map(|i| BoolVar(i))
+        (0..self.num_bool_var).map(BoolVar)
     }
 
     pub(super) fn int_vars_iter(&self) -> impl Iterator<Item = IntVar> {
-        (0..self.int_var.len()).map(|i| IntVar(i))
+        (0..self.int_var.len()).map(IntVar)
     }
 
     pub(super) fn int_var(&self, var: IntVar) -> &IntVarRepresentation {
@@ -420,7 +417,7 @@ impl NormCSP {
     }
 
     pub fn unencoded_int_vars(&self) -> impl Iterator<Item = IntVar> {
-        (self.num_encoded_vars..self.vars.int_var.len()).map(|x| IntVar(x))
+        (self.num_encoded_vars..self.vars.int_var.len()).map(IntVar)
     }
 
     pub(super) fn get_domain_linear_sum(&self, linear_sum: &LinearSum) -> Domain {
@@ -491,7 +488,7 @@ impl Assignment {
             let sum = &l.sum;
             let mut v = sum.constant;
             for (var, coef) in &sum.term {
-                v = v + self.int_val.get(var).copied().unwrap() * *coef;
+                v += self.int_val.get(var).copied().unwrap() * *coef;
             }
 
             if l.op.compare(v, CheckedInt::new(0)) {

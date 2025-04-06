@@ -29,7 +29,7 @@ impl Solver {
     }
 
     pub fn all_vars(&self) -> Vec<Var> {
-        (0..self.num_var()).map(|i| Var(i)).collect()
+        (0..self.num_var()).map(Var).collect()
     }
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {
@@ -37,7 +37,7 @@ impl Solver {
         true
     }
 
-    pub fn solve<'a>(&'a mut self) -> Option<Model<'a>> {
+    pub fn solve(&mut self) -> Option<Model<'_>> {
         if self.solve_without_model() {
             Some(unsafe { self.model() })
         } else {
@@ -105,7 +105,7 @@ impl Solver {
         is_sat.unwrap()
     }
 
-    pub(crate) unsafe fn model<'a>(&'a self) -> Model<'a> {
+    pub(crate) unsafe fn model(&self) -> Model<'_> {
         Model { solver: self }
     }
 }
@@ -114,7 +114,7 @@ pub struct Model<'a> {
     solver: &'a Solver,
 }
 
-impl<'a> Model<'a> {
+impl Model<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         self.solver.model[var.0 as usize]
     }

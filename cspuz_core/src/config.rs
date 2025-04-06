@@ -25,7 +25,9 @@ pub struct Config {
 }
 
 thread_local! {
-    static DEFAULT_CONFIG: std::cell::Cell<Config> = std::cell::Cell::new(Config::initial_default());
+    static DEFAULT_CONFIG: std::cell::Cell<Config> = const {
+        std::cell::Cell::new(Config::initial_default())
+    };
 }
 
 impl Config {
@@ -166,7 +168,7 @@ impl Config {
         let matches = match opts.parse(&args[1..]) {
             Ok(m) => m,
             Err(f) => {
-                println!("error: {}", f.to_string());
+                println!("error: {}", f);
                 std::process::exit(1);
             }
         };
@@ -200,10 +202,7 @@ impl Config {
             let v = match s.parse::<usize>() {
                 Ok(v) => v,
                 Err(f) => {
-                    println!(
-                        "error: parse failed for --domain-product-threshold: {}",
-                        f.to_string()
-                    );
+                    println!("error: parse failed for --domain-product-threshold: {}", f,);
                     std::process::exit(1);
                 }
             };
@@ -215,7 +214,7 @@ impl Config {
                 Err(f) => {
                     println!(
                         "error: parse failed for --native-linear-encoding-terms: {}",
-                        f.to_string()
+                        f,
                     );
                     std::process::exit(1);
                 }
@@ -228,7 +227,7 @@ impl Config {
                 Err(f) => {
                     println!(
                         "error: parse failed for --native-linear-encoding-domain-product: {}",
-                        f.to_string()
+                        f,
                     );
                     std::process::exit(1);
                 }
