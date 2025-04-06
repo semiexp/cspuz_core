@@ -99,10 +99,65 @@ pub unsafe trait SolverManipulator {
     unsafe fn is_current_level(&self, lit: Lit) -> bool;
 }
 
+/// A trait for custom propagators.
+///
+/// # Safety
+/// See the "Safety" section of `calc_reason`.
+///
+/// Note that, inappropriate implementation of this trait will be "safe" (i.e. not causing undefined
+/// behavior) as long as it follows the conditions in the "Safety" section, but it can be
+/// logically unsound.
+/// TODO: is this really "safe"?
 pub unsafe trait CustomPropagator<T: SolverManipulator> {
+    /// Initializes the propagator.
+    ///
+    /// This function is called when the propagator is added to the solver.
+    /// Then it should register the propagator to the watch list of any literals it uses by calling
+    /// `add_watch`.
+    /// It should return `true` if the propagator did not find any conflict, or `false` otherwise.
     fn initialize(&mut self, solver: &mut T) -> bool;
+
+    /// Notifies the propagator of a new assignment.
+    ///
+    /// This function is called when a literal `p` is assigned to `true`.
+    /// The propagator should check if the assignment so far is consistent with the constraints
+    /// it represents.
+    /// It should return `true` if the propagator did not find any conflict, or `false` otherwise.
+    ///
+    /// Also, this function should check for any immediate propagation. That is, if the propagator
+    /// can deduce the value of any other literal, it should enqueue the literal using `enqueue`.
+    ///
+    /// `num_pending_propagations` is the number of pending propagations of this propagator.
+    /// If this number is greater than 0, the propagator may skip checks for inconsistencies.
+    /// This is useful for propagators that are expensive to check.
     fn propagate(&mut self, solver: &mut T, p: Lit, num_pending_propagations: i32) -> bool;
+
+    /// Calculates the reason for a conflict.
+    ///
+    /// When this function is called, it is guaranteed that the propagator has already found
+    /// a conflict or a propagation with the current decisions.
+    ///
+    /// - If both `p` and `extra` is `None`, there is a conflict in the current decision.
+    ///   This function should return a vector of literals that causes the conflict.
+    /// - If `p` is `None`, but `extra` is `None`, `!extra` could be propagated
+    ///   from the current decision, but `extra` has already been added, causing a conflict.
+    ///   This function should return a vector of literals that causes the conflict.
+    ///   Note that this is NOT the reason why `!extra` is propagated. Thus, the returned vector
+    ///   typically contains `extra` itself.
+    /// - If `p` is not `None` and `extra` is `None`, `p` can be propagated from the current
+    ///   decision, and `p` has already been `enqueue`'d.
+    ///
+    /// This function should return a vector of literals from which `p` can be propagated.
+    ///
+    /// # Safety
+    /// The returned vector must contain only literals that are currently assigned to `true`.
+    /// Also, at least one literal in the returned vector must be from the current decision level.
+    /// Violating this rule causes undefined behavior.
     fn calc_reason(&mut self, solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit>;
+
+    /// Notifies the propagator of a backtrack.
+    ///
+    /// This function is called when the solver undos the decision of a literal `p`.
     fn undo(&mut self, solver: &mut T, p: Lit);
 }
 
