@@ -22,6 +22,7 @@ extern "C-unwind" {
     fn Glucose_Solve(solver: *mut Opaque) -> i32;
     fn Glucose_NumVar(solver: *mut Opaque) -> i32;
     fn Glucose_GetModelValueVar(solver: *mut Opaque, var: i32) -> i32;
+    fn Glucose_SetPolarity(solver: *mut Opaque, var: i32, polarity: i32);
     fn Glucose_AddOrderEncodingLinear(
         solver: *mut Opaque,
         n_terms: i32,
@@ -104,6 +105,11 @@ impl Solver {
 
     pub fn all_vars(&self) -> Vec<Var> {
         (0..self.num_var()).map(Var).collect()
+    }
+
+    pub fn set_polarity(&mut self, var: Var, polarity: bool) {
+        assert!(0 <= var.0 && var.0 < self.num_var());
+        unsafe { Glucose_SetPolarity(self.ptr, var.0, if polarity { 1 } else { 0 }) }
     }
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {

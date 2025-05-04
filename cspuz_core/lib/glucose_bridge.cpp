@@ -67,6 +67,10 @@ int32_t Glucose_GetModelValueVar(const Glucose::Solver* solver, int32_t var) {
     return solver->modelValue(Glucose::Var(var)) == l_True ? 1 : 0;
 }
 
+void Glucose_SetPolarity(Glucose::Solver* solver, int32_t var, int32_t polarity) {
+    solver->setPolarity(Glucose::Var(var), polarity != 0);
+}
+
 int32_t Glucose_AddOrderEncodingLinear(Glucose::Solver* solver, int32_t n_terms, const int32_t* domain_size, const int32_t* lits, const int32_t* domain, const int32_t* coefs, int32_t constant) {
     std::vector<Glucose::LinearTerm> terms;
     int lits_offset = 0, domain_offset = 0;

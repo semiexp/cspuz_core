@@ -274,6 +274,26 @@ impl<'a> IntegratedSolver<'a> {
             }
             self.add_expr(BoolExpr::Or(refutation));
 
+            if self.config.optimize_polarity {
+                // To make the conversion faster, it is better to find assignments in which many variables
+                // are assigned with values that are different from current values.
+                // Here we set the polarity of the variables so that the negation of the current value is
+                // preferred.
+                for (&v, &b) in assignment.bool_iter() {
+                    let converted = self.normalize_map.get_bool_var_raw(v);
+                    if let ConvertedBoolVar::Lit(norm_lit) = converted {
+                        let sat_lit = self.encode_map.get_bool_lit(norm_lit);
+                        if let Some(sat_lit) = sat_lit {
+                            // NOTE: `polarity` is the negation of the preferred value of the variable
+                            self.sat
+                                .set_polarity(sat_lit.var(), b ^ sat_lit.is_negated());
+                        }
+                    }
+                }
+
+                // TODO: support int variables
+            }
+
             iterations += 1;
             match self.solve() {
                 Some(model) => {
