@@ -20,6 +20,7 @@ pub struct PerfStats {
     decisions: Cell<u64>,
     propagations: Cell<u64>,
     conflicts: Cell<u64>,
+    iterations: Cell<u64>,
 }
 
 impl PerfStats {
@@ -31,6 +32,7 @@ impl PerfStats {
             decisions: Cell::new(0u64),
             propagations: Cell::new(0u64),
             conflicts: Cell::new(0u64),
+            iterations: Cell::new(0u64),
         }
     }
 
@@ -56,6 +58,10 @@ impl PerfStats {
 
     pub fn conflicts(&self) -> u64 {
         self.conflicts.get()
+    }
+
+    pub fn iterations(&self) -> u64 {
+        self.iterations.get()
     }
 }
 
@@ -257,6 +263,7 @@ impl<'a> IntegratedSolver<'a> {
             }
             None => return None,
         }
+        let mut iterations = 1;
         loop {
             let mut refutation = vec![];
             for (&v, &b) in assignment.bool_iter() {
@@ -267,6 +274,7 @@ impl<'a> IntegratedSolver<'a> {
             }
             self.add_expr(BoolExpr::Or(refutation));
 
+            iterations += 1;
             match self.solve() {
                 Some(model) => {
                     let bool_erased = assignment
@@ -293,6 +301,10 @@ impl<'a> IntegratedSolver<'a> {
                 }
                 None => break,
             }
+        }
+
+        if let Some(perf_stats) = self.perf_stats {
+            perf_stats.iterations.set(iterations);
         }
 
         Some(assignment)
