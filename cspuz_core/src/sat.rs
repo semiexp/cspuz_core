@@ -277,6 +277,20 @@ impl SAT {
         vars.iter().map(|v| v.as_lit(false)).collect()
     }
 
+    pub fn set_polarity(&mut self, var: Var, polarity: bool) {
+        match self {
+            SAT::Glucose(solver) => solver.set_polarity(var, polarity),
+            #[cfg(feature = "backend-external")]
+            SAT::External(_) => {
+                panic!("set_polarity is not supported in external backend")
+            }
+            #[cfg(feature = "backend-cadical")]
+            SAT::CaDiCaL(_) => {
+                panic!("set_polarity is not supported in cadical backend")
+            }
+        }
+    }
+
     pub fn add_clause(&mut self, clause: &[Lit]) {
         match self {
             SAT::Glucose(solver) => {

@@ -21,6 +21,7 @@ pub struct Config {
     pub backend: Backend,
     pub order_encoding_linear_mode: OrderEncodingLinearMode,
     pub graph_division_mode: GraphDivisionMode,
+    pub optimize_polarity: bool,
     pub verbose: bool,
 }
 
@@ -60,6 +61,7 @@ impl Config {
             backend: Backend::Glucose,
             order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
             graph_division_mode: GraphDivisionMode::Cpp,
+            optimize_polarity: false,
             verbose: false,
         }
     }
