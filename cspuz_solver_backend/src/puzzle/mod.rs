@@ -157,5 +157,7 @@ pub fn list_puzzles() -> Vec<(String, String)> {
     puzzles.extend(kudamono::list_puzzles());
     puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
 
+    puzzles.sort();
+
     puzzles
 }
