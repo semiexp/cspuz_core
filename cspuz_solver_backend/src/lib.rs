@@ -14,25 +14,19 @@ static mut SHARED_ARRAY: Vec<u8> = vec![];
 fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
     let url = std::str::from_utf8(url).map_err(|_| "failed to decode URL as UTF-8")?;
 
-    let puzzle_kind = url_to_puzzle_kind(url).ok_or("puzzle type not detected");
-
-    match puzzle_kind {
-        Ok(puzzle_kind) => {
-            puzzle::dispatch_puzz_link(&puzzle_kind, url).unwrap_or(Err("unknown puzzle type"))
-        }
-        Err(_) => {
-            let puzzle_info = get_kudamono_url_info_detailed(url).ok_or("failed to parse URL")?;
-
-            let puzzle_kind = *puzzle_info.get("G").unwrap_or(&"");
-            let puzzle_variant = *puzzle_info.get("V").unwrap_or(&"");
-
-            if let Some(res) = puzzle::dispatch_kudamono(puzzle_kind, puzzle_variant, url) {
-                return res;
-            }
-
-            Err("unknown puzzle type")
-        }
+    if let Some(puzzle_kind) = url_to_puzzle_kind(url) {
+        return puzzle::dispatch_puzz_link(&puzzle_kind, url).unwrap_or(Err("unknown puzzle type"));
     }
+
+    if let Some(puzzle_info) = get_kudamono_url_info_detailed(url) {
+        let puzzle_kind = *puzzle_info.get("G").unwrap_or(&"");
+        let puzzle_variant = *puzzle_info.get("V").unwrap_or(&"");
+
+        return puzzle::dispatch_kudamono(puzzle_kind, puzzle_variant, url)
+            .unwrap_or(Err("unknown puzzle type"));
+    }
+
+    Err("URL cannot be parsed")
 }
 
 fn decode_and_enumerate(
