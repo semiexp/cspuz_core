@@ -143,7 +143,7 @@ pub fn dispatch_kudamono(
     }
 
     if puzzle_kind == "lits" && puzzle_variant == "double" {
-        return Some(double_lits::solve_double_lits(url));
+        return Some(double_lits::solve(url));
     }
 
     None
