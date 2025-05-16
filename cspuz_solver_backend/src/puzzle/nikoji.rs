@@ -4,7 +4,7 @@ use cspuz_rs_puzzles::puzzles::nikoji;
 
 const ALPHA: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-pub fn solve_nikoji(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = nikoji::deserialize_problem(url).ok_or("invalid url")?;
     let border = nikoji::solve_nikoji(&problem).ok_or("no answer")?;
 

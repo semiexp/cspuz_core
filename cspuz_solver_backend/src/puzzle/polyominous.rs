@@ -6,7 +6,7 @@ use cspuz_rs_puzzles::puzzles::polyominous;
 const PENTOMINO_NAMES: [&'static str; 12] =
     ["F", "I", "L", "N", "P", "T", "U", "V", "W", "X", "Y", "Z"];
 
-pub fn solve_pentominous(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues, default_borders) =
         polyominous::deserialize_pentominous_problem(url).ok_or("invalid url")?;
     let border = polyominous::solve_pentominous(&clues, &default_borders).ok_or("no answer")?;

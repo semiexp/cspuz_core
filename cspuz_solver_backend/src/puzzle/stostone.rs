@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::stostone;
 
-pub fn solve_stostone(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = stostone::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = stostone::solve_stostone(&borders, &clues).ok_or("no answer")?;
 

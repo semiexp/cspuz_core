@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::curvedata;
 
-pub fn solve_curvedata(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (piece_id, borders, pieces) = curvedata::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = curvedata::solve_curvedata(&piece_id, &borders, &pieces).ok_or("no answer")?;
 

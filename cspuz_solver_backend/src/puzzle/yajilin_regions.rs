@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::yajilin_regions;
 
-pub fn solve_yajilin_regions(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = yajilin_regions::deserialize_problem(url).ok_or("invalid url")?;
     let (is_line, is_black) =
         yajilin_regions::solve_yajilin_regions(&borders, &clues).ok_or("no answer")?;

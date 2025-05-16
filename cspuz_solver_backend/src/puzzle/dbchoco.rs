@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::dbchoco;
 
-pub fn solve_doublechoco(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (color, num) = dbchoco::deserialize_problem(url).ok_or("invalid url")?;
     let border = dbchoco::solve_doublechoco(&color, &num).ok_or("no answer")?;
 

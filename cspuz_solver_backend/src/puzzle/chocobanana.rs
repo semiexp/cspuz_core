@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::chocobanana;
 
-pub fn solve_chocobanana(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = chocobanana::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = chocobanana::solve_chocobanana(&clues).ok_or("no answer")?;
 

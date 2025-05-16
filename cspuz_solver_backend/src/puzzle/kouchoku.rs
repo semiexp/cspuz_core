@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
 use cspuz_rs_puzzles::puzzles::kouchoku;
 
-pub fn solve_kouchoku(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = kouchoku::deserialize_problem(url).ok_or("invalid url")?;
     let (fixed_lines, undet_lines) = kouchoku::solve_kouchoku(&problem).ok_or("no answer")?;
 

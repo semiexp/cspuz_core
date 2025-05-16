@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::kropki::{self, KropkiClue};
 
-pub fn solve_kropki(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = kropki::deserialize_problem(url).ok_or("invalid url")?;
     let ans = kropki::solve_kropki(&problem).ok_or("no answer")?;
 

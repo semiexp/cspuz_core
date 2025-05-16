@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::shimaguni;
 
-pub fn solve_shimaguni(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = shimaguni::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = shimaguni::solve_shimaguni(&borders, &clues).ok_or("no answer")?;
 

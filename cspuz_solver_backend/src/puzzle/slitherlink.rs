@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::slitherlink;
 
-pub fn solve_slitherlink(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = slitherlink::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = slitherlink::solve_slitherlink(&problem).ok_or("no answer")?;
 

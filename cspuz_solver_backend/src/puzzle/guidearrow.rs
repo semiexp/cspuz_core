@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::guidearrow::{self, GuidearrowClue};
 
-pub fn solve_guidearrow(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (ty, tx, clues) = guidearrow::deserialize_problem(url).ok_or("invalid url")?;
     let ans = guidearrow::solve_guidearrow(ty, tx, &clues).ok_or("no answer")?;
 

@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::kurotto;
 
-pub fn solve_kurotto(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = kurotto::deserialize_problem(url).ok_or("invalid url")?;
     let ans = kurotto::solve_kurotto(&problem).ok_or("no answer")?;
 

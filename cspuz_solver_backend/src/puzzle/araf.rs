@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::araf;
 
-pub fn solve_araf(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = araf::deserialize_problem(url).ok_or("invalid url")?;
     let ans = araf::solve_araf(&problem).ok_or("no answer")?;
 

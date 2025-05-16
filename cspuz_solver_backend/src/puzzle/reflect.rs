@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::reflect::{self, ReflectLinkClue};
 
-pub fn solve_reflect_link(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = reflect::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = reflect::solve_reflect_link(&problem).ok_or("no answer")?;
 

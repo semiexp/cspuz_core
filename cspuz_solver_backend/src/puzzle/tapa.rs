@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::tapa;
 
-pub fn solve_tapa(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = tapa::deserialize_problem(url).ok_or("invalid url")?;
     let ans = tapa::solve_tapa(&problem).ok_or("no answer")?;
 
