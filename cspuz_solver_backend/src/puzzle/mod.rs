@@ -148,3 +148,14 @@ pub fn dispatch_kudamono(
 
     None
 }
+
+pub fn list_puzzles() -> Vec<(String, String)> {
+    let mut puzzles = Vec::new();
+
+    puzzles.extend(puzz_link::list_puzzles());
+
+    puzzles.extend(kudamono::list_puzzles());
+    puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
+
+    puzzles
+}
