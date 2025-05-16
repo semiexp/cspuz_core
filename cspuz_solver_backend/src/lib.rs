@@ -17,23 +17,20 @@ fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
     let puzzle_kind = url_to_puzzle_kind(url).ok_or("puzzle type not detected");
 
     match puzzle_kind {
-        Ok(puzzle_kind) => puzzle::dispatch_puzz_link_puzzle(&puzzle_kind, url)
-            .unwrap_or(Err("unknown puzzle type")),
+        Ok(puzzle_kind) => {
+            puzzle::dispatch_puzz_link(&puzzle_kind, url).unwrap_or(Err("unknown puzzle type"))
+        }
         Err(_) => {
             let puzzle_info = get_kudamono_url_info_detailed(url).ok_or("failed to parse URL")?;
 
             let puzzle_kind = *puzzle_info.get("G").unwrap_or(&"");
             let puzzle_variant = *puzzle_info.get("V").unwrap_or(&"");
 
-            if let Some(res) = puzzle::dispatch_kudamono_puzzle(puzzle_kind, url) {
+            if let Some(res) = puzzle::dispatch_kudamono(puzzle_kind, puzzle_variant, url) {
                 return res;
             }
 
-            if puzzle_kind == "lits" && puzzle_variant == "double" {
-                puzzle::double_lits::solve_double_lits(url)
-            } else {
-                Err("unknown puzzle type")
-            }
+            Err("unknown puzzle type")
         }
     }
 }

@@ -1,21 +1,31 @@
 use crate::board::Board;
 
 macro_rules! puzzle_list {
-    ( $func_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr ) ),* $(,)? ) => {
+    ( $mod_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr ) ),* $(,)? ) => {
         $(
             pub mod $mod;
         )*
 
-        pub fn $func_name(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
-            $(
-                for alias in $aliases {
-                    if puzzle_kind == alias {
-                        return Some($mod::solve(url));
+        mod $mod_name {
+            pub fn dispatch(puzzle_kind: &str, url: &str) -> Option<Result<super::Board, &'static str>> {
+                $(
+                    for alias in $aliases {
+                        if puzzle_kind == alias {
+                            return Some(super::$mod::solve(url));
+                        }
                     }
-                }
-            )*
+                )*
 
-            None
+                None
+            }
+
+            pub fn list_puzzles() -> Vec<(String, String)> {
+                vec![
+                    $(
+                        (String::from($en_name), String::from($ja_name)),
+                    )*
+                ]
+            }
         }
     };
 }
@@ -23,7 +33,7 @@ macro_rules! puzzle_list {
 pub mod heyawake_internal;
 
 #[rustfmt::skip]
-puzzle_list!(dispatch_puzz_link_puzzle,
+puzzle_list!(puzz_link,
     (akari, ["akari"], "Akari", "美術館"),
     (akichiwake, ["akichi"], "Akichiwake", "Akichiwake"),
     (aqre, ["aqre"], "Aqre", "Aqre"),
@@ -97,7 +107,7 @@ puzzle_list!(dispatch_puzz_link_puzzle,
 );
 
 #[rustfmt::skip]
-puzzle_list!(dispatch_kudamono_puzzle,
+puzzle_list!(kudamono,
     (akari_regions, ["akari-regional"], "Regional Akari", "Regional Akari"),
     (akari_rgb, ["akari-rgb"], "Akari RGB", "Akari RGB"),
     (cross_border_parity_loop, ["cross-border-parity-loop"], "Cross Border Parity Loop", "Cross Border Parity Loop"),
@@ -118,3 +128,23 @@ puzzle_list!(dispatch_kudamono_puzzle,
 );
 
 pub mod double_lits;
+
+pub fn dispatch_puzz_link(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
+    puzz_link::dispatch(puzzle_kind, url)
+}
+
+pub fn dispatch_kudamono(
+    puzzle_kind: &str,
+    puzzle_variant: &str,
+    url: &str,
+) -> Option<Result<Board, &'static str>> {
+    if let Some(res) = kudamono::dispatch(puzzle_kind, url) {
+        return Some(res);
+    }
+
+    if puzzle_kind == "lits" && puzzle_variant == "double" {
+        return Some(double_lits::solve_double_lits(url));
+    }
+
+    None
+}
