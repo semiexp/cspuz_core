@@ -11,7 +11,7 @@ fn num_to_item(n: i32) -> ItemKind {
     }
 }
 
-pub fn solve_tontonbeya(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = tontonbeya::deserialize_problem(url).ok_or("invalid url")?;
     let answer = tontonbeya::solve_tontonbeya(&borders, &clues).ok_or("no answer")?;
 

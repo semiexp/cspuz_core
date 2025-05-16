@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::forestwalk;
 
-pub fn solve_forestwalk(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (forest, num) = forestwalk::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = forestwalk::solve_forestwalk(&forest, &num).ok_or("no answer")?;
 

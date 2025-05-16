@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::akari_rgb::{self, AkariRGBClue};
 
-pub fn solve_akari_rgb(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = akari_rgb::deserialize_problem(url).ok_or("invalid url")?;
     let ans = akari_rgb::solve_akari_rgb(&problem).ok_or("no answer")?;
 

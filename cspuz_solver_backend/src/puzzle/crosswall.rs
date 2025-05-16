@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::crosswall;
 
-pub fn solve_crosswall(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = crosswall::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = crosswall::solve_crosswall(&problem).ok_or("no answer")?;
 

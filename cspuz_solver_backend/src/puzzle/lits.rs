@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::lits;
 
-pub fn solve_lits(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let borders = lits::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = lits::solve_lits(&borders).ok_or("no answer")?;
 

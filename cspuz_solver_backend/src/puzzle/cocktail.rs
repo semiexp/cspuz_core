@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::cocktail;
 
-pub fn solve_cocktail(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = cocktail::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = cocktail::solve_cocktail(&borders, &clues).ok_or("no answer")?;
 

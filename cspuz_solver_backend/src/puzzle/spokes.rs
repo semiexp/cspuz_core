@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::spokes;
 
-pub fn solve_spokes(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = spokes::deserialize_problem(url).ok_or("invalid url")?;
     let (lines, lines_dr, lines_dl) = spokes::solve_spokes(&clues).ok_or("no answer")?;
 

@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::cross_border_parity_loop::{self, CBPLCell};
 
-pub fn solve_cross_border_parity_loop(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (cells, clues_black, clues_white, borders) =
         cross_border_parity_loop::deserialize_problem(url).ok_or("invalid url")?;
     let (is_line, cell_state) = cross_border_parity_loop::solve_cross_border_parity_loop(

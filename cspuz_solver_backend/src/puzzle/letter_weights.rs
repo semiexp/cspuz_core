@@ -4,7 +4,7 @@ use cspuz_rs_puzzles::puzzles::letter_weights;
 
 const ALPHA: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-pub fn solve_letter_weights(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (sums, chars, nums) = letter_weights::deserialize_problem(url)?;
     let (chars, nums, ans) = letter_weights::solve_letter_weights(&sums, &chars, &nums);
     let ans = ans.ok_or("no answer")?;

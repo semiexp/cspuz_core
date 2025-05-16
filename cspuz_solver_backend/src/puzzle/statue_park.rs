@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::statue_park::{self, StatueParkClue};
 
-pub fn solve_statue_park(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (problem, pieces) = statue_park::deserialize_problem(url).ok_or("invalid url")?;
     let ans = statue_park::solve_statue_park(&problem, &pieces).ok_or("no answer")?;
 

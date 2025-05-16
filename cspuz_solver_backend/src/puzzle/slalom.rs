@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::slalom;
 
-pub fn solve_slalom(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     use slalom::{SlalomBlackCellDir, SlalomCell};
 
     let problem = slalom::deserialize_problem_as_primitive(url).ok_or("invalid url")?;

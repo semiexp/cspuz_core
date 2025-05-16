@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
 use cspuz_rs_puzzles::puzzles::doppelblock;
 
-pub fn solve_doppelblock(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues_up, clues_left, cells) =
         doppelblock::deserialize_problem(url).ok_or("invalid url")?;
     let answer: Vec<Vec<Option<i32>>> =

@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::shakashaka::{self, ShakashakaCell};
 
-pub fn solve_shakashaka(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = shakashaka::deserialize_problem(url).ok_or("invalid url")?;
     let answer = shakashaka::solve_shakashaka(&problem).ok_or("no answer")?;
 

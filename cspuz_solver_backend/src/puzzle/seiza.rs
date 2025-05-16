@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::seiza;
 
-pub fn solve_seiza(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (absent_cell, num, borders) = seiza::deserialize_problem(url).ok_or("invalid url")?;
     let (is_line, is_star) = seiza::solve_seiza(&absent_cell, &num, &borders).ok_or("no answer")?;
 

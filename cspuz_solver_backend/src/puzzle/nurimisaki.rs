@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::nurimisaki;
 
-pub fn solve_nurimisaki(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = nurimisaki::deserialize_problem(url).ok_or("invalid url")?;
     let ans = nurimisaki::solve_nurimisaki(&problem).ok_or("no answer")?;
 

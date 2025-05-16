@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::pencils::{self, PencilsAnswer, PencilsClue};
 
-pub fn solve_pencils(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = pencils::deserialize_problem(url).ok_or("invalid url")?;
     let (cell, line, border) = pencils::solve_pencils(&problem).ok_or("no answer")?;
 

@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::akari_regions;
 
-pub fn solve_akari_regions(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues, has_block) =
         akari_regions::deserialize_problem(url).ok_or("invalid url")?;
     let has_light =

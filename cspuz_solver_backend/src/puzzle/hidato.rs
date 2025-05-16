@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::hidato;
 
-pub fn solve_hidato(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = hidato::deserialize_problem(url).ok_or("invalid url")?;
     let answer = hidato::solve_hidato(&problem).ok_or("no answer")?;
 

@@ -2,7 +2,7 @@ use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::castle_wall;
 
-pub fn solve_castle_wall(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     use castle_wall::Side;
     use cspuz_rs::items::Arrow;
     let problem = castle_wall::deserialize_problem(url).ok_or("invalid url")?;

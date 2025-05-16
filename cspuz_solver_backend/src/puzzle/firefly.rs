@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::items::Arrow;
 use cspuz_rs_puzzles::puzzles::firefly;
 
-pub fn solve_firefly(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = firefly::deserialize_problem(url).ok_or("invalid url")?;
     let is_line = firefly::solve_firefly(&problem).ok_or("no answer")?;
 
