@@ -11,27 +11,14 @@ use cspuz_rs::serializer::{get_kudamono_url_info_detailed, url_to_puzzle_kind};
 
 static mut SHARED_ARRAY: Vec<u8> = vec![];
 
-fn solve_puzz_link(puzzle_kind: String, url: &str) -> Result<Board, &'static str> {
-    if let Some(board) = puzzle::dispatch_puzz_link_puzzle(&puzzle_kind, url) {
-        return board;
-    }
-
-    if puzzle_kind == "heyawake" {
-        puzzle::heyawake::solve_heyawake(url, false)
-    } else if puzzle_kind == "ayeheya" {
-        puzzle::heyawake::solve_heyawake(url, true)
-    } else {
-        Err("unknown puzzle type")
-    }
-}
-
 fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
     let url = std::str::from_utf8(url).map_err(|_| "failed to decode URL as UTF-8")?;
 
     let puzzle_kind = url_to_puzzle_kind(url).ok_or("puzzle type not detected");
 
     match puzzle_kind {
-        Ok(puzzle_kind) => solve_puzz_link(puzzle_kind, url),
+        Ok(puzzle_kind) => puzzle::dispatch_puzz_link_puzzle(&puzzle_kind, url)
+            .unwrap_or(Err("unknown puzzle type")),
         Err(_) => {
             let puzzle_info = get_kudamono_url_info_detailed(url).ok_or("failed to parse URL")?;
 

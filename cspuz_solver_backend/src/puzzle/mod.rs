@@ -20,6 +20,8 @@ macro_rules! puzz_link {
     };
 }
 
+pub mod heyawake_internal;
+
 #[rustfmt::skip]
 puzz_link!(
     (akari, ["akari"], "Akari", "美術館"),
@@ -28,6 +30,7 @@ puzz_link!(
     (aquapelago, ["aquapelago"], "Aquapelago", "Aquapelago"),
     (araf, ["araf"], "Araf", "相ダ部屋"),
     (archipelago, ["archipelago"], "Archipelago", "Archipelago"),
+    (ayeheya, ["ayeheya"], "Ekawayeh (Symmetry Heyawake)", "∀人∃ＨＥＹＡ"),
     (barns, ["barns"], "Barns", "バーンズ"),
     (castle_wall, ["castle"], "Castle Wall", "Castle Wall"),
     (cave, ["cave"], "Cave", "バッグ"),
@@ -50,6 +53,7 @@ puzz_link!(
     (guidearrow, ["guidearrow"], "Guide Arrow", "ガイドアロー"),
     (hashi, ["hashi"], "Hashiwokakero", "橋をかけろ"),
     (herugolf, ["herugolf"], "Herugolf", "ヘルゴルフ"),
+    (heyawake, ["heyawake"], "Heyawake", "へやわけ"),
     (icewalk, ["icewalk"], "Ice Walk", "アイスウォーク"),
     (inverse_litso, ["invlitso"], "Inverse LITSO", "Inverse LITSO"),
     (kakuro, ["kakuro"], "Kakuro", "カックロ"),
@@ -97,7 +101,6 @@ pub mod akari_rgb;
 pub mod cross_border_parity_loop;
 pub mod crosswall;
 pub mod double_lits;
-pub mod heyawake;
 pub mod hidato;
 pub mod kropki_pairs;
 pub mod letter_weights;
