@@ -13,7 +13,7 @@ fn convert_arrow(arrow: Arrow) -> ItemKind {
     }
 }
 
-pub fn solve_sniping_arrow(url: &str) -> Result<Board, &'static str> {
+pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = sniping_arrow::deserialize_problem(url).ok_or("invalid url")?;
     let (is_line, arrow) = sniping_arrow::solve_sniping_arrow(&clues).ok_or("no answer")?;
 

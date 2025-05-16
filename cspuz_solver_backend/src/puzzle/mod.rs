@@ -1,12 +1,12 @@
 use crate::board::Board;
 
-macro_rules! puzz_link {
-    ( $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr ) ),* $(,)? ) => {
+macro_rules! puzzle_list {
+    ( $func_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr ) ),* $(,)? ) => {
         $(
             pub mod $mod;
         )*
 
-        pub fn dispatch_puzz_link_puzzle(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
+        pub fn $func_name(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
             $(
                 for alias in $aliases {
                     if puzzle_kind == alias {
@@ -23,7 +23,7 @@ macro_rules! puzz_link {
 pub mod heyawake_internal;
 
 #[rustfmt::skip]
-puzz_link!(
+puzzle_list!(dispatch_puzz_link_puzzle,
     (akari, ["akari"], "Akari", "美術館"),
     (akichiwake, ["akichi"], "Akichiwake", "Akichiwake"),
     (aqre, ["aqre"], "Aqre", "Aqre"),
@@ -96,21 +96,25 @@ puzz_link!(
     (yajilin_regions, ["yajilin-regions"], "Yajilin (Regions)", "ヘヤジリン"),
 );
 
-pub mod akari_regions;
-pub mod akari_rgb;
-pub mod cross_border_parity_loop;
-pub mod crosswall;
+#[rustfmt::skip]
+puzzle_list!(dispatch_kudamono_puzzle,
+    (akari_regions, ["akari-regional"], "Regional Akari", "Regional Akari"),
+    (akari_rgb, ["akari-rgb"], "Akari RGB", "Akari RGB"),
+    (cross_border_parity_loop, ["cross-border-parity-loop"], "Cross Border Parity Loop", "Cross Border Parity Loop"),
+    (crosswall, ["crosswall"], "Cross Wall", "クロスウォール"),
+    (hidato, ["hidoku"], "Hidato", "Hidato"),
+    (kropki_pairs, ["kropki-pairs"], "Kropki Pairs", "Kropki Pairs"),
+    (letter_weights, ["letter-weights"], "Letter Weights", "Letter Weights"),
+    (milktea, ["milk-tea"], "Milk Tea", "Milk Tea"),
+    (multiplication_link, ["multiplication-link"], "Multiplication Link", "掛け算リンク"),
+    (parrot_loop, ["parrot-loop"], "Parrot Loop", "Parrot Loop"),
+    (seiza, ["seiza"], "Seiza", "星座になれたら"),
+    (slicy, ["slicy"], "SLICY", "SLICY"),
+    (sniping_arrow, ["sniping-arrow"], "Sniping Arrow", "スナイピングアロー"),
+    (soulmates, ["soulmates"], "Soulmates", "ソウルメイツ"),
+    (spokes, ["spokes"], "Spokes", "Spokes"),
+    (the_longest, ["the-longest"], "The Longest", "短辺消失"),
+    (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
+);
+
 pub mod double_lits;
-pub mod hidato;
-pub mod kropki_pairs;
-pub mod letter_weights;
-pub mod milktea;
-pub mod multiplication_link;
-pub mod parrot_loop;
-pub mod seiza;
-pub mod slicy;
-pub mod sniping_arrow;
-pub mod soulmates;
-pub mod spokes;
-pub mod the_longest;
-pub mod tricklayer;

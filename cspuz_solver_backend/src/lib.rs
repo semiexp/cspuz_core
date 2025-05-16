@@ -25,41 +25,11 @@ fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
             let puzzle_kind = *puzzle_info.get("G").unwrap_or(&"");
             let puzzle_variant = *puzzle_info.get("V").unwrap_or(&"");
 
-            if puzzle_kind == "tricklayer" {
-                puzzle::tricklayer::solve_tricklayer(url)
-            } else if puzzle_kind == "parrot-loop" {
-                puzzle::parrot_loop::solve_parrot_loop(url)
-            } else if puzzle_kind == "crosswall" {
-                puzzle::crosswall::solve_crosswall(url)
-            } else if puzzle_kind == "soulmates" {
-                puzzle::soulmates::solve_soulmates(url)
-            } else if puzzle_kind == "cross-border-parity-loop" {
-                puzzle::cross_border_parity_loop::solve_cross_border_parity_loop(url)
-            } else if puzzle_kind == "akari-regional" {
-                puzzle::akari_regions::solve_akari_regions(url)
-            } else if puzzle_kind == "akari-rgb" {
-                puzzle::akari_rgb::solve_akari_rgb(url)
-            } else if puzzle_kind == "milk-tea" {
-                puzzle::milktea::solve_milktea(url)
-            } else if puzzle_kind == "seiza" {
-                puzzle::seiza::solve_seiza(url)
-            } else if puzzle_kind == "spokes" {
-                puzzle::spokes::solve_spokes(url)
-            } else if puzzle_kind == "kropki-pairs" {
-                puzzle::kropki_pairs::solve_kropki_pairs(url)
-            } else if puzzle_kind == "letter-weights" {
-                puzzle::letter_weights::solve_letter_weights(url)
-            } else if puzzle_kind == "sniping-arrow" {
-                puzzle::sniping_arrow::solve_sniping_arrow(url)
-            } else if puzzle_kind == "multiplication-link" {
-                puzzle::multiplication_link::solve_multiplication_link(url)
-            } else if puzzle_kind == "hidoku" {
-                puzzle::hidato::solve_hidato(url)
-            } else if puzzle_kind == "the-longest" {
-                puzzle::the_longest::solve_the_longest(url)
-            } else if puzzle_kind == "slicy" {
-                puzzle::slicy::solve_slicy(url)
-            } else if puzzle_kind == "lits" && puzzle_variant == "double" {
+            if let Some(res) = puzzle::dispatch_kudamono_puzzle(puzzle_kind, url) {
+                return res;
+            }
+
+            if puzzle_kind == "lits" && puzzle_variant == "double" {
                 puzzle::double_lits::solve_double_lits(url)
             } else {
                 Err("unknown puzzle type")
