@@ -8,7 +8,7 @@ mod uniqueness;
 
 use board::Board;
 use cspuz_rs::serializer::{get_kudamono_url_info_detailed, url_to_puzzle_kind};
-pub use puzzle::list_puzzles;
+pub use puzzle::list_puzzles_for_solve;
 
 static mut SHARED_ARRAY: Vec<u8> = vec![];
 
@@ -38,17 +38,8 @@ fn decode_and_enumerate(
 
     let puzzle_kind = url_to_puzzle_kind(url).ok_or("puzzle type not detected")?;
 
-    if puzzle_kind == "heyawake" {
-        puzzle::heyawake::enumerate_answers_heyawake(url, num_max_answers)
-    } else if puzzle_kind == "slither" || puzzle_kind == "slitherlink" {
-        puzzle::slitherlink::enumerate_answers_slitherlink(url, num_max_answers)
-    } else if puzzle_kind == "nurikabe" {
-        puzzle::nurikabe::enumerate_answers_nurikabe(url, num_max_answers)
-    } else if puzzle_kind == "curvedata" {
-        puzzle::curvedata::enumerate_answers_curvedata(url, num_max_answers)
-    } else {
-        Err("unsupported puzzle type")
-    }
+    puzzle::dispatch_puzz_link_enumerate(&puzzle_kind, url, num_max_answers)
+        .unwrap_or(Err("unknown puzzle type"))
 }
 
 #[no_mangle]

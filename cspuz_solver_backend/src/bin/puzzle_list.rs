@@ -1,7 +1,7 @@
-use cspuz_solver_backend::list_puzzles;
+use cspuz_solver_backend::list_puzzles_for_solve;
 
 fn main() {
-    let puzzles = list_puzzles();
+    let puzzles = list_puzzles_for_solve();
 
     println!("[");
     for i in 0..puzzles.len() {

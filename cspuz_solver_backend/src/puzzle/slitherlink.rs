@@ -45,7 +45,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     Ok(board)
 }
 
-pub fn enumerate_answers_slitherlink(
+pub fn enumerate(
     url: &str,
     num_max_answers: usize,
 ) -> Result<(Board, Vec<Board>), &'static str> {
