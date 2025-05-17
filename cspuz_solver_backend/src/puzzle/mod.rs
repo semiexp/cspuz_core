@@ -11,6 +11,13 @@ macro_rules! dispatch_enumerate {
     };
 }
 
+macro_rules! dispatch_enumerate_list {
+    ( $ret:expr, $en_name:expr, $ja_name:expr ) => {};
+    ( $ret:expr, $en_name:expr, $ja_name:expr, $enumerable:ident) => {
+        $ret.push((String::from($en_name), String::from($ja_name)));
+    };
+}
+
 macro_rules! puzzle_list {
     ( $mod_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr $(, $enumerable:ident )? ) ),* $(,)? ) => {
         $(
@@ -52,6 +59,15 @@ macro_rules! puzzle_list {
                         (String::from($en_name), String::from($ja_name)),
                     )*
                 ]
+            }
+
+            #[allow(unused)]
+            pub fn list_puzzles_enumerate() -> Vec<(String, String)> {
+                let mut ret = vec![];
+                $(
+                    dispatch_enumerate_list!(ret, $en_name, $ja_name $(, $enumerable)?);
+                )*
+                ret
             }
         }
     };
@@ -191,6 +207,16 @@ pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
 
     puzzles.extend(kudamono::list_puzzles());
     puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
+
+    puzzles.sort();
+
+    puzzles
+}
+
+pub fn list_puzzles_for_enumerate() -> Vec<(String, String)> {
+    let mut puzzles = Vec::new();
+
+    puzzles.extend(puzz_link::list_puzzles_enumerate());
 
     puzzles.sort();
 
