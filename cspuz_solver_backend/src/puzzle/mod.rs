@@ -1,7 +1,25 @@
 use crate::board::Board;
 
+macro_rules! dispatch_enumerate {
+    ( $mod:ident, $aliases:expr, $puzzle_kind:expr, $url:expr, $num_max_answers:expr ) => {};
+    ( $mod:ident, $aliases:expr, $puzzle_kind:expr, $url:expr, $num_max_answers:expr, $enumerate:ident ) => {
+        for alias in $aliases {
+            if $puzzle_kind == alias {
+                return Some(super::$mod::enumerate($url, $num_max_answers));
+            }
+        }
+    };
+}
+
+macro_rules! dispatch_enumerate_list {
+    ( $ret:expr, $en_name:expr, $ja_name:expr ) => {};
+    ( $ret:expr, $en_name:expr, $ja_name:expr, $enumerable:ident) => {
+        $ret.push((String::from($en_name), String::from($ja_name)));
+    };
+}
+
 macro_rules! puzzle_list {
-    ( $mod_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr ) ),* $(,)? ) => {
+    ( $mod_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr $(, $enumerable:ident )? ) ),* $(,)? ) => {
         $(
             pub mod $mod;
         )*
@@ -19,12 +37,37 @@ macro_rules! puzzle_list {
                 None
             }
 
+            #[allow(unused)]
+            pub fn dispatch_enumerate(
+                #[allow(unused)]
+                puzzle_kind: &str,
+                #[allow(unused)]
+                url: &str,
+                #[allow(unused)]
+                num_max_answers: usize,
+            ) -> Option<Result<(super::Board, Vec<super::Board>), &'static str>> {
+                $(
+                    dispatch_enumerate!($mod, $aliases, puzzle_kind, url, num_max_answers $(, $enumerable)?);
+                )*
+
+                None
+            }
+
             pub fn list_puzzles() -> Vec<(String, String)> {
                 vec![
                     $(
                         (String::from($en_name), String::from($ja_name)),
                     )*
                 ]
+            }
+
+            #[allow(unused)]
+            pub fn list_puzzles_enumerate() -> Vec<(String, String)> {
+                let mut ret = vec![];
+                $(
+                    dispatch_enumerate_list!(ret, $en_name, $ja_name $(, $enumerable)?);
+                )*
+                ret
             }
         }
     };
@@ -51,7 +94,7 @@ puzzle_list!(puzz_link,
     (compass, ["compass"], "Compass", "Compass"),
     (coral, ["coral"], "Coral", "Coral"),
     (creek, ["creek"], "Creek", "クリーク"),
-    (curvedata, ["curvedata"], "Curve Data", "カーブデータ"),
+    (curvedata, ["curvedata"], "Curve Data", "カーブデータ", enumerable),
     (dbchoco, ["dbchoco"], "Double Choco", "ダブルチョコ"),
     (doppelblock, ["doppelblock"], "Doppelblock", "ビトゥイーン・サム"),
     (evolmino, ["evolmino"], "Evolmino", "シンカミノ"),
@@ -63,7 +106,7 @@ puzzle_list!(puzz_link,
     (guidearrow, ["guidearrow"], "Guide Arrow", "ガイドアロー"),
     (hashi, ["hashi"], "Hashiwokakero", "橋をかけろ"),
     (herugolf, ["herugolf"], "Herugolf", "ヘルゴルフ"),
-    (heyawake, ["heyawake"], "Heyawake", "へやわけ"),
+    (heyawake, ["heyawake"], "Heyawake", "へやわけ", enumerable),
     (icewalk, ["icewalk"], "Ice Walk", "アイスウォーク"),
     (inverse_litso, ["invlitso"], "Inverse LITSO", "Inverse LITSO"),
     (kakuro, ["kakuro"], "Kakuro", "カックロ"),
@@ -80,7 +123,7 @@ puzzle_list!(puzz_link,
     (nikoji, ["nikoji"], "NIKOJI", "NIKOJI"),
     (norinori, ["norinori"], "Norinori", "のりのり"),
     (nothree, ["nothree"], "No Three", "ノースリー"),
-    (nurikabe, ["nurikabe"], "Nurikabe", "ぬりかべ"),
+    (nurikabe, ["nurikabe"], "Nurikabe", "ぬりかべ", enumerable),
     (nurimaze, ["nurimaze"], "Nurimaze", "ぬりめいず"),
     (nurimisaki, ["nurimisaki"], "Nurimisaki", "ぬりみさき"),
     (pencils, ["pencils"], "Pencils", "ペンシルズ"),
@@ -94,7 +137,7 @@ puzzle_list!(puzz_link,
     (simpleloop, ["simpleloop"], "Simple Loop", "シンプルループ"),
     (slalom, ["slalom"], "Slalom", "スラローム"),
     (slashpack, ["slashpack"], "Slash Pack", "Slash Pack"),
-    (slitherlink, ["slither", "slitherlink"], "Slitherlink", "スリザーリンク"),
+    (slitherlink, ["slither", "slitherlink"], "Slitherlink", "スリザーリンク", enumerable),
     (square_jam, ["squarejam"], "Square Jam", "Square Jam"),
     (statue_park, ["statuepark"], "Statue Park", "Statue Park"),
     (stostone, ["stostone"], "Stostone", "ストストーン"),
@@ -133,6 +176,14 @@ pub fn dispatch_puzz_link(puzzle_kind: &str, url: &str) -> Option<Result<Board, 
     puzz_link::dispatch(puzzle_kind, url)
 }
 
+pub fn dispatch_puzz_link_enumerate(
+    puzzle_kind: &str,
+    url: &str,
+    num_max_answers: usize,
+) -> Option<Result<(Board, Vec<Board>), &'static str>> {
+    puzz_link::dispatch_enumerate(puzzle_kind, url, num_max_answers)
+}
+
 pub fn dispatch_kudamono(
     puzzle_kind: &str,
     puzzle_variant: &str,
@@ -149,13 +200,23 @@ pub fn dispatch_kudamono(
     None
 }
 
-pub fn list_puzzles() -> Vec<(String, String)> {
+pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
     let mut puzzles = Vec::new();
 
     puzzles.extend(puzz_link::list_puzzles());
 
     puzzles.extend(kudamono::list_puzzles());
     puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
+
+    puzzles.sort();
+
+    puzzles
+}
+
+pub fn list_puzzles_for_enumerate() -> Vec<(String, String)> {
+    let mut puzzles = Vec::new();
+
+    puzzles.extend(puzz_link::list_puzzles_enumerate());
 
     puzzles.sort();
 
