@@ -62,6 +62,7 @@ pub mod pencils;
 pub mod polyominous;
 pub mod reflect;
 pub mod ringring;
+pub mod ripple;
 pub mod sasahigane;
 pub mod scrabble;
 pub mod seiza;
