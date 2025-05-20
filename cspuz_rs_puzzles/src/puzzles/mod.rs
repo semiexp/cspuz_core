@@ -37,6 +37,7 @@ pub mod hidato;
 pub mod icewalk;
 pub mod inverse_litso;
 pub mod kakuro;
+pub mod koburin;
 pub mod kouchoku;
 pub mod kropki;
 pub mod kropki_pairs;
