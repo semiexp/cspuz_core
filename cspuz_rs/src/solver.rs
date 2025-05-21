@@ -15,7 +15,7 @@ pub use cspuz_core::integration::PerfStats;
 pub use cspuz_core::propagators::graph_division::GraphDivisionOptions;
 
 #[derive(Clone)]
-pub struct Value<T>(T);
+pub struct Value<T>(pub(crate) T);
 
 #[derive(Clone)]
 pub struct Array0DImpl<T> {
