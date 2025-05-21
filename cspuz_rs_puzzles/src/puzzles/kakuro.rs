@@ -1,9 +1,10 @@
 use crate::util;
+use cspuz_rs::complex_constraints::sum_all_different;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, Optionalize, Size, Spaces, Tuple2, UnlimitedSeq,
 };
-use cspuz_rs::solver::{all, any, IntVarArray1D, Solver};
+use cspuz_rs::solver::{IntVarArray1D, Solver};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct KakuroClue {
@@ -41,37 +42,12 @@ pub fn solve_kakuro(clues: &[Vec<Option<KakuroClue>>]) -> Option<Vec<Vec<Option<
     }
 
     let mut add_constraints = |cells: IntVarArray1D, clue: Option<i32>| -> bool {
-        solver.all_different(&cells);
-
         if let Some(n) = clue {
-            let n_cells = cells.len() as i32;
-            let n_min = n_cells * (n_cells + 1) / 2;
-            let n_max = n_cells * 10 - n_min;
-            if !(n_min <= n && n <= n_max) {
-                return false;
-            }
-
-            let appear = solver.bool_var_1d(9);
-            for i in 0..9 {
-                solver.add_expr(appear.at(i).iff(cells.eq(i as i32 + 1).any()));
-            }
-
-            let mut cands = vec![];
-            for b in &dict[cells.len()][n as usize] {
-                let mut lits = vec![];
-                for i in 0..9 {
-                    if (b & (1 << i)) != 0 {
-                        lits.push(appear.at(i).expr());
-                    } else {
-                        lits.push(!appear.at(i));
-                    }
-                }
-                cands.push(all(lits));
-            }
-            solver.add_expr(any(cands));
+            sum_all_different(&mut solver, cells, n, 1, 9)
+        } else {
+            solver.all_different(&cells);
+            cells.len() <= 9
         }
-
-        true
     };
 
     for y in 0..h {
