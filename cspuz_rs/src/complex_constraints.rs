@@ -1,17 +1,22 @@
-use crate::solver::{all, any, Array0DImpl, Array1DImpl, CSPIntExpr, Operand, Solver, Value};
+use crate::solver::{
+    all, any, Array0DImpl, Array1DImpl, CSPBoolExpr, CSPIntExpr, Operand, Solver, Value,
+};
 
-/// Adds a constraint that,
+/// Adds a constraint that, if `condition` is true (or not present),
 /// - given values are all different,
 /// - the sum of the values is equal to `sum`, and
 /// - the values are between `value_low` and `value_high` (inclusive).
 ///
 /// Returns true if there is at least one possible assignment that satisfies the constraints, otherwise false.
+/// Note that this function returns true if `condition` is present, because the constraint is satisfied
+/// if `condition` is false.
 pub fn sum_all_different<T>(
     solver: &mut Solver,
     values: T,
     sum: i32,
     value_low: i32,
     value_high: i32,
+    condition: Option<Value<Array0DImpl<CSPBoolExpr>>>,
 ) -> bool
 where
     T: IntoIterator,
@@ -22,7 +27,16 @@ where
         .map(|x| Value(x.as_expr_array()))
         .collect();
     let terms = &Value::<Array1DImpl<_>>::new(terms);
-    solver.all_different(terms);
+
+    if let Some(condition) = &condition {
+        for i in 0..terms.len() {
+            for j in (i + 1)..terms.len() {
+                solver.add_expr(condition.imp(terms.at(i).ne(terms.at(j))));
+            }
+        }
+    } else {
+        solver.all_different(terms);
+    }
 
     let mut indicators = vec![];
 
@@ -39,7 +53,11 @@ where
         }
         cands.push(all(expr));
     }
-    solver.add_expr(any(cands));
+    if let Some(condition) = &condition {
+        solver.add_expr(condition.imp(any(cands)));
+    } else {
+        solver.add_expr(any(cands));
+    }
 
     !part.is_empty()
 }
@@ -115,14 +133,14 @@ mod tests {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(3, 1, 9);
             solver.add_answer_key_int(nums);
-            assert!(sum_all_different(&mut solver, nums, 9, 1, 9));
+            assert!(sum_all_different(&mut solver, nums, 9, 1, 9, None));
             assert_eq!(solver.answer_iter().count(), 3 * 6);
         }
         {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(4, 1, 9);
             solver.add_answer_key_int(nums);
-            assert!(sum_all_different(&mut solver, nums, 16, 1, 9));
+            assert!(sum_all_different(&mut solver, nums, 16, 1, 9, None));
             // 1 + 2 + 4 + 9
             // 1 + 2 + 5 + 8
             // 1 + 2 + 6 + 7
@@ -137,15 +155,35 @@ mod tests {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(3, -1, 9);
             solver.add_answer_key_int(nums);
-            assert!(sum_all_different(&mut solver, nums, 3, -1, 9));
+            assert!(sum_all_different(&mut solver, nums, 3, -1, 9, None));
             assert_eq!(solver.answer_iter().count(), 3 * 6);
         }
         {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(3, 1, 9);
             solver.add_answer_key_int(nums);
-            assert!(!sum_all_different(&mut solver, nums, 25, 1, 9));
+            assert!(!sum_all_different(&mut solver, nums, 25, 1, 9, None));
             assert!(solver.solve().is_none());
+        }
+    }
+
+    #[test]
+    fn test_sum_all_different_conditional() {
+        {
+            let mut solver = Solver::new();
+            let nums = &solver.int_var_1d(3, 1, 6);
+            let b = solver.bool_var();
+            solver.add_answer_key_int(nums);
+            solver.add_answer_key_bool(&b);
+            assert!(sum_all_different(
+                &mut solver,
+                nums,
+                9,
+                1,
+                6,
+                Some(b.expr())
+            ));
+            assert_eq!(solver.answer_iter().count(), 3 * 6 + 6 * 6 * 6);
         }
     }
 

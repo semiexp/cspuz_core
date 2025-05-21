@@ -43,7 +43,7 @@ pub fn solve_kakuro(clues: &[Vec<Option<KakuroClue>>]) -> Option<Vec<Vec<Option<
 
     let mut add_constraints = |cells: IntVarArray1D, clue: Option<i32>| -> bool {
         if let Some(n) = clue {
-            sum_all_different(&mut solver, cells, n, 1, 9)
+            sum_all_different(&mut solver, cells, n, 1, 9, None)
         } else {
             solver.all_different(&cells);
             cells.len() <= 9
