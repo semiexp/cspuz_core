@@ -1,5 +1,6 @@
 extern crate cspuz_core;
 
+pub mod complex_constraints;
 pub mod graph;
 pub mod hex;
 pub mod items;
