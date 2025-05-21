@@ -4,13 +4,16 @@ use crate::solver::{all, any, Array0DImpl, Array1DImpl, CSPIntExpr, Operand, Sol
 /// - given values are all different,
 /// - the sum of the values is equal to `sum`, and
 /// - the values are between `value_low` and `value_high` (inclusive).
+///
+/// Returns true if there is at least one possible assignment that satisfies the constraints, otherwise false.
 pub fn sum_all_different<T>(
     solver: &mut Solver,
     values: T,
     sum: i32,
     value_low: i32,
     value_high: i32,
-) where
+) -> bool
+where
     T: IntoIterator,
     T::Item: Operand<Output = Array0DImpl<CSPIntExpr>>,
 {
@@ -29,7 +32,7 @@ pub fn sum_all_different<T>(
 
     let part = partitions(sum, terms.len() as i32, value_low, value_high);
     let mut cands = vec![];
-    for p in part {
+    for p in &part {
         let mut expr = vec![];
         for i in 0..p.len() {
             expr.push(&indicators[i] ^ !p[i]);
@@ -37,6 +40,8 @@ pub fn sum_all_different<T>(
         cands.push(all(expr));
     }
     solver.add_expr(any(cands));
+
+    !part.is_empty()
 }
 
 fn partitions(sum: i32, n: i32, value_low: i32, value_high: i32) -> Vec<Vec<bool>> {
@@ -110,14 +115,14 @@ mod tests {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(3, 1, 9);
             solver.add_answer_key_int(nums);
-            sum_all_different(&mut solver, nums, 9, 1, 9);
+            assert!(sum_all_different(&mut solver, nums, 9, 1, 9));
             assert_eq!(solver.answer_iter().count(), 3 * 6);
         }
         {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(4, 1, 9);
             solver.add_answer_key_int(nums);
-            sum_all_different(&mut solver, nums, 16, 1, 9);
+            assert!(sum_all_different(&mut solver, nums, 16, 1, 9));
             // 1 + 2 + 4 + 9
             // 1 + 2 + 5 + 8
             // 1 + 2 + 6 + 7
@@ -132,8 +137,15 @@ mod tests {
             let mut solver = Solver::new();
             let nums = &solver.int_var_1d(3, -1, 9);
             solver.add_answer_key_int(nums);
-            sum_all_different(&mut solver, nums, 3, -1, 9);
+            assert!(sum_all_different(&mut solver, nums, 3, -1, 9));
             assert_eq!(solver.answer_iter().count(), 3 * 6);
+        }
+        {
+            let mut solver = Solver::new();
+            let nums = &solver.int_var_1d(3, 1, 9);
+            solver.add_answer_key_int(nums);
+            assert!(!sum_all_different(&mut solver, nums, 25, 1, 9));
+            assert!(solver.solve().is_none());
         }
     }
 
