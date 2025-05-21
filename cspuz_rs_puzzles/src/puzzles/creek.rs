@@ -1,9 +1,8 @@
-use crate::puzzles::slitherlink::SlitherlinkClueCombinator;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    Size, Spaces,
+    NumSpaces, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -42,7 +41,7 @@ type Problem = Vec<Vec<Option<i32>>>;
 fn combinator() -> impl Combinator<Problem> {
     Size::with_offset(
         ContextBasedGrid::new(Choice::new(vec![
-            Box::new(SlitherlinkClueCombinator),
+            Box::new(NumSpaces::new(4, 2)),
             Box::new(Spaces::new(None, 'g')),
         ])),
         1,
