@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    from_base16, problem_to_url_with_context, to_base16, url_to_problem, Choice, Combinator,
-    Context, ContextBasedGrid, Size, Spaces,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
+    Map, NumSpaces, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -103,43 +103,13 @@ where
     }
 }
 
-pub struct NothreeClueCombinator;
-
-impl Combinator<bool> for NothreeClueCombinator {
-    fn serialize(&self, _: &Context, input: &[bool]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        if !input[0] {
-            return None;
-        }
-        let mut n_spaces = 0;
-        while n_spaces < 7 && 1 + n_spaces < input.len() && !input[1 + n_spaces] {
-            n_spaces += 1;
-        }
-        Some((1 + n_spaces, vec![to_base16(n_spaces as i32 * 2)]))
-    }
-
-    fn deserialize(&self, _: &Context, input: &[u8]) -> Option<(usize, Vec<bool>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        let c = from_base16(input[0])?;
-        if c % 2 != 0 {
-            return None;
-        }
-        let spaces = c / 2;
-        let mut ret = vec![true];
-        for _ in 0..spaces {
-            ret.push(false);
-        }
-        Some((1, ret))
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
     Size::new(SizeDoubler::new(ContextBasedGrid::new(Choice::new(vec![
-        Box::new(NothreeClueCombinator),
+        Box::new(Map::new(
+            NumSpaces::new(1, 7),
+            |x| if x { Some(Some(0)) } else { Some(None) },
+            |x| if x.is_some() { Some(true) } else { Some(false) },
+        )),
         Box::new(Spaces::new(false, 'g')),
     ]))))
 }

@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    from_base16, problem_to_url_with_context, to_base16, url_to_problem, Choice, Combinator,
-    Context, ContextBasedGrid, Dict, HexInt, Size, Spaces, Tuple3,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
+    Dict, HexInt, Map, NumSpaces, Size, Spaces, Tuple3,
 };
 use cspuz_rs::solver::Solver;
 
@@ -85,57 +85,6 @@ pub fn solve_guidearrow(
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
-pub struct GuidearrowClueCombinator;
-
-impl Combinator<Option<GuidearrowClue>> for GuidearrowClueCombinator {
-    fn serialize(&self, _: &Context, input: &[Option<GuidearrowClue>]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        let n = match input[0]? {
-            GuidearrowClue::Up => 1,
-            GuidearrowClue::Down => 2,
-            GuidearrowClue::Left => 3,
-            GuidearrowClue::Right => 4,
-            _ => return None,
-        };
-        let mut n_spaces = 0;
-        while n_spaces < 2 && 1 + n_spaces < input.len() && input[1 + n_spaces].is_none() {
-            n_spaces += 1;
-        }
-        Some((1 + n_spaces, vec![to_base16(n + n_spaces as i32 * 5)]))
-    }
-
-    fn deserialize(
-        &self,
-        _: &Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Option<GuidearrowClue>>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        let c = from_base16(input[0])?;
-        if c == 15 {
-            return None;
-        }
-        let n = c % 5;
-        let arrow = match n {
-            0 => return None,
-            1 => GuidearrowClue::Up,
-            2 => GuidearrowClue::Down,
-            3 => GuidearrowClue::Left,
-            4 => GuidearrowClue::Right,
-            _ => unreachable!(),
-        };
-        let spaces = c / 5;
-        let mut ret = vec![Some(arrow)];
-        for _ in 0..spaces {
-            ret.push(None);
-        }
-        Some((1, ret))
-    }
-}
-
 type Problem = (usize, usize, Vec<Vec<Option<GuidearrowClue>>>);
 
 fn combinator() -> impl Combinator<(i32, i32, Vec<Vec<Option<GuidearrowClue>>>)> {
@@ -143,8 +92,26 @@ fn combinator() -> impl Combinator<(i32, i32, Vec<Vec<Option<GuidearrowClue>>>)>
         HexInt,
         HexInt,
         ContextBasedGrid::new(Choice::new(vec![
-            Box::new(GuidearrowClueCombinator),
             Box::new(Dict::new(Some(GuidearrowClue::Unknown), ".")),
+            Box::new(Map::new(
+                NumSpaces::new(4, 2),
+                |x| match x {
+                    Some(GuidearrowClue::Up) => Some(Some(1)),
+                    Some(GuidearrowClue::Down) => Some(Some(2)),
+                    Some(GuidearrowClue::Left) => Some(Some(3)),
+                    Some(GuidearrowClue::Right) => Some(Some(4)),
+                    None => Some(None),
+                    _ => None,
+                },
+                |x| match x {
+                    Some(1) => Some(Some(GuidearrowClue::Up)),
+                    Some(2) => Some(Some(GuidearrowClue::Down)),
+                    Some(3) => Some(Some(GuidearrowClue::Left)),
+                    Some(4) => Some(Some(GuidearrowClue::Right)),
+                    None => Some(None),
+                    _ => None,
+                },
+            )),
             Box::new(Spaces::new(None, 'g')),
         ])),
     ))

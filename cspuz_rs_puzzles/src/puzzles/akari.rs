@@ -1,7 +1,6 @@
 use crate::util;
 use cspuz_rs::serializer::{
-    from_base16, problem_to_url, to_base16, url_to_problem, Choice, Combinator, Context, Dict,
-    Grid, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
 use cspuz_rs::solver::{BoolVar, Solver};
 
@@ -89,47 +88,11 @@ pub fn solve_akari(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>>
     solver.irrefutable_facts().map(|f| f.get(has_light))
 }
 
-struct AkariClueCombinator;
-
-impl Combinator<Option<i32>> for AkariClueCombinator {
-    fn serialize(&self, _: &Context, input: &[Option<i32>]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        let n = input[0]?;
-        if n < 0 {
-            return None;
-        }
-        let mut n_spaces = 0;
-        while n_spaces < 2 && 1 + n_spaces < input.len() && input[1 + n_spaces].is_none() {
-            n_spaces += 1;
-        }
-        Some((1 + n_spaces, vec![to_base16(n + n_spaces as i32 * 5)]))
-    }
-
-    fn deserialize(&self, _: &Context, input: &[u8]) -> Option<(usize, Vec<Option<i32>>)> {
-        if input.len() == 0 {
-            return None;
-        }
-        let c = from_base16(input[0])?;
-        if c == 15 {
-            return None;
-        }
-        let n = c % 5;
-        let spaces = c / 5;
-        let mut ret = vec![Some(n)];
-        for _ in 0..spaces {
-            ret.push(None);
-        }
-        Some((1, ret))
-    }
-}
-
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
-        Box::new(AkariClueCombinator),
+        Box::new(NumSpaces::new(4, 2)),
         Box::new(Spaces::new(None, 'g')),
         Box::new(Dict::new(Some(-1), ".")),
     ]))
