@@ -511,12 +511,21 @@ mod tests {
             self.solver.add_constraint(stmt);
         }
 
-        fn check_expect(self, n_assignment_expected: usize) {
+        fn check_expect(self, n_assignment_expected: usize, no_panic: bool) -> bool {
             let n_assignment = self.solver.enumerate_valid_assignments().len();
-            assert_eq!(n_assignment, n_assignment_expected);
+
+            if !no_panic {
+                assert_eq!(n_assignment, n_assignment_expected);
+            }
+
+            n_assignment == n_assignment_expected
         }
 
-        fn check(self) {
+        fn check(self) -> bool {
+            self.check_internal(false)
+        }
+
+        fn check_internal(self, no_panic: bool) -> bool {
             let mut bool_domains = vec![];
             for _ in &self.bool_vars {
                 bool_domains.push(vec![false, true]);
@@ -547,7 +556,7 @@ mod tests {
                 }
             }
 
-            self.check_expect(n_assignment_expected);
+            self.check_expect(n_assignment_expected, no_panic)
         }
 
         fn is_satisfied_csp(&self, assignment: &csp::Assignment) -> bool {
@@ -1262,7 +1271,7 @@ mod tests {
         let c = tester.new_int_var(Domain::range(1, 100));
         tester.add_expr((a.expr() * a.expr() + b.expr() * b.expr()).eq(c.expr() * c.expr()));
 
-        tester.check_expect(104);
+        tester.check_expect(104, false);
     }
 
     #[test]
@@ -1838,11 +1847,13 @@ mod tests {
             }
 
             let mut int_vars = vec![];
+            let mut int_var_descs = vec![];
             for _ in 0..num_int_vars {
                 if self.next_u32(2) == 0 {
                     let a = self.next_i32(-3, 4);
                     let b = self.next_i32(-3, 4);
                     int_vars.push(tester.new_int_var(Domain::range(a.min(b), a.max(b))));
+                    int_var_descs.push(format!("{}..{}", a.min(b), a.max(b)));
                 } else {
                     let mut domain = vec![];
                     for n in -3..=3 {
@@ -1853,18 +1864,37 @@ mod tests {
                     if domain.is_empty() {
                         domain.push(self.next_i32(-3, 4));
                     }
+                    int_var_descs.push(format!("{:?}", domain));
                     int_vars.push(tester.new_int_var_from_list(domain));
                 }
             }
 
+            let mut exprs = vec![];
             for _ in 0..num_exprs {
                 let complexity = self.next_u32(max_complexity);
 
                 let expr = self.random_bool_expr(&bool_vars, &int_vars, complexity);
+                exprs.push(expr.clone());
                 tester.add_expr(expr);
             }
 
-            tester.check();
+            if !tester.check_internal(true) {
+                eprintln!("Fuzzer failed!");
+                eprintln!("Num bool vars: {}", num_bool_vars);
+                eprintln!("Int vars:");
+                for desc in &int_var_descs {
+                    eprintln!("- {}", desc);
+                }
+                eprintln!("Expressions:");
+                for expr in exprs {
+                    eprint!("- ");
+                    let mut out_buf = vec![];
+                    let _ = expr.pretty_print(&mut out_buf);
+                    eprint!("{}", String::from_utf8(out_buf).unwrap());
+                    eprintln!();
+                }
+                panic!();
+            }
         }
 
         fn random_bool_expr(
