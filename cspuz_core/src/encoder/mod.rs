@@ -812,20 +812,20 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
     // ClauseSet: list of clauses whose conjunction (&&) is equivalent to a linear literal
     // Vec<ClauseSet>: the above for each linear literal
     let mut encoded_lits: Vec<ClauseSet> = vec![];
-    let allow_order_encoding_native = simplified_linears.len() == 1 && bool_lits.is_empty();
-    let mut is_order_encoding_native_applied = false;
+    let can_use_order_encoding_native = simplified_linears.len() == 1 && bool_lits.is_empty();
+    let mut native_order_encoding_used = false;
 
     for linear_lits in simplified_linears {
         let mut encoded_conjunction: ClauseSet = ClauseSet::new();
         for linear_lit in linear_lits {
             match suggest_encoder(env, &linear_lit) {
                 EncoderKind::MixedGe => {
-                    if allow_order_encoding_native
+                    if can_use_order_encoding_native
                         && order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum)
                     {
                         // Native constraints will be directly added to SAT.
                         // This is safe because the constraint is a conjunction of linear literals
-                        is_order_encoding_native_applied = true;
+                        native_order_encoding_used = true;
                         order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
                     } else {
                         let encoded = mixed::encode_linear_ge_mixed(env, &linear_lit.sum);
@@ -877,7 +877,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
         encoded_lits.push(encoded_conjunction);
     }
 
-    if is_order_encoding_native_applied {
+    if native_order_encoding_used {
         assert!(bool_lits.is_empty());
     }
 
