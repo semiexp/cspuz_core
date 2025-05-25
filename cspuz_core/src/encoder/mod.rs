@@ -729,7 +729,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
         return;
     }
 
-    // A conjunction (||) of disjunctions (&&) of linear literals which is equivalent to `constr`.
+    // A disjunction (||) of conjunctions (&&) of linear literals which is equivalent to `constr`.
     let mut simplified_linears: Vec<Vec<LinearLit>> = vec![];
     for linear_lit in constr.linear_lit {
         if is_unsatisfiable_linear(env, &linear_lit) {
@@ -809,7 +809,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
     }
 
     // Vec<Lit>: a clause
-    // ClauseSet: list clauses whose disjunction is equivalent to a linear literal
+    // ClauseSet: list of clauses whose conjunction (&&) is equivalent to a linear literal
     // Vec<ClauseSet>: the above for each linear literal
     let mut encoded_lits: Vec<ClauseSet> = vec![];
     let maybe_order_encoding_native_applicable =
