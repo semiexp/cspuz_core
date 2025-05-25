@@ -729,6 +729,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
         return;
     }
 
+    // A conjunction (||) of disjunctions (&&) of linear literals which is equivalent to `constr`.
     let mut simplified_linears: Vec<Vec<LinearLit>> = vec![];
     for linear_lit in constr.linear_lit {
         if is_unsatisfiable_linear(env, &linear_lit) {
@@ -807,71 +808,28 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
         return;
     }
 
-    if simplified_linears.len() == 1 && bool_lits.is_empty() {
-        // native encoding may be applicable
-        let linears = simplified_linears.remove(0);
-        for linear_lit in linears {
-            match suggest_encoder(env, &linear_lit) {
-                EncoderKind::MixedGe => {
-                    assert_eq!(linear_lit.op, CmpOp::Ge);
-                    if order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum) {
-                        order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
-                    } else {
-                        let encoded = mixed::encode_linear_ge_mixed(env, &linear_lit.sum);
-                        for i in 0..encoded.len() {
-                            env.sat.add_clause(&encoded[i]);
-                        }
-                    }
-                }
-                EncoderKind::DirectSimple => {
-                    let encoded = direct::encode_simple_linear_direct_encoding(env, &linear_lit);
-                    if let Some(encoded) = encoded {
-                        env.sat.add_clause(&encoded);
-                    }
-                }
-                EncoderKind::DirectEqNe => {
-                    assert!(linear_lit.op == CmpOp::Eq || linear_lit.op == CmpOp::Ne);
-                    let encoded = if linear_lit.op == CmpOp::Eq {
-                        direct::encode_linear_eq_direct(env, &linear_lit.sum)
-                    } else {
-                        direct::encode_linear_ne_direct(env, &linear_lit.sum)
-                    };
-                    for i in 0..encoded.len() {
-                        env.sat.add_clause(&encoded[i]);
-                    }
-                }
-                #[cfg(feature = "csp-extra-constraints")]
-                EncoderKind::Log => {
-                    assert!(
-                        linear_lit.op == CmpOp::Eq
-                            || linear_lit.op == CmpOp::Ne
-                            || linear_lit.op == CmpOp::Ge
-                    );
-                    let encoded = log::encode_linear_log(env, &linear_lit.sum, linear_lit.op);
-                    for i in 0..encoded.len() {
-                        env.sat.add_clause(&encoded[i]);
-                    }
-                }
-                #[cfg(not(feature = "csp-extra-constraints"))]
-                EncoderKind::Log => {
-                    panic!("feature not enabled");
-                }
-            }
-        }
-        return;
-    }
-
     // Vec<Lit>: a clause
-    // ClauseSet: list clauses whose conjunction is equivalent to a linear literal
+    // ClauseSet: list clauses whose disjunction is equivalent to a linear literal
     // Vec<ClauseSet>: the above for each linear literal
     let mut encoded_lits: Vec<ClauseSet> = vec![];
+    let maybe_order_encoding_native_applicable =
+        simplified_linears.len() == 1 && bool_lits.is_empty();
+    let mut is_order_encoding_native_applied = false;
+
     for linear_lits in simplified_linears {
         let mut encoded_conjunction: ClauseSet = ClauseSet::new();
         for linear_lit in linear_lits {
             match suggest_encoder(env, &linear_lit) {
                 EncoderKind::MixedGe => {
-                    let encoded = mixed::encode_linear_ge_mixed(env, &linear_lit.sum);
-                    encoded_conjunction.append(encoded);
+                    if maybe_order_encoding_native_applicable
+                        && order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum)
+                    {
+                        is_order_encoding_native_applied = true;
+                        order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
+                    } else {
+                        let encoded = mixed::encode_linear_ge_mixed(env, &linear_lit.sum);
+                        encoded_conjunction.append(encoded);
+                    }
                 }
                 EncoderKind::DirectSimple => {
                     let encoded = direct::encode_simple_linear_direct_encoding(env, &linear_lit);
@@ -907,6 +865,8 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
 
         if encoded_conjunction.len() == 0 {
             // This constraint always holds
+            // We can safely return here even if `encode_linear_ge_order_encoding_native` is called,
+            // because in this case simplified_linears.len() == 1 and bool_lits is empty.
             return;
         }
         if encoded_conjunction.len() == 1 {
@@ -914,6 +874,10 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
             continue;
         }
         encoded_lits.push(encoded_conjunction);
+    }
+
+    if is_order_encoding_native_applied {
+        assert!(bool_lits.is_empty());
     }
 
     if encoded_lits.is_empty() {
