@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 
+use super::direct::encode_linear_eq_direct_from_info;
 use super::{
-    encode_linear_eq_direct_from_info, encode_linear_eq_mixed_from_info,
-    encode_linear_ge_mixed_from_info, new_var, new_vars_as_lits, ClauseSet, DirectEncoding,
-    EncoderEnv, LinearInfo, LinearInfoForDirectEncoding, LinearInfoForOrderEncoding, LinearLit,
-    LogEncoding, OrderEncoding,
+    encode_linear_eq_mixed_from_info, encode_linear_ge_mixed_from_info, new_var, new_vars_as_lits,
+    ClauseSet, DirectEncoding, EncoderEnv, LinearInfo, LinearInfoForDirectEncoding,
+    LinearInfoForOrderEncoding, LinearLit, LogEncoding, OrderEncoding,
 };
 use crate::arithmetic::{CheckedInt, CmpOp, Range};
 use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum};
