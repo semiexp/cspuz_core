@@ -1,6 +1,7 @@
 mod direct;
 #[cfg(feature = "csp-extra-constraints")]
 mod log;
+mod order;
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
@@ -58,31 +59,14 @@ impl Index<usize> for ClauseSet {
     }
 }
 
-/// Order encoding of an integer variable with domain of `domain`.
-/// `vars[i]` is the logical variable representing (the value of this int variable) >= `domain[i+1]`.
-struct OrderEncoding {
-    domain: Vec<CheckedInt>,
-    lits: Vec<Lit>,
-}
-
-impl OrderEncoding {
-    fn range(&self) -> Range {
-        if self.domain.is_empty() {
-            Range::empty()
-        } else {
-            Range::new(self.domain[0], self.domain[self.domain.len() - 1])
-        }
-    }
-}
-
 struct Encoding {
-    order_encoding: Option<OrderEncoding>,
+    order_encoding: Option<order::OrderEncoding>,
     direct_encoding: Option<direct::DirectEncoding>,
     log_encoding: Option<log::LogEncoding>,
 }
 
 impl Encoding {
-    fn order_encoding(enc: OrderEncoding) -> Encoding {
+    fn order_encoding(enc: order::OrderEncoding) -> Encoding {
         Encoding {
             order_encoding: Some(enc),
             direct_encoding: None,
@@ -107,7 +91,7 @@ impl Encoding {
         }
     }
 
-    fn as_order_encoding(&self) -> &OrderEncoding {
+    fn as_order_encoding(&self) -> &order::OrderEncoding {
         self.order_encoding.as_ref().unwrap()
     }
 
@@ -265,12 +249,18 @@ impl EncodeMap {
                     sat.add_clause(&[!lits[i], lits[i - 1]]);
                 }
 
-                self.int_map[var] = Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
+                self.int_map[var] = Some(Encoding::order_encoding(order::OrderEncoding {
+                    domain,
+                    lits,
+                }));
             }
             &IntVarRepresentation::Binary(cond, f, t) => {
                 let domain = vec![f, t];
                 let lits = vec![self.convert_bool_lit(norm_vars, sat, cond)];
-                self.int_map[var] = Some(Encoding::order_encoding(OrderEncoding { domain, lits }));
+                self.int_map[var] = Some(Encoding::order_encoding(order::OrderEncoding {
+                    domain,
+                    lits,
+                }));
             }
         }
     }
@@ -830,7 +820,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
                 EncoderKind::MixedGe => {
                     assert_eq!(linear_lit.op, CmpOp::Ge);
                     if is_ge_order_encoding_native_applicable(env, &linear_lit.sum) {
-                        encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
+                        order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
                     } else {
                         let encoded = encode_linear_ge_mixed(env, &linear_lit.sum);
                         for i in 0..encoded.len() {
@@ -1018,79 +1008,8 @@ enum ExtendedLit {
     Lit(Lit),
 }
 
-/// Helper struct for encoding linear constraints on variables represented in order encoding.
-/// With this struct, all coefficients can be virtually treated as 1.
-struct LinearInfoForOrderEncoding<'a> {
-    coef: CheckedInt,
-    encoding: &'a OrderEncoding,
-}
-
-impl<'a> LinearInfoForOrderEncoding<'a> {
-    pub fn new(coef: CheckedInt, encoding: &'a OrderEncoding) -> LinearInfoForOrderEncoding<'a> {
-        LinearInfoForOrderEncoding { coef, encoding }
-    }
-
-    fn domain_size(&self) -> usize {
-        self.encoding.domain.len()
-    }
-
-    /// j-th smallest domain value after normalizing negative coefficients
-    fn domain(&self, j: usize) -> CheckedInt {
-        if self.coef > 0 {
-            self.encoding.domain[j] * self.coef
-        } else {
-            self.encoding.domain[self.encoding.domain.len() - 1 - j] * self.coef
-        }
-    }
-
-    #[allow(unused)]
-    fn domain_min(&self) -> CheckedInt {
-        self.domain(0)
-    }
-
-    fn domain_max(&self) -> CheckedInt {
-        self.domain(self.domain_size() - 1)
-    }
-
-    /// The literal asserting that (the value) is at least `domain(i, j)`.
-    fn at_least(&self, j: usize) -> Lit {
-        assert!(0 < j && j < self.encoding.domain.len());
-        if self.coef > 0 {
-            self.encoding.lits[j - 1]
-        } else {
-            !self.encoding.lits[self.encoding.domain.len() - 1 - j]
-        }
-    }
-
-    /// The literal asserting (x >= val) under the assumption that x is in the domain.
-    fn at_least_val(&self, val: CheckedInt) -> ExtendedLit {
-        let dom_size = self.domain_size();
-
-        if val <= self.domain(0) {
-            ExtendedLit::True
-        } else if val > self.domain(dom_size - 1) {
-            ExtendedLit::False
-        } else {
-            // compute the largest j such that val <= domain[j]
-            let mut left = 0;
-            let mut right = dom_size - 1;
-
-            while left < right {
-                let mid = (left + right) / 2;
-                if val <= self.domain(mid) {
-                    right = mid;
-                } else {
-                    left = mid + 1;
-                }
-            }
-
-            ExtendedLit::Lit(self.at_least(left))
-        }
-    }
-}
-
 enum LinearInfo<'a> {
-    Order(LinearInfoForOrderEncoding<'a>),
+    Order(order::LinearInfoForOrderEncoding<'a>),
     Direct(direct::LinearInfoForDirectEncoding<'a>),
 }
 
@@ -1215,44 +1134,6 @@ fn is_ge_order_encoding_native_applicable(env: &EncoderEnv, sum: &LinearSum) -> 
     domain_product >= env.config.native_linear_encoding_domain_product_threshold
 }
 
-fn encode_linear_ge_order_encoding_native(env: &mut EncoderEnv, sum: &LinearSum) {
-    let mut info = vec![];
-    for (&v, &c) in sum.iter() {
-        assert_ne!(c, 0);
-        info.push(LinearInfoForOrderEncoding::new(
-            c,
-            env.map.int_map[v].as_ref().unwrap().as_order_encoding(),
-        ));
-    }
-
-    let mut lits = vec![];
-    let mut domain = vec![];
-    let mut coefs = vec![];
-    let constant = sum.constant.get();
-
-    for i in 0..info.len() {
-        let mut lits_r = vec![];
-        let mut domain_r = vec![];
-        for j in 0..info[i].domain_size() {
-            if j > 0 {
-                lits_r.push(info[i].at_least(j));
-            }
-            domain_r.push(info[i].domain(j).get());
-        }
-        lits.push(lits_r);
-        domain.push(domain_r);
-        coefs.push(1);
-    }
-
-    env.sat.add_order_encoding_linear(
-        lits,
-        domain,
-        coefs,
-        constant,
-        env.config.order_encoding_linear_mode,
-    );
-}
-
 fn encode_linear_ge_mixed(env: &EncoderEnv, sum: &LinearSum) -> ClauseSet {
     let mut info = vec![];
     for (&var, &coef) in sum.iter() {
@@ -1260,7 +1141,7 @@ fn encode_linear_ge_mixed(env: &EncoderEnv, sum: &LinearSum) -> ClauseSet {
 
         if let Some(order_encoding) = &encoding.order_encoding {
             // Prefer order encoding
-            info.push(LinearInfo::Order(LinearInfoForOrderEncoding::new(
+            info.push(LinearInfo::Order(order::LinearInfoForOrderEncoding::new(
                 coef,
                 order_encoding,
             )));
@@ -1646,7 +1527,7 @@ mod tests {
                 linear_sum(&[(x, 3), (y, -4), (z, 2)], -1),
                 CmpOp::Ge,
             )];
-            encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
+            order::encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
 
             tester.run_check(&lits);
         }
