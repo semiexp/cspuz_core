@@ -75,19 +75,10 @@ impl OrderEncoding {
     }
 }
 
-/// Representation of a log-encoded variable.
-///
-/// The value of the variable equals lits[0] * 2^0 + lits[1] * 2^1 + ... + lits[n-1] * 2^(n-1) + offset.
-/// `low` and `high` represent the range of the value after applying the offset.
-struct LogEncoding {
-    lits: Vec<Lit>,
-    range: Range,
-}
-
 struct Encoding {
     order_encoding: Option<OrderEncoding>,
     direct_encoding: Option<direct::DirectEncoding>,
-    log_encoding: Option<LogEncoding>,
+    log_encoding: Option<log::LogEncoding>,
 }
 
 impl Encoding {
@@ -108,7 +99,7 @@ impl Encoding {
     }
 
     #[allow(unused)]
-    fn log_encoding(enc: LogEncoding) -> Encoding {
+    fn log_encoding(enc: log::LogEncoding) -> Encoding {
         Encoding {
             order_encoding: None,
             direct_encoding: None,

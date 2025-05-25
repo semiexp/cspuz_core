@@ -5,12 +5,20 @@ use super::direct::{
 };
 use super::{
     encode_linear_eq_mixed_from_info, encode_linear_ge_mixed_from_info, new_var, new_vars_as_lits,
-    ClauseSet, EncoderEnv, LinearInfo, LinearInfoForOrderEncoding, LinearLit, LogEncoding,
-    OrderEncoding,
+    ClauseSet, EncoderEnv, LinearInfo, LinearInfoForOrderEncoding, LinearLit, OrderEncoding,
 };
 use crate::arithmetic::{CheckedInt, CmpOp, Range};
 use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum};
 use crate::sat::{Lit, SAT};
+
+/// Representation of a log-encoded variable.
+///
+/// The value of the variable equals lits[0] * 2^0 + lits[1] * 2^1 + ... + lits[n-1] * 2^(n-1) + offset.
+/// `low` and `high` represent the range of the value after applying the offset.
+pub(super) struct LogEncoding {
+    pub lits: Vec<Lit>,
+    pub range: Range,
+}
 
 pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
     match repr {
