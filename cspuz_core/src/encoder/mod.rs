@@ -651,7 +651,7 @@ fn decide_encode_schemes(
         for &var in new_vars {
             let maybe_direct_encoding = match norm_vars.int_var(var) {
                 IntVarRepresentation::Domain(_) => true,
-                IntVarRepresentation::Binary(_, _, _) => config.direct_encoding_for_binary_vars,
+                IntVarRepresentation::Binary { .. } => config.direct_encoding_for_binary_vars,
             };
             if maybe_direct_encoding && !scheme.get(&var).map_or(false, |&x| x == EncodeScheme::Log)
             {

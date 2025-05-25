@@ -756,11 +756,16 @@ fn normalize_int_expr(env: &mut NormalizerEnv, expr: &IntExpr) -> LinearSum {
                     xdom_low = dom.lower_bound_checked();
                     xdom_high = dom.upper_bound_checked();
                 }
-                IntVarRepresentation::Binary(_, t, f) => {
-                    xdom_low = *t.min(f);
-                    xdom_high = *t.max(f);
+                IntVarRepresentation::Binary {
+                    cond: _,
+                    v_false,
+                    v_true,
+                } => {
+                    xdom_low = *v_false;
+                    xdom_high = *v_true;
                 }
             }
+            assert!(xdom_low <= xdom_high);
             let ydom_low;
             let ydom_high;
             match env.norm.vars.int_var(yvar) {
@@ -768,11 +773,16 @@ fn normalize_int_expr(env: &mut NormalizerEnv, expr: &IntExpr) -> LinearSum {
                     ydom_low = dom.lower_bound_checked();
                     ydom_high = dom.upper_bound_checked();
                 }
-                IntVarRepresentation::Binary(_, t, f) => {
-                    ydom_low = *t.min(f);
-                    ydom_high = *t.max(f);
+                IntVarRepresentation::Binary {
+                    cond: _,
+                    v_false,
+                    v_true,
+                } => {
+                    ydom_low = *v_false;
+                    ydom_high = *v_true;
                 }
             }
+            assert!(ydom_low <= ydom_high);
             let edges = [
                 xdom_low * ydom_low,
                 xdom_low * ydom_high,
@@ -819,14 +829,18 @@ fn normalize_circuit(env: &mut NormalizerEnv, vars: Vec<NIntVar>) {
                     }
                 }
             }
-            IntVarRepresentation::Binary(_, t, f) => {
-                if *t >= 0 && *t < n as i32 {
-                    valid_domain.push(*t);
+            IntVarRepresentation::Binary {
+                cond: _,
+                v_false,
+                v_true,
+            } => {
+                if *v_true >= 0 && *v_true < n as i32 {
+                    valid_domain.push(*v_true);
                 } else {
                     has_out_of_range = true;
                 }
-                if *f >= 0 && *f < n as i32 {
-                    valid_domain.push(*f);
+                if *v_false >= 0 && *v_false < n as i32 {
+                    valid_domain.push(*v_false);
                 } else {
                     has_out_of_range = true;
                 }
@@ -1190,8 +1204,13 @@ mod tests {
             let mut unfixed_int_domains = vec![];
             for nv in &unfixed_int_vars {
                 match &self.norm.vars.int_var(*nv) {
-                    IntVarRepresentation::Binary(_, t, f) => {
-                        unfixed_int_domains.push(vec![(*t).min(*f), (*t).max(*f)]);
+                    IntVarRepresentation::Binary {
+                        cond: _,
+                        v_false,
+                        v_true,
+                    } => {
+                        assert!(v_false < v_true);
+                        unfixed_int_domains.push(vec![*v_false, *v_true]);
                     }
                     &IntVarRepresentation::Domain(domain) => {
                         unfixed_int_domains.push(domain.enumerate());

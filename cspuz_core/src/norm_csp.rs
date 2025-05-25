@@ -144,7 +144,18 @@ impl Constraint {
 
 pub(super) enum IntVarRepresentation {
     Domain(super::domain::Domain),
-    Binary(BoolLit, CheckedInt, CheckedInt), // condition, false, true (order encoding)
+
+    /// A variable which takes one of two values, depending on the value of `cond`.
+    /// If `cond` is true, the variable takes `v_true`, otherwise it takes `v_false`.
+    ///
+    /// Preconditions: `v_false` < `v_true`.
+    /// - If `v_false` > `v_true`, the values should be swapped and `cond` negated.
+    /// - `v_false` == `v_true` is not allowed. Instead, use a domain with a single value.
+    Binary {
+        cond: BoolLit,
+        v_false: CheckedInt,
+        v_true: CheckedInt,
+    },
 }
 
 impl IntVarRepresentation {
@@ -152,14 +163,13 @@ impl IntVarRepresentation {
     pub(super) fn enumerate(&self) -> Vec<CheckedInt> {
         match self {
             IntVarRepresentation::Domain(domain) => domain.enumerate(),
-            &IntVarRepresentation::Binary(_, f, t) => {
-                if f < t {
-                    vec![f, t]
-                } else if f > t {
-                    vec![t, f]
-                } else {
-                    vec![f]
-                }
+            &IntVarRepresentation::Binary {
+                cond: _,
+                v_false,
+                v_true,
+            } => {
+                assert!(v_false < v_true);
+                vec![v_false, v_true]
             }
         }
     }
@@ -180,14 +190,28 @@ impl IntVarRepresentation {
     pub(super) fn lower_bound_checked(&self) -> CheckedInt {
         match self {
             IntVarRepresentation::Domain(domain) => domain.lower_bound_checked(),
-            IntVarRepresentation::Binary(_, t, f) => (*t).min(*f),
+            IntVarRepresentation::Binary {
+                cond: _,
+                v_false,
+                v_true,
+            } => {
+                assert!(v_false < v_true);
+                *v_false
+            }
         }
     }
 
     pub(super) fn upper_bound_checked(&self) -> CheckedInt {
         match self {
             IntVarRepresentation::Domain(domain) => domain.upper_bound_checked(),
-            IntVarRepresentation::Binary(_, t, f) => (*t).max(*f),
+            IntVarRepresentation::Binary {
+                cond: _,
+                v_false,
+                v_true,
+            } => {
+                assert!(v_false < v_true);
+                *v_true
+            }
         }
     }
 }
@@ -234,8 +258,12 @@ impl NormCSPVars {
         for (var, coef) in &linear_sum.term {
             match self.int_var(*var) {
                 IntVarRepresentation::Domain(dom) => ret = ret + dom.clone() * *coef,
-                IntVarRepresentation::Binary(_, t, f) => {
-                    let dom = Domain::range(t.min(f).get(), t.max(f).get());
+                IntVarRepresentation::Binary {
+                    cond: _,
+                    v_false,
+                    v_true,
+                } => {
+                    let dom = Domain::range(v_false.get(), v_true.get());
                     ret = ret + dom * *coef;
                 }
             }
@@ -388,15 +416,29 @@ impl NormCSP {
     pub fn new_binary_int_var(
         &mut self,
         cond: BoolLit,
-        val_true: CheckedInt,
-        val_false: CheckedInt,
+        v_true: CheckedInt,
+        v_false: CheckedInt,
     ) -> IntVar {
-        if val_true < val_false {
+        if v_true < v_false {
+            // If v_true < v_false, we swap the values and negate the condition so that
+            // v_false < v_true holds.
+            self.vars.new_int_var(IntVarRepresentation::Binary {
+                cond: !cond,
+                v_false: v_true,
+                v_true: v_false,
+            })
+        } else if v_true == v_false {
+            // If v_true == v_false, we can use a domain with a single value.
             self.vars
-                .new_int_var(IntVarRepresentation::Binary(!cond, val_true, val_false))
+                .new_int_var(IntVarRepresentation::Domain(Domain::range_from_checked(
+                    v_true, v_true,
+                )))
         } else {
-            self.vars
-                .new_int_var(IntVarRepresentation::Binary(cond, val_false, val_true))
+            self.vars.new_int_var(IntVarRepresentation::Binary {
+                cond,
+                v_false,
+                v_true,
+            })
         }
     }
 

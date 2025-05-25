@@ -76,7 +76,7 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
                 range: Range::new(low, high),
             }
         }
-        IntVarRepresentation::Binary(_, _, _) => {
+        IntVarRepresentation::Binary { .. } => {
             todo!();
         }
     }
