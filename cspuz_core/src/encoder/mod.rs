@@ -306,43 +306,12 @@ impl EncodeMap {
         var: IntVar,
     ) {
         assert!(self.int_map[var].is_none());
-        match norm_vars.int_var(var) {
-            IntVarRepresentation::Domain(domain) => {
-                let domain = domain.enumerate();
-                assert_ne!(domain.len(), 0);
-                let lits;
-                #[cfg(feature = "sat-analyzer")]
-                {
-                    let mut tmp = vec![];
-                    for i in 0..domain.len() {
-                        tmp.push(
-                            new_var!(sat, "{}.dir=={}", var.id(), domain[i].get()).as_lit(false),
-                        );
-                    }
-                    lits = tmp;
-                }
-                #[cfg(not(feature = "sat-analyzer"))]
-                {
-                    lits = sat.new_vars_as_lits(domain.len());
-                }
-                sat.add_clause(&lits);
-                for i in 1..lits.len() {
-                    for j in 0..i {
-                        sat.add_clause(&[!lits[i], !lits[j]]);
-                    }
-                }
-
-                self.int_map[var] =
-                    Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
-            }
-            &IntVarRepresentation::Binary(cond, f, t) => {
-                let c = self.convert_bool_lit(norm_vars, sat, cond);
-                let domain = vec![f, t];
-                let lits = vec![!c, c];
-                self.int_map[var] =
-                    Some(Encoding::direct_encoding(DirectEncoding { domain, lits }));
-            }
-        }
+        self.int_map[var] = Some(Encoding::direct_encoding(direct::encode_var_direct(
+            self,
+            norm_vars,
+            sat,
+            norm_vars.int_var(var),
+        )));
     }
 
     #[cfg(not(feature = "csp-extra-constraints"))]

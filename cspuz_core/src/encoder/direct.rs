@@ -1,7 +1,7 @@
-use super::{ClauseSet, DirectEncoding, EncoderEnv, LinearLit};
+use super::{ClauseSet, DirectEncoding, EncodeMap, EncoderEnv, LinearLit};
 use crate::arithmetic::CheckedInt;
-use crate::norm_csp::LinearSum;
-use crate::sat::Lit;
+use crate::norm_csp::{IntVarRepresentation, LinearSum, NormCSPVars};
+use crate::sat::{Lit, SAT};
 
 pub struct LinearInfoForDirectEncoding<'a> {
     pub coef: CheckedInt,
@@ -60,6 +60,47 @@ impl<'a> LinearInfoForDirectEncoding<'a> {
             Some(self.equals(left))
         } else {
             None
+        }
+    }
+}
+
+pub(super) fn encode_var_direct(
+    encode_map: &mut EncodeMap,
+    norm_vars: &NormCSPVars,
+    sat: &mut SAT,
+    repr: &IntVarRepresentation,
+) -> DirectEncoding {
+    match repr {
+        IntVarRepresentation::Domain(domain) => {
+            let domain = domain.enumerate();
+            assert_ne!(domain.len(), 0);
+            let lits;
+            #[cfg(feature = "sat-analyzer")]
+            {
+                let mut tmp = vec![];
+                for i in 0..domain.len() {
+                    tmp.push(new_var!(sat, "{}.dir=={}", var.id(), domain[i].get()).as_lit(false));
+                }
+                lits = tmp;
+            }
+            #[cfg(not(feature = "sat-analyzer"))]
+            {
+                lits = sat.new_vars_as_lits(domain.len());
+            }
+            sat.add_clause(&lits);
+            for i in 1..lits.len() {
+                for j in 0..i {
+                    sat.add_clause(&[!lits[i], !lits[j]]);
+                }
+            }
+
+            DirectEncoding { domain, lits }
+        }
+        &IntVarRepresentation::Binary(cond, f, t) => {
+            let c = encode_map.convert_bool_lit(norm_vars, sat, cond);
+            let domain = vec![f, t];
+            let lits = vec![!c, c];
+            DirectEncoding { domain, lits }
         }
     }
 }
