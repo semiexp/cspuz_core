@@ -1,7 +1,7 @@
-use super::{EncoderEnv, ExtendedLit};
+use super::{EncodeMap, EncoderEnv, ExtendedLit};
 use crate::arithmetic::{CheckedInt, Range};
-use crate::norm_csp::LinearSum;
-use crate::sat::Lit;
+use crate::norm_csp::{IntVarRepresentation, LinearSum, NormCSPVars};
+use crate::sat::{Lit, SAT};
 
 /// Order encoding of an integer variable with domain of `domain`.
 /// `vars[i]` is the logical variable representing (the value of this int variable) >= `domain[i+1]`.
@@ -87,6 +87,46 @@ impl<'a> LinearInfoForOrderEncoding<'a> {
             }
 
             ExtendedLit::Lit(self.at_least(left))
+        }
+    }
+}
+
+pub(super) fn encode_var_order(
+    encode_map: &mut EncodeMap,
+    norm_vars: &NormCSPVars,
+    sat: &mut SAT,
+    repr: &IntVarRepresentation,
+) -> OrderEncoding {
+    match repr {
+        IntVarRepresentation::Domain(domain) => {
+            let domain = domain.enumerate();
+            assert_ne!(domain.len(), 0);
+            let lits;
+            #[cfg(feature = "sat-analyzer")]
+            {
+                let mut tmp = vec![];
+                for i in 0..domain.len() - 1 {
+                    tmp.push(
+                        new_var!(sat, "{}.ord>={}", var.id(), domain[i + 1].get()).as_lit(false),
+                    );
+                }
+                lits = tmp;
+            }
+            #[cfg(not(feature = "sat-analyzer"))]
+            {
+                lits = sat.new_vars_as_lits(domain.len() - 1);
+            }
+            for i in 1..lits.len() {
+                // vars[i] implies vars[i - 1]
+                sat.add_clause(&[!lits[i], lits[i - 1]]);
+            }
+
+            OrderEncoding { domain, lits }
+        }
+        &IntVarRepresentation::Binary(cond, f, t) => {
+            let domain = vec![f, t];
+            let lits = vec![encode_map.convert_bool_lit(norm_vars, sat, cond)];
+            OrderEncoding { domain, lits }
         }
     }
 }

@@ -224,45 +224,12 @@ impl EncodeMap {
         var: IntVar,
     ) {
         assert!(self.int_map[var].is_none());
-        match norm_vars.int_var(var) {
-            IntVarRepresentation::Domain(domain) => {
-                let domain = domain.enumerate();
-                assert_ne!(domain.len(), 0);
-                let lits;
-                #[cfg(feature = "sat-analyzer")]
-                {
-                    let mut tmp = vec![];
-                    for i in 0..domain.len() - 1 {
-                        tmp.push(
-                            new_var!(sat, "{}.ord>={}", var.id(), domain[i + 1].get())
-                                .as_lit(false),
-                        );
-                    }
-                    lits = tmp;
-                }
-                #[cfg(not(feature = "sat-analyzer"))]
-                {
-                    lits = sat.new_vars_as_lits(domain.len() - 1);
-                }
-                for i in 1..lits.len() {
-                    // vars[i] implies vars[i - 1]
-                    sat.add_clause(&[!lits[i], lits[i - 1]]);
-                }
-
-                self.int_map[var] = Some(Encoding::order_encoding(order::OrderEncoding {
-                    domain,
-                    lits,
-                }));
-            }
-            &IntVarRepresentation::Binary(cond, f, t) => {
-                let domain = vec![f, t];
-                let lits = vec![self.convert_bool_lit(norm_vars, sat, cond)];
-                self.int_map[var] = Some(Encoding::order_encoding(order::OrderEncoding {
-                    domain,
-                    lits,
-                }));
-            }
-        }
+        self.int_map[var] = Some(Encoding::order_encoding(order::encode_var_order(
+            self,
+            norm_vars,
+            sat,
+            norm_vars.int_var(var),
+        )));
     }
 
     fn convert_int_var_direct_encoding(
