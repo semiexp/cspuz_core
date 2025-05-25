@@ -1273,8 +1273,6 @@ fn encode_mul_naive(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntVar) {
 // TODO: add tests for ClauseSet
 #[cfg(test)]
 mod tests {
-    use crate::sat::OrderEncodingLinearMode;
-
     use super::super::{
         config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSPVars,
         sat::SAT,
@@ -1285,7 +1283,7 @@ mod tests {
         norm_vars: NormCSPVars,
         sat: SAT,
         map: EncodeMap,
-        config: Config,
+        pub config: Config,
     }
 
     impl EncoderTester {
@@ -1472,30 +1470,6 @@ mod tests {
                 let clause_set = encode_linear_ge_mixed(&tester.env(), &lits[0].sum);
                 tester.add_clause_set(clause_set);
             }
-            tester.run_check(&lits);
-        }
-    }
-
-    #[test]
-    fn test_encode_linear_ge_order_encoding_native() {
-        for mode in [
-            OrderEncodingLinearMode::Cpp,
-            OrderEncodingLinearMode::Rust,
-            OrderEncodingLinearMode::RustOptimized,
-        ] {
-            let mut tester = EncoderTester::new();
-            tester.config.order_encoding_linear_mode = mode;
-
-            let x = tester.add_int_var(Domain::range(0, 5), false);
-            let y = tester.add_int_var(Domain::range(2, 6), false);
-            let z = tester.add_int_var(Domain::range(-1, 4), false);
-
-            let lits = [LinearLit::new(
-                linear_sum(&[(x, 3), (y, -4), (z, 2)], -1),
-                CmpOp::Ge,
-            )];
-            order::encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
-
             tester.run_check(&lits);
         }
     }

@@ -168,3 +168,39 @@ pub(super) fn encode_linear_ge_order_encoding_native(env: &mut EncoderEnv, sum: 
         env.config.order_encoding_linear_mode,
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::sat::OrderEncodingLinearMode;
+
+    use super::*;
+
+    use super::super::tests::{linear_sum, EncoderTester};
+    use crate::arithmetic::CmpOp;
+    use crate::domain::Domain;
+    use crate::norm_csp::LinearLit;
+
+    #[test]
+    fn test_encode_linear_ge_order_encoding_native() {
+        for mode in [
+            OrderEncodingLinearMode::Cpp,
+            OrderEncodingLinearMode::Rust,
+            OrderEncodingLinearMode::RustOptimized,
+        ] {
+            let mut tester = EncoderTester::new();
+            tester.config.order_encoding_linear_mode = mode;
+
+            let x = tester.add_int_var(Domain::range(0, 5), false);
+            let y = tester.add_int_var(Domain::range(2, 6), false);
+            let z = tester.add_int_var(Domain::range(-1, 4), false);
+
+            let lits = [LinearLit::new(
+                linear_sum(&[(x, 3), (y, -4), (z, 2)], -1),
+                CmpOp::Ge,
+            )];
+            encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
+
+            tester.run_check(&lits);
+        }
+    }
+}
