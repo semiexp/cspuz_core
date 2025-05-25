@@ -2,12 +2,76 @@ use std::collections::VecDeque;
 
 use super::{
     encode_linear_eq_direct_from_info, encode_linear_eq_mixed_from_info,
-    encode_linear_ge_mixed_from_info, new_var, ClauseSet, DirectEncoding, EncoderEnv, LinearInfo,
-    LinearInfoForDirectEncoding, LinearInfoForOrderEncoding, LinearLit, OrderEncoding,
+    encode_linear_ge_mixed_from_info, new_var, new_vars_as_lits, ClauseSet, DirectEncoding,
+    EncoderEnv, LinearInfo, LinearInfoForDirectEncoding, LinearInfoForOrderEncoding, LinearLit,
+    LogEncoding, OrderEncoding,
 };
-use crate::arithmetic::{CheckedInt, CmpOp};
+use crate::arithmetic::{CheckedInt, CmpOp, Range};
 use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum};
-use crate::sat::Lit;
+use crate::sat::{Lit, SAT};
+
+pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
+    match repr {
+        IntVarRepresentation::Domain(domain) => {
+            let low = domain.lower_bound_checked();
+            let high = domain.upper_bound_checked();
+            if low < 0 {
+                todo!("negative values not supported in log encoding");
+            }
+            let n_bits = (32 - high.get().leading_zeros()) as usize;
+            let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
+
+            for i in 0..n_bits {
+                if ((low.get() >> i) & 1) != 0 {
+                    let mut clause = vec![lits[i]];
+                    for j in (i + 1)..n_bits {
+                        clause.push(if (low.get() >> j) & 1 != 0 {
+                            !lits[j]
+                        } else {
+                            lits[j]
+                        });
+                    }
+                    sat.add_clause(&clause);
+                }
+            }
+
+            for i in 0..n_bits {
+                if (high.get() >> i) & 1 == 0 {
+                    let mut clause = vec![!lits[i]];
+                    for j in (i + 1)..n_bits {
+                        clause.push(if (high.get() >> j) & 1 != 0 {
+                            !lits[j]
+                        } else {
+                            lits[j]
+                        });
+                    }
+                    sat.add_clause(&clause);
+                }
+            }
+
+            let domain = domain.enumerate();
+            for i in 1..domain.len() {
+                let gap_low = domain[i - 1].get() + 1;
+                let gap_high = domain[i].get();
+                for n in gap_low..gap_high {
+                    let mut clause = vec![];
+                    for j in 0..n_bits {
+                        clause.push(if (n >> j) & 1 != 0 { !lits[j] } else { lits[j] });
+                    }
+                    sat.add_clause(&clause);
+                }
+            }
+
+            LogEncoding {
+                lits,
+                range: Range::new(low, high),
+            }
+        }
+        IntVarRepresentation::Binary(_, _, _) => {
+            todo!();
+        }
+    }
+}
 
 pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<LinearLit> {
     assert!(lit.op == CmpOp::Ge || lit.op == CmpOp::Eq || lit.op == CmpOp::Ne);

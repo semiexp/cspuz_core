@@ -201,8 +201,6 @@ macro_rules! new_var {
     };
 }
 
-use new_var;
-
 #[allow(unused)]
 #[cfg(feature = "sat-analyzer")]
 macro_rules! new_vars_as_lits {
@@ -221,6 +219,9 @@ macro_rules! new_vars_as_lits {
         $sat.new_vars_as_lits($n)
     };
 }
+
+use new_var;
+use new_vars_as_lits;
 
 pub struct EncodeMap {
     bool_map: ConvertMap<BoolVar, Option<Lit>>, // mapped to Lit rather than Var so that further optimization can be done
@@ -356,66 +357,10 @@ impl EncodeMap {
         var: IntVar,
     ) {
         assert!(self.int_map[var].is_none());
-        match norm_vars.int_var(var) {
-            IntVarRepresentation::Domain(domain) => {
-                let low = domain.lower_bound_checked();
-                let high = domain.upper_bound_checked();
-                if low < 0 {
-                    todo!("negative values not supported in log encoding");
-                }
-                let n_bits = (32 - high.get().leading_zeros()) as usize;
-                let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
-
-                for i in 0..n_bits {
-                    if ((low.get() >> i) & 1) != 0 {
-                        let mut clause = vec![lits[i]];
-                        for j in (i + 1)..n_bits {
-                            clause.push(if (low.get() >> j) & 1 != 0 {
-                                !lits[j]
-                            } else {
-                                lits[j]
-                            });
-                        }
-                        sat.add_clause(&clause);
-                    }
-                }
-
-                for i in 0..n_bits {
-                    if (high.get() >> i) & 1 == 0 {
-                        let mut clause = vec![!lits[i]];
-                        for j in (i + 1)..n_bits {
-                            clause.push(if (high.get() >> j) & 1 != 0 {
-                                !lits[j]
-                            } else {
-                                lits[j]
-                            });
-                        }
-                        sat.add_clause(&clause);
-                    }
-                }
-
-                let domain = domain.enumerate();
-                for i in 1..domain.len() {
-                    let gap_low = domain[i - 1].get() + 1;
-                    let gap_high = domain[i].get();
-                    for n in gap_low..gap_high {
-                        let mut clause = vec![];
-                        for j in 0..n_bits {
-                            clause.push(if (n >> j) & 1 != 0 { !lits[j] } else { lits[j] });
-                        }
-                        sat.add_clause(&clause);
-                    }
-                }
-
-                self.int_map[var] = Some(Encoding::log_encoding(LogEncoding {
-                    lits,
-                    range: Range::new(low, high),
-                }));
-            }
-            IntVarRepresentation::Binary(_, _, _) => {
-                todo!();
-            }
-        }
+        self.int_map[var] = Some(Encoding::log_encoding(log::encode_var_log(
+            sat,
+            norm_vars.int_var(var),
+        )));
     }
 
     pub fn get_bool_var(&self, var: BoolVar) -> Option<Lit> {
