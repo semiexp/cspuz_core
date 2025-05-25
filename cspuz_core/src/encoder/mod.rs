@@ -75,21 +75,6 @@ impl OrderEncoding {
     }
 }
 
-struct DirectEncoding {
-    domain: Vec<CheckedInt>,
-    lits: Vec<Lit>,
-}
-
-impl DirectEncoding {
-    fn range(&self) -> Range {
-        if self.domain.is_empty() {
-            Range::empty()
-        } else {
-            Range::new(self.domain[0], self.domain[self.domain.len() - 1])
-        }
-    }
-}
-
 /// Representation of a log-encoded variable.
 ///
 /// The value of the variable equals lits[0] * 2^0 + lits[1] * 2^1 + ... + lits[n-1] * 2^(n-1) + offset.
@@ -101,7 +86,7 @@ struct LogEncoding {
 
 struct Encoding {
     order_encoding: Option<OrderEncoding>,
-    direct_encoding: Option<DirectEncoding>,
+    direct_encoding: Option<direct::DirectEncoding>,
     log_encoding: Option<LogEncoding>,
 }
 
@@ -114,7 +99,7 @@ impl Encoding {
         }
     }
 
-    fn direct_encoding(enc: DirectEncoding) -> Encoding {
+    fn direct_encoding(enc: direct::DirectEncoding) -> Encoding {
         Encoding {
             order_encoding: None,
             direct_encoding: Some(enc),
@@ -135,7 +120,7 @@ impl Encoding {
         self.order_encoding.as_ref().unwrap()
     }
 
-    fn as_direct_encoding(&self) -> &DirectEncoding {
+    fn as_direct_encoding(&self) -> &direct::DirectEncoding {
         self.direct_encoding.as_ref().unwrap()
     }
 

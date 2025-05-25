@@ -1,7 +1,22 @@
-use super::{ClauseSet, DirectEncoding, EncodeMap, EncoderEnv, LinearLit};
-use crate::arithmetic::CheckedInt;
+use super::{ClauseSet, EncodeMap, EncoderEnv, LinearLit};
+use crate::arithmetic::{CheckedInt, Range};
 use crate::norm_csp::{IntVarRepresentation, LinearSum, NormCSPVars};
 use crate::sat::{Lit, SAT};
+
+pub(super) struct DirectEncoding {
+    pub domain: Vec<CheckedInt>,
+    pub lits: Vec<Lit>,
+}
+
+impl DirectEncoding {
+    pub fn range(&self) -> Range {
+        if self.domain.is_empty() {
+            Range::empty()
+        } else {
+            Range::new(self.domain[0], self.domain[self.domain.len() - 1])
+        }
+    }
+}
 
 pub struct LinearInfoForDirectEncoding<'a> {
     pub coef: CheckedInt,
