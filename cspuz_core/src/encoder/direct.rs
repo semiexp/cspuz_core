@@ -1,7 +1,68 @@
-use super::{ClauseSet, EncoderEnv, LinearInfoForDirectEncoding, LinearLit};
+use super::{ClauseSet, DirectEncoding, EncoderEnv, LinearLit};
 use crate::arithmetic::CheckedInt;
 use crate::norm_csp::LinearSum;
 use crate::sat::Lit;
+
+pub struct LinearInfoForDirectEncoding<'a> {
+    pub coef: CheckedInt,
+    pub encoding: &'a DirectEncoding,
+}
+
+impl<'a> LinearInfoForDirectEncoding<'a> {
+    pub fn new(coef: CheckedInt, encoding: &'a DirectEncoding) -> LinearInfoForDirectEncoding<'a> {
+        LinearInfoForDirectEncoding { coef, encoding }
+    }
+
+    pub fn domain_size(&self) -> usize {
+        self.encoding.domain.len()
+    }
+
+    pub fn domain(&self, j: usize) -> CheckedInt {
+        if self.coef > 0 {
+            self.encoding.domain[j] * self.coef
+        } else {
+            self.encoding.domain[self.encoding.domain.len() - 1 - j] * self.coef
+        }
+    }
+
+    pub fn domain_min(&self) -> CheckedInt {
+        self.domain(0)
+    }
+
+    pub fn domain_max(&self) -> CheckedInt {
+        self.domain(self.domain_size() - 1)
+    }
+
+    // The literal asserting that (the value) equals `domain(j)`.
+    pub fn equals(&self, j: usize) -> Lit {
+        if self.coef > 0 {
+            self.encoding.lits[j]
+        } else {
+            self.encoding.lits[self.domain_size() - 1 - j]
+        }
+    }
+
+    /// The literal asserting (x == val), or `None` if `val` is not in the domain.
+    fn equals_val(&self, val: CheckedInt) -> Option<Lit> {
+        let mut left = 0;
+        let mut right = self.domain_size() - 1;
+
+        while left < right {
+            let mid = (left + right) / 2;
+            if val <= self.domain(mid) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        if self.domain(left) == val {
+            Some(self.equals(left))
+        } else {
+            None
+        }
+    }
+}
 
 // Return Some(clause) where `clause` encodes `lit` (the truth value of `clause` is equal to that of `lit`),
 // or None when `lit` always holds.

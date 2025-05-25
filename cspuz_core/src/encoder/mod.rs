@@ -1144,70 +1144,9 @@ impl<'a> LinearInfoForOrderEncoding<'a> {
     }
 }
 
-struct LinearInfoForDirectEncoding<'a> {
-    coef: CheckedInt,
-    encoding: &'a DirectEncoding,
-}
-
-impl<'a> LinearInfoForDirectEncoding<'a> {
-    pub fn new(coef: CheckedInt, encoding: &'a DirectEncoding) -> LinearInfoForDirectEncoding<'a> {
-        LinearInfoForDirectEncoding { coef, encoding }
-    }
-
-    fn domain_size(&self) -> usize {
-        self.encoding.domain.len()
-    }
-
-    fn domain(&self, j: usize) -> CheckedInt {
-        if self.coef > 0 {
-            self.encoding.domain[j] * self.coef
-        } else {
-            self.encoding.domain[self.encoding.domain.len() - 1 - j] * self.coef
-        }
-    }
-
-    fn domain_min(&self) -> CheckedInt {
-        self.domain(0)
-    }
-
-    fn domain_max(&self) -> CheckedInt {
-        self.domain(self.domain_size() - 1)
-    }
-
-    // The literal asserting that (the value) equals `domain(j)`.
-    fn equals(&self, j: usize) -> Lit {
-        if self.coef > 0 {
-            self.encoding.lits[j]
-        } else {
-            self.encoding.lits[self.domain_size() - 1 - j]
-        }
-    }
-
-    /// The literal asserting (x == val), or `None` if `val` is not in the domain.
-    fn equals_val(&self, val: CheckedInt) -> Option<Lit> {
-        let mut left = 0;
-        let mut right = self.domain_size() - 1;
-
-        while left < right {
-            let mid = (left + right) / 2;
-            if val <= self.domain(mid) {
-                right = mid;
-            } else {
-                left = mid + 1;
-            }
-        }
-
-        if self.domain(left) == val {
-            Some(self.equals(left))
-        } else {
-            None
-        }
-    }
-}
-
 enum LinearInfo<'a> {
     Order(LinearInfoForOrderEncoding<'a>),
-    Direct(LinearInfoForDirectEncoding<'a>),
+    Direct(direct::LinearInfoForDirectEncoding<'a>),
 }
 
 /// Given a LinearLit `lit`, compute a set of LinearLit's whose conjunction is equivalent to `lit`.
@@ -1381,10 +1320,9 @@ fn encode_linear_ge_mixed(env: &EncoderEnv, sum: &LinearSum) -> ClauseSet {
                 order_encoding,
             )));
         } else if let Some(direct_encoding) = &encoding.direct_encoding {
-            info.push(LinearInfo::Direct(LinearInfoForDirectEncoding::new(
-                coef,
-                direct_encoding,
-            )));
+            info.push(LinearInfo::Direct(
+                direct::LinearInfoForDirectEncoding::new(coef, direct_encoding),
+            ));
         }
     }
 
