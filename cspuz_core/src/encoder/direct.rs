@@ -112,6 +112,7 @@ pub(super) fn encode_var_direct(
             DirectEncoding { domain, lits }
         }
         &IntVarRepresentation::Binary(cond, f, t) => {
+            assert!(f < t);
             let c = encode_map.convert_bool_lit(norm_vars, sat, cond);
             let domain = vec![f, t];
             let lits = vec![!c, c];

@@ -124,6 +124,7 @@ pub(super) fn encode_var_order(
             OrderEncoding { domain, lits }
         }
         &IntVarRepresentation::Binary(cond, f, t) => {
+            assert!(f < t);
             let domain = vec![f, t];
             let lits = vec![encode_map.convert_bool_lit(norm_vars, sat, cond)];
             OrderEncoding { domain, lits }
