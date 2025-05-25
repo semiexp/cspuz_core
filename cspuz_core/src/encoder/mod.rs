@@ -812,8 +812,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
     // ClauseSet: list of clauses whose conjunction (&&) is equivalent to a linear literal
     // Vec<ClauseSet>: the above for each linear literal
     let mut encoded_lits: Vec<ClauseSet> = vec![];
-    let maybe_order_encoding_native_applicable =
-        simplified_linears.len() == 1 && bool_lits.is_empty();
+    let allow_order_encoding_native = simplified_linears.len() == 1 && bool_lits.is_empty();
     let mut is_order_encoding_native_applied = false;
 
     for linear_lits in simplified_linears {
@@ -821,7 +820,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
         for linear_lit in linear_lits {
             match suggest_encoder(env, &linear_lit) {
                 EncoderKind::MixedGe => {
-                    if maybe_order_encoding_native_applicable
+                    if allow_order_encoding_native
                         && order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum)
                     {
                         is_order_encoding_native_applied = true;
