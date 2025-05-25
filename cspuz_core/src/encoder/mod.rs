@@ -823,6 +823,8 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
                     if allow_order_encoding_native
                         && order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum)
                     {
+                        // Native constraints will be directly added to SAT.
+                        // This is safe because the constraint is a conjunction of linear literals
                         is_order_encoding_native_applied = true;
                         order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
                     } else {
