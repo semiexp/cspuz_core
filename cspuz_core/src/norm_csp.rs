@@ -193,8 +193,11 @@ impl IntVarRepresentation {
             IntVarRepresentation::Binary {
                 cond: _,
                 v_false,
-                v_true: _,
-            } => *v_false,
+                v_true,
+            } => {
+                assert!(v_false < v_true);
+                *v_false
+            }
         }
     }
 
@@ -203,9 +206,12 @@ impl IntVarRepresentation {
             IntVarRepresentation::Domain(domain) => domain.upper_bound_checked(),
             IntVarRepresentation::Binary {
                 cond: _,
-                v_false: _,
+                v_false,
                 v_true,
-            } => *v_true,
+            } => {
+                assert!(v_false < v_true);
+                *v_true
+            }
         }
     }
 }
