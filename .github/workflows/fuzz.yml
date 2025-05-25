@@ -1,0 +1,21 @@
+name: Run tests
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 15 * * FRI"  # weekly test: every Saturday 00:00 JST
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-x86-fuzz:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup environment
+      run: rustup update
+    - name: Run fuzz tests
+      run: cargo test --release test_integration_fuzz_long -- --ignored
