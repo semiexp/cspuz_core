@@ -60,10 +60,16 @@ impl Index<usize> for ClauseSet {
     }
 }
 
+#[cfg(feature = "csp-extra-constraints")]
+use log::LogEncoding;
+
+#[cfg(not(feature = "csp-extra-constraints"))]
+struct LogEncoding;
+
 struct Encoding {
     order_encoding: Option<order::OrderEncoding>,
     direct_encoding: Option<direct::DirectEncoding>,
-    log_encoding: Option<log::LogEncoding>,
+    log_encoding: Option<LogEncoding>,
 }
 
 impl Encoding {
@@ -84,7 +90,7 @@ impl Encoding {
     }
 
     #[allow(unused)]
-    fn log_encoding(enc: log::LogEncoding) -> Encoding {
+    fn log_encoding(enc: LogEncoding) -> Encoding {
         Encoding {
             order_encoding: None,
             direct_encoding: None,
@@ -108,12 +114,21 @@ impl Encoding {
         self.order_encoding.is_some() || self.direct_encoding.is_some()
     }
     fn range(&self) -> Range {
+        #[allow(unused)]
         if let Some(order_encoding) = &self.order_encoding {
             order_encoding.range()
         } else if let Some(direct_encoding) = &self.direct_encoding {
             direct_encoding.range()
         } else if let Some(log_encoding) = &self.log_encoding {
-            log_encoding.range
+            #[cfg(feature = "csp-extra-constraints")]
+            {
+                log_encoding.range
+            }
+
+            #[cfg(not(feature = "csp-extra-constraints"))]
+            {
+                panic!();
+            }
         } else {
             panic!();
         }
@@ -128,6 +143,8 @@ impl Encoding {
         if let Some(direct_encoding) = &self.direct_encoding {
             ret.extend_from_slice(&direct_encoding.lits);
         }
+
+        #[cfg(feature = "csp-extra-constraints")]
         if let Some(log_encoding) = &self.log_encoding {
             ret.extend_from_slice(&log_encoding.lits);
         }
@@ -183,6 +200,7 @@ macro_rules! new_vars_as_lits {
 }
 
 use new_var;
+#[allow(unused)]
 use new_vars_as_lits;
 
 pub struct EncodeMap {
@@ -285,6 +303,7 @@ impl EncodeMap {
         }
         let encoding = self.int_map[var].as_ref().unwrap();
 
+        #[allow(unused)]
         if let Some(encoding) = &encoding.order_encoding {
             // Find the number of true value in `encoding.vars`
             let mut left = 0;
@@ -315,13 +334,21 @@ impl EncodeMap {
             );
             ret
         } else if let Some(encoding) = &encoding.log_encoding {
-            let mut ret = 0;
-            for i in 0..encoding.lits.len() {
-                if model.assignment_lit(encoding.lits[i]) {
-                    ret |= 1 << i;
+            #[cfg(feature = "csp-extra-constraints")]
+            {
+                let mut ret = 0;
+                for i in 0..encoding.lits.len() {
+                    if model.assignment_lit(encoding.lits[i]) {
+                        ret |= 1 << i;
+                    }
                 }
+                Some(CheckedInt::new(ret))
             }
-            Some(CheckedInt::new(ret))
+
+            #[cfg(not(feature = "csp-extra-constraints"))]
+            {
+                panic!("feature not enabled");
+            }
         } else {
             panic!();
         }
