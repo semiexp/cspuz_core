@@ -1,7 +1,6 @@
 name: Run tests
 
 on:
-  pull_request: {}  # delete this later
   workflow_dispatch: {}
   schedule:
     - cron: "0 15 * * FRI"  # weekly test: every Saturday 00:00 JST
