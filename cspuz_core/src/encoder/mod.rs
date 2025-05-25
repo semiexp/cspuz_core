@@ -786,7 +786,7 @@ fn encode_constraint(env: &mut EncoderEnv, constr: Constraint) {
             match suggest_encoder(env, &linear_lit) {
                 EncoderKind::MixedGe => {
                     assert_eq!(linear_lit.op, CmpOp::Ge);
-                    if is_ge_order_encoding_native_applicable(env, &linear_lit.sum) {
+                    if order::is_ge_order_encoding_native_applicable(env, &linear_lit.sum) {
                         order::encode_linear_ge_order_encoding_native(env, &linear_lit.sum);
                     } else {
                         let encoded = encode_linear_ge_mixed(env, &linear_lit.sum);
@@ -1073,32 +1073,6 @@ fn decompose_linear_lit(env: &mut EncoderEnv, lit: &LinearLit) -> Option<Vec<Lin
     }
     ret.push(LinearLit::new(sum, lit.op));
     Some(ret)
-}
-
-fn is_ge_order_encoding_native_applicable(env: &EncoderEnv, sum: &LinearSum) -> bool {
-    for (&var, _) in sum.iter() {
-        if env.map.int_map[var]
-            .as_ref()
-            .unwrap()
-            .order_encoding
-            .is_none()
-        {
-            return false;
-        }
-    }
-    if sum.len() > env.config.native_linear_encoding_terms {
-        return false;
-    }
-    let mut domain_product = 1usize;
-    for (&var, _) in sum.iter() {
-        domain_product *= env.map.int_map[var]
-            .as_ref()
-            .unwrap()
-            .as_order_encoding()
-            .domain
-            .len();
-    }
-    domain_product >= env.config.native_linear_encoding_domain_product_threshold
 }
 
 fn encode_linear_ge_mixed(env: &EncoderEnv, sum: &LinearSum) -> ClauseSet {
