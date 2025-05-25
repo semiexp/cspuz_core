@@ -1763,4 +1763,32 @@ mod tests {
 
         tester.check();
     }
+
+    #[test]
+    fn test_integration_binary_var1() {
+        let mut tester = IntegrationTester::new();
+
+        let x = tester.new_bool_var();
+        let a = x.expr().ite(IntExpr::Const(1), IntExpr::Const(2));
+
+        let y = tester.new_bool_var();
+        let b = y.expr().ite(IntExpr::Const(2), IntExpr::Const(1));
+        tester.add_expr(a.eq(b));
+
+        tester.check();
+    }
+
+    #[test]
+    fn test_integration_binary_var2() {
+        let mut tester = IntegrationTester::new();
+
+        let x = tester.new_bool_var();
+        let a = x.expr().ite(IntExpr::Const(1), IntExpr::Const(2));
+
+        let y = tester.new_bool_var();
+        let b = y.expr().ite(IntExpr::Const(2), IntExpr::Const(2));
+        tester.add_expr(a.eq(b));
+
+        tester.check();
+    }
 }

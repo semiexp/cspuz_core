@@ -148,8 +148,9 @@ pub(super) enum IntVarRepresentation {
     /// A variable which takes one of two values, depending on the value of `cond`.
     /// If `cond` is true, the variable takes `v_true`, otherwise it takes `v_false`.
     ///
-    /// Preconditions: `v_false` < `v_true`. If `v_false` > `v_true`, the values should be swapped
-    /// and `cond` negated.
+    /// Preconditions: `v_false` < `v_true`.
+    /// - If `v_false` > `v_true`, the values should be swapped and `cond` negated.
+    /// - `v_false` == `v_true` is not allowed. Instead, use a domain with a single value.
     Binary {
         cond: BoolLit,
         v_false: CheckedInt,
@@ -412,7 +413,6 @@ impl NormCSP {
         v_true: CheckedInt,
         v_false: CheckedInt,
     ) -> IntVar {
-        assert_ne!(v_true, v_false);
         if v_true < v_false {
             // If v_true < v_false, we swap the values and negate the condition so that
             // v_false < v_true holds.
@@ -421,6 +421,12 @@ impl NormCSP {
                 v_false: v_true,
                 v_true: v_false,
             })
+        } else if v_true == v_false {
+            // If v_true == v_false, we can use a domain with a single value.
+            self.vars
+                .new_int_var(IntVarRepresentation::Domain(Domain::range_from_checked(
+                    v_true, v_true,
+                )))
         } else {
             self.vars.new_int_var(IntVarRepresentation::Binary {
                 cond,
