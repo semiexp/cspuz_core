@@ -149,6 +149,7 @@ puzzle_list!(puzz_link,
     (tapa, ["tapa"], "Tapa", "Tapa"),
     (timebomb, ["timebomb"], "Time Bomb", "時限爆弾"),
     (tontonbeya, ["tontonbeya"], "Tontonbeya", "とんとんべや"),
+    (yajikazu, ["yajikazu"], "Yajisan-Kazusan", "やじさんかずさん"),
     (yajilin, ["yajilin", "yajirin"], "Yajilin", "ヤジリン"),
     (yajilin_regions, ["yajilin-regions"], "Yajilin (Regions)", "ヘヤジリン"),
 );
