@@ -12,5 +12,4 @@ generator = ["rand"]
 
 [dependencies]
 cspuz_core = { path = "../cspuz_core", default-features = false }
-cspuz_rs_macro = { path = "../cspuz_rs_macro" }
 rand = { version = "0.8.5", optional = true }
