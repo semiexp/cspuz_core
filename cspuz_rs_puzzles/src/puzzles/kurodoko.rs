@@ -19,6 +19,7 @@ pub fn solve_kurodoko(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
+                solver.add_expr(!is_black.at((y, x)));
                 if n < 0 {
                     continue;
                 }
