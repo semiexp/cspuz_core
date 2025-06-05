@@ -22,7 +22,7 @@ SOFTWARE.
 
 =============================================================================
 
-Currently, EnigmaCSP uses Glucose SAT solver as the only backend.
+Currently, cspuz_core uses Glucose SAT solver as a backend.
 When compiled with it, the following licence for Glucose applies.
 
 =============================================================================
