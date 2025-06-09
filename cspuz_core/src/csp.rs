@@ -1029,4 +1029,19 @@ mod tests {
             assert!(csp.vars[y].is_feasible(true));
         }
     }
+
+    #[test]
+    fn test_vars_iter() {
+        let mut csp = CSP::new();
+
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+        let z = csp.new_bool_var();
+
+        let a = csp.new_int_var(Domain::range(0, 5));
+        let b = csp.new_int_var(Domain::range(1, 10));
+
+        assert_eq!(csp.vars.bool_vars_iter().collect::<Vec<_>>(), vec![x, y, z]);
+        assert_eq!(csp.vars.int_vars_iter().collect::<Vec<_>>(), vec![a, b]);
+    }
 }
