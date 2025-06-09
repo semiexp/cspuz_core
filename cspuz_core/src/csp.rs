@@ -595,6 +595,8 @@ impl Assignment {
 
 #[cfg(test)]
 mod tests {
+    use crate::propagators::graph_division::GraphDivisionOptions;
+
     use super::*;
 
     #[test]
@@ -1063,5 +1065,118 @@ mod tests {
         assert_eq!(csp.vars[b].domain, Domain::range(1, 10));
         csp.vars[b].domain.refine_lower_bound(CheckedInt::new(3));
         assert_eq!(csp.vars[b].domain, Domain::range(3, 10));
+    }
+
+    #[test]
+    fn test_csp_constant_folding() {
+        let mut csp = CSP::new();
+
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+        let a = csp.new_int_var(Domain::range(0, 5));
+
+        csp.add_constraint(Stmt::Expr(x.expr() | BoolExpr::Const(false)));
+        csp.add_constraint(Stmt::AllDifferent(vec![a.expr(), IntExpr::Linear(vec![])]));
+        csp.add_constraint(Stmt::ActiveVerticesConnected(
+            vec![x.expr() | BoolExpr::Const(false), y.expr()],
+            vec![(0, 1)],
+        ));
+        csp.add_constraint(Stmt::Circuit(vec![a.expr(), IntExpr::Linear(vec![])]));
+        csp.add_constraint(Stmt::ExtensionSupports(
+            vec![a.expr(), IntExpr::Linear(vec![])],
+            vec![],
+        ));
+        csp.add_constraint(Stmt::GraphDivision(
+            vec![Some(a.expr()), Some(IntExpr::Linear(vec![])), None],
+            vec![(0, 1)],
+            vec![x.expr() | BoolExpr::Const(false)],
+            GraphDivisionOptions::default(),
+        ));
+
+        csp.apply_constant_folding();
+
+        assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &x.expr()));
+        assert!(
+            matches!(&csp.constraints[1], Stmt::AllDifferent(e) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[2], Stmt::ActiveVerticesConnected(e, _) if e == &[x.expr(), y.expr()])
+        );
+        assert!(
+            matches!(&csp.constraints[3], Stmt::Circuit(e) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[4], Stmt::ExtensionSupports(e, _) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[5], Stmt::GraphDivision(s, _, e, _) if s == &[Some(a.expr()), Some(IntExpr::Const(0)), None] && e == &[x.expr()])
+        );
+    }
+
+    #[test]
+    fn test_csp_optimize() {
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+            let z = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() | y.expr()));
+            csp.add_constraint(Stmt::Expr(!y.expr() | z.expr()));
+            csp.add_constraint(Stmt::Expr(!z.expr()));
+
+            csp.optimize(false, true);
+
+            assert!(!csp.is_inconsistent());
+            assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &(x.expr() | y.expr())));
+            assert!(matches!(&csp.constraints[1], Stmt::Expr(e) if e == &(!y.expr() | z.expr())));
+            assert!(matches!(&csp.constraints[2], Stmt::Expr(e) if e == &(!z.expr())));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+            let z = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() | y.expr()));
+            csp.add_constraint(Stmt::Expr(!y.expr() | z.expr()));
+            csp.add_constraint(Stmt::Expr(!z.expr()));
+
+            csp.optimize(true, true);
+
+            assert!(!csp.is_inconsistent());
+            assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(&csp.constraints[1], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(&csp.constraints[2], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(
+                csp.get_bool_var_status(x),
+                BoolVarStatus::Fixed(true)
+            ));
+            assert!(matches!(
+                csp.get_bool_var_status(y),
+                BoolVarStatus::Fixed(false)
+            ));
+            assert!(matches!(
+                csp.get_bool_var_status(z),
+                BoolVarStatus::Fixed(false)
+            ));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() & y.expr()));
+            csp.add_constraint(Stmt::Expr(!x.expr() | !y.expr()));
+
+            csp.optimize(true, true);
+
+            assert!(csp.is_inconsistent());
+        }
     }
 }
