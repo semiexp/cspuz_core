@@ -600,6 +600,19 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_csp() {
+        let mut csp = CSP::new();
+
+        let n = csp.new_int_var_from_list(vec![
+            CheckedInt::new(4),
+            CheckedInt::new(2),
+            CheckedInt::new(3),
+            CheckedInt::new(2),
+        ]);
+        assert_eq!(csp.vars[n].domain, Domain::enumerative(vec![2, 3, 4]));
+    }
+
+    #[test]
     fn test_constant_folding_bool() {
         let mut csp = CSP::new();
 
@@ -1178,5 +1191,190 @@ mod tests {
 
             assert!(csp.is_inconsistent());
         }
+    }
+
+    #[test]
+    fn test_assignment() {
+        let mut assignment = Assignment::new();
+
+        let x = BoolVar::new(0);
+        let y = BoolVar::new(1);
+        let z = BoolVar::new(2);
+        let a = IntVar::new(0);
+        let b = IntVar::new(1);
+        let c = IntVar::new(2);
+
+        assignment.set_bool(x, true);
+        assignment.set_bool(y, false);
+        assignment.set_int(a, 42);
+        assignment.set_int(b, 100);
+
+        assert_eq!(
+            assignment.bool_iter().collect::<Vec<_>>(),
+            vec![(&x, &true), (&y, &false)]
+        );
+        assert_eq!(
+            assignment.int_iter().collect::<Vec<_>>(),
+            vec![(&a, &42), (&b, &100)]
+        );
+
+        assert_eq!(assignment.get_bool(x), Some(true));
+        assert_eq!(assignment.get_bool(y), Some(false));
+        assert_eq!(assignment.get_bool(z), None);
+
+        assert_eq!(assignment.get_int(a), Some(42));
+        assert_eq!(assignment.get_int(b), Some(100));
+        assert_eq!(assignment.get_int(c), None);
+
+        assert_eq!(assignment.remove_bool(x), Some(true));
+        assert_eq!(assignment.remove_bool(x), None);
+        assert_eq!(assignment.get_bool(x), None);
+
+        assert_eq!(assignment.remove_int(a), Some(42));
+        assert_eq!(assignment.remove_int(a), None);
+        assert_eq!(assignment.get_int(a), None);
+    }
+
+    #[test]
+    fn test_assignment_eval() {
+        let mut assignment = Assignment::new();
+
+        let t = BoolVar::new(0);
+        let f = BoolVar::new(1);
+        let a = IntVar::new(0);
+        let b = IntVar::new(1);
+
+        assignment.set_bool(t, true);
+        assignment.set_bool(f, false);
+        assignment.set_int(a, 42);
+        assignment.set_int(b, 100);
+
+        assert_eq!(assignment.eval_bool_expr(&BoolExpr::Const(true)), true);
+
+        assert_eq!(assignment.eval_bool_expr(&t.expr()), true);
+        assert_eq!(assignment.eval_bool_expr(&f.expr()), false);
+        assert_eq!(assignment.eval_int_expr(&a.expr()), 42);
+        assert_eq!(assignment.eval_int_expr(&b.expr()), 100);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() & t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() & f.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() & t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() & f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() | t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() | f.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() | t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() | f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(!t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(!f.expr())), true);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() ^ t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() ^ f.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() ^ t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() ^ f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().iff(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().iff(f.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().iff(t.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().iff(f.expr()))), true);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().imp(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().imp(f.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().imp(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().imp(f.expr()))), true);
+
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Eq,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Ne,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Le,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Lt,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Ge,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Gt,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+
+        assert_eq!(assignment.eval_int_expr(&IntExpr::Const(42)), 42);
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Linear(vec![
+                (Box::new(a.expr()), 2),
+                (Box::new(b.expr()), 3)
+            ])),
+            2 * 42 + 3 * 100
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::If(
+                Box::new(t.expr()),
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            42
+        );
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::If(
+                Box::new(f.expr()),
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            100
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Abs(Box::new(a.expr()))),
+            42
+        );
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Abs(Box::new(IntExpr::Linear(vec![(
+                Box::new(a.expr()),
+                -1
+            )])))),
+            42
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Mul(Box::new(a.expr()), Box::new(b.expr()))),
+            42 * 100
+        );
     }
 }
