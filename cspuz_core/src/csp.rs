@@ -595,40 +595,786 @@ impl Assignment {
 
 #[cfg(test)]
 mod tests {
+    use crate::propagators::graph_division::GraphDivisionOptions;
+
     use super::*;
 
     #[test]
-    fn test_constant_folding1() {
+    fn test_csp() {
         let mut csp = CSP::new();
 
-        let x = csp.new_bool_var();
-        let y = csp.new_bool_var();
-        let z = csp.new_bool_var();
-
-        let mut expr = (x.expr() ^ y.expr()) | (y.expr().imp(z.expr()));
-        csp.vars[y].set_infeasible(false); // y := true
-
-        csp.vars.constant_folding_bool(&mut expr);
-        assert_eq!(expr, !x.expr() | z.expr());
+        let n = csp.new_int_var_from_list(vec![
+            CheckedInt::new(4),
+            CheckedInt::new(2),
+            CheckedInt::new(3),
+            CheckedInt::new(2),
+        ]);
+        assert_eq!(csp.vars[n].domain, Domain::enumerative(vec![2, 3, 4]));
     }
 
     #[test]
-    fn test_constant_prop1() {
+    fn test_constant_folding_bool() {
         let mut csp = CSP::new();
 
-        let w = csp.new_bool_var();
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+        let t = csp.new_bool_var();
+        let f = csp.new_bool_var();
+
+        csp.vars[t].set_infeasible(false); // a := true
+        csp.vars[f].set_infeasible(true); // b := false
+
+        // and
+        let mut expr = x.expr() & y.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr() & y.expr());
+
+        let mut expr = x.expr() & t.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = t.expr() & x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = x.expr() & f.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        let mut expr = f.expr() & x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        let mut expr = BoolExpr::Const(true) & BoolExpr::Const(true);
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        let mut expr = BoolExpr::Const(true) & BoolExpr::Const(false);
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        // or
+        let mut expr = x.expr() | y.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr() | y.expr());
+
+        let mut expr = x.expr() | t.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        let mut expr = t.expr() | x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        let mut expr = x.expr() | f.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = f.expr() | x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = BoolExpr::Const(false) | BoolExpr::Const(false);
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        let mut expr = BoolExpr::Const(true) | BoolExpr::Const(false);
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        // not
+        let mut expr = !x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = !t.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        // xor
+        let mut expr = x.expr() ^ y.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr() ^ y.expr());
+
+        let mut expr = x.expr() ^ t.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = t.expr() ^ x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = x.expr() ^ f.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = f.expr() ^ x.expr();
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = BoolExpr::Const(true) ^ BoolExpr::Const(true);
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        // iff
+        let mut expr = x.expr().iff(y.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr().iff(y.expr()));
+
+        let mut expr = x.expr().iff(t.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = t.expr().iff(x.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = x.expr().iff(f.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = f.expr().iff(x.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = BoolExpr::Const(true).iff(BoolExpr::Const(true));
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        // imp
+        let mut expr = x.expr().imp(y.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr().imp(y.expr()));
+
+        let mut expr = x.expr().imp(t.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        let mut expr = t.expr().imp(x.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, x.expr());
+
+        let mut expr = x.expr().imp(f.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, !x.expr());
+
+        let mut expr = f.expr().imp(x.expr());
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(true));
+
+        let mut expr = BoolExpr::Const(true).imp(BoolExpr::Const(false));
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(expr, BoolExpr::Const(false));
+
+        // cmp
+        let mut expr = BoolExpr::Cmp(
+            crate::arithmetic::CmpOp::Eq,
+            Box::new(x.expr().ite(IntExpr::Const(1), IntExpr::Const(0))),
+            Box::new((y.expr() | f.expr()).ite(IntExpr::Const(1), IntExpr::Const(0))),
+        );
+        csp.vars.constant_folding_bool(&mut expr);
+        assert_eq!(
+            expr,
+            BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Eq,
+                Box::new(x.expr().ite(IntExpr::Const(1), IntExpr::Const(0))),
+                Box::new(y.expr().ite(IntExpr::Const(1), IntExpr::Const(0))),
+            )
+        );
+    }
+
+    #[test]
+    fn test_constant_folding_int() {
+        let mut csp = CSP::new();
+
+        let a = csp.new_int_var(Domain::range(0, 5));
+        let n = csp.new_int_var(Domain::range(1, 1));
+        let x = csp.new_bool_var();
+
+        // var
+        let mut expr = a.expr();
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, a.expr());
+
+        // linear
+        let mut expr = IntExpr::Linear(vec![]);
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Const(0));
+
+        let mut expr = IntExpr::Linear(vec![(Box::new(a.expr()), 1)]);
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, a.expr());
+
+        // if
+        let mut expr = x.expr().ite(a.expr(), n.expr());
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, x.expr().ite(a.expr(), IntExpr::Const(1)));
+
+        let mut expr = BoolExpr::Const(true).ite(a.expr(), n.expr());
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, a.expr());
+
+        let mut expr = BoolExpr::Const(false).ite(a.expr(), n.expr());
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Const(1));
+
+        // abs
+        let mut expr = x.expr().ite(a.expr(), n.expr()).abs();
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, x.expr().ite(a.expr(), IntExpr::Const(1)).abs());
+
+        // mul
+        let mut expr = x.expr().ite(a.expr(), n.expr()) * a.expr();
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, x.expr().ite(a.expr(), IntExpr::Const(1)) * a.expr());
+    }
+
+    #[test]
+    fn test_constant_prop_bool() {
+        // const
+        {
+            let mut csp = CSP::new();
+            assert_eq!(
+                csp.vars.constant_prop_bool(&BoolExpr::Const(true), true),
+                UpdateStatus::NotUpdated
+            );
+        }
+        {
+            let mut csp = CSP::new();
+            assert_eq!(
+                csp.vars.constant_prop_bool(&BoolExpr::Const(false), false),
+                UpdateStatus::NotUpdated
+            );
+        }
+        {
+            let mut csp = CSP::new();
+            assert_eq!(
+                csp.vars.constant_prop_bool(&BoolExpr::Const(true), false),
+                UpdateStatus::Unsatisfiable
+            );
+        }
+        {
+            let mut csp = CSP::new();
+            assert_eq!(
+                csp.vars.constant_prop_bool(&BoolExpr::Const(false), true),
+                UpdateStatus::Unsatisfiable
+            );
+        }
+
+        // var
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&x.expr(), false),
+                UpdateStatus::Updated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(!csp.vars[x].is_feasible(true));
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&y.expr(), true),
+                UpdateStatus::Updated
+            );
+            assert!(!csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        // and
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr() & y.expr()), true),
+                UpdateStatus::Updated
+            );
+            assert!(!csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(!csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr() & y.expr()), false),
+                UpdateStatus::NotUpdated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        // or
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr() | y.expr()), true),
+                UpdateStatus::NotUpdated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr() | y.expr()), false),
+                UpdateStatus::Updated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(!csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(!csp.vars[y].is_feasible(true));
+        }
+
+        // not
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&!x.expr(), true),
+                UpdateStatus::Updated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(!csp.vars[x].is_feasible(true));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&!x.expr(), false),
+                UpdateStatus::Updated
+            );
+            assert!(!csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+        }
+
+        // imp
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr().imp(y.expr())), true),
+                UpdateStatus::NotUpdated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars
+                    .constant_prop_bool(&(x.expr().imp(y.expr())), false),
+                UpdateStatus::Updated
+            );
+            assert!(!csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(!csp.vars[y].is_feasible(true));
+        }
+
+        // xor
+        for b in [false, true] {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr() ^ y.expr()), b),
+                UpdateStatus::NotUpdated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+
+        // iff
+        for b in [false, true] {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            assert_eq!(
+                csp.vars.constant_prop_bool(&(x.expr().iff(y.expr())), b),
+                UpdateStatus::NotUpdated
+            );
+            assert!(csp.vars[x].is_feasible(false));
+            assert!(csp.vars[x].is_feasible(true));
+            assert!(csp.vars[y].is_feasible(false));
+            assert!(csp.vars[y].is_feasible(true));
+        }
+    }
+
+    #[test]
+    fn test_vars_iter() {
+        let mut csp = CSP::new();
+
         let x = csp.new_bool_var();
         let y = csp.new_bool_var();
         let z = csp.new_bool_var();
 
-        csp.vars.constant_prop_bool(&(w.expr() & !x.expr()), true);
-        assert!(!csp.vars[w].is_feasible(false));
-        assert!(!csp.vars[x].is_feasible(true));
+        let a = csp.new_int_var(Domain::range(0, 5));
+        let b = csp.new_int_var(Domain::range(1, 10));
 
-        let mut expr =
-            (w.expr().iff(x.expr())) | ((x.expr() ^ y.expr()) | (w.expr().imp(z.expr())));
+        assert_eq!(csp.vars.bool_vars_iter().collect::<Vec<_>>(), vec![x, y, z]);
+        assert_eq!(csp.vars.int_vars_iter().collect::<Vec<_>>(), vec![a, b]);
+    }
 
-        csp.vars.constant_folding_bool(&mut expr);
-        assert_eq!(expr, y.expr() | z.expr());
+    #[test]
+    fn test_vars_index() {
+        let mut csp = CSP::new();
+
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+
+        let a = csp.new_int_var(Domain::range(0, 5));
+        let b = csp.new_int_var(Domain::range(1, 10));
+
+        csp.vars.constant_prop_bool(&y.expr(), false);
+
+        assert_eq!(csp.vars[x].possibility_mask, 3);
+        assert_eq!(csp.vars[y].possibility_mask, 1);
+        assert_eq!(csp.vars[a].domain, Domain::range(0, 5));
+        assert_eq!(csp.vars[b].domain, Domain::range(1, 10));
+        csp.vars[b].domain.refine_lower_bound(CheckedInt::new(3));
+        assert_eq!(csp.vars[b].domain, Domain::range(3, 10));
+    }
+
+    #[test]
+    fn test_csp_constant_folding() {
+        let mut csp = CSP::new();
+
+        let x = csp.new_bool_var();
+        let y = csp.new_bool_var();
+        let a = csp.new_int_var(Domain::range(0, 5));
+
+        csp.add_constraint(Stmt::Expr(x.expr() | BoolExpr::Const(false)));
+        csp.add_constraint(Stmt::AllDifferent(vec![a.expr(), IntExpr::Linear(vec![])]));
+        csp.add_constraint(Stmt::ActiveVerticesConnected(
+            vec![x.expr() | BoolExpr::Const(false), y.expr()],
+            vec![(0, 1)],
+        ));
+        csp.add_constraint(Stmt::Circuit(vec![a.expr(), IntExpr::Linear(vec![])]));
+        csp.add_constraint(Stmt::ExtensionSupports(
+            vec![a.expr(), IntExpr::Linear(vec![])],
+            vec![],
+        ));
+        csp.add_constraint(Stmt::GraphDivision(
+            vec![Some(a.expr()), Some(IntExpr::Linear(vec![])), None],
+            vec![(0, 1)],
+            vec![x.expr() | BoolExpr::Const(false)],
+            GraphDivisionOptions::default(),
+        ));
+
+        csp.apply_constant_folding();
+
+        assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &x.expr()));
+        assert!(
+            matches!(&csp.constraints[1], Stmt::AllDifferent(e) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[2], Stmt::ActiveVerticesConnected(e, _) if e == &[x.expr(), y.expr()])
+        );
+        assert!(
+            matches!(&csp.constraints[3], Stmt::Circuit(e) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[4], Stmt::ExtensionSupports(e, _) if e == &[a.expr(), IntExpr::Const(0)])
+        );
+        assert!(
+            matches!(&csp.constraints[5], Stmt::GraphDivision(s, _, e, _) if s == &[Some(a.expr()), Some(IntExpr::Const(0)), None] && e == &[x.expr()])
+        );
+    }
+
+    #[test]
+    fn test_csp_optimize() {
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+            let z = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() | y.expr()));
+            csp.add_constraint(Stmt::Expr(!y.expr() | z.expr()));
+            csp.add_constraint(Stmt::Expr(!z.expr()));
+
+            csp.optimize(false, true);
+
+            assert!(!csp.is_inconsistent());
+            assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &(x.expr() | y.expr())));
+            assert!(matches!(&csp.constraints[1], Stmt::Expr(e) if e == &(!y.expr() | z.expr())));
+            assert!(matches!(&csp.constraints[2], Stmt::Expr(e) if e == &(!z.expr())));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+            let z = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() | y.expr()));
+            csp.add_constraint(Stmt::Expr(!y.expr() | z.expr()));
+            csp.add_constraint(Stmt::Expr(!z.expr()));
+
+            csp.optimize(true, true);
+
+            assert!(!csp.is_inconsistent());
+            assert!(matches!(&csp.constraints[0], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(&csp.constraints[1], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(&csp.constraints[2], Stmt::Expr(e) if e == &BoolExpr::Const(true)));
+            assert!(matches!(
+                csp.get_bool_var_status(x),
+                BoolVarStatus::Fixed(true)
+            ));
+            assert!(matches!(
+                csp.get_bool_var_status(y),
+                BoolVarStatus::Fixed(false)
+            ));
+            assert!(matches!(
+                csp.get_bool_var_status(z),
+                BoolVarStatus::Fixed(false)
+            ));
+        }
+
+        {
+            let mut csp = CSP::new();
+
+            let x = csp.new_bool_var();
+            let y = csp.new_bool_var();
+
+            csp.add_constraint(Stmt::Expr(x.expr() & y.expr()));
+            csp.add_constraint(Stmt::Expr(!x.expr() | !y.expr()));
+
+            csp.optimize(true, true);
+
+            assert!(csp.is_inconsistent());
+        }
+    }
+
+    #[test]
+    fn test_assignment() {
+        let mut assignment = Assignment::new();
+
+        let x = BoolVar::new(0);
+        let y = BoolVar::new(1);
+        let z = BoolVar::new(2);
+        let a = IntVar::new(0);
+        let b = IntVar::new(1);
+        let c = IntVar::new(2);
+
+        assignment.set_bool(x, true);
+        assignment.set_bool(y, false);
+        assignment.set_int(a, 42);
+        assignment.set_int(b, 100);
+
+        assert_eq!(
+            assignment.bool_iter().collect::<Vec<_>>(),
+            vec![(&x, &true), (&y, &false)]
+        );
+        assert_eq!(
+            assignment.int_iter().collect::<Vec<_>>(),
+            vec![(&a, &42), (&b, &100)]
+        );
+
+        assert_eq!(assignment.get_bool(x), Some(true));
+        assert_eq!(assignment.get_bool(y), Some(false));
+        assert_eq!(assignment.get_bool(z), None);
+
+        assert_eq!(assignment.get_int(a), Some(42));
+        assert_eq!(assignment.get_int(b), Some(100));
+        assert_eq!(assignment.get_int(c), None);
+
+        assert_eq!(assignment.remove_bool(x), Some(true));
+        assert_eq!(assignment.remove_bool(x), None);
+        assert_eq!(assignment.get_bool(x), None);
+
+        assert_eq!(assignment.remove_int(a), Some(42));
+        assert_eq!(assignment.remove_int(a), None);
+        assert_eq!(assignment.get_int(a), None);
+    }
+
+    #[test]
+    fn test_assignment_eval() {
+        let mut assignment = Assignment::new();
+
+        let t = BoolVar::new(0);
+        let f = BoolVar::new(1);
+        let a = IntVar::new(0);
+        let b = IntVar::new(1);
+
+        assignment.set_bool(t, true);
+        assignment.set_bool(f, false);
+        assignment.set_int(a, 42);
+        assignment.set_int(b, 100);
+
+        assert_eq!(assignment.eval_bool_expr(&BoolExpr::Const(true)), true);
+
+        assert_eq!(assignment.eval_bool_expr(&t.expr()), true);
+        assert_eq!(assignment.eval_bool_expr(&f.expr()), false);
+        assert_eq!(assignment.eval_int_expr(&a.expr()), 42);
+        assert_eq!(assignment.eval_int_expr(&b.expr()), 100);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() & t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() & f.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() & t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() & f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() | t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() | f.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() | t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() | f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(!t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(!f.expr())), true);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() ^ t.expr())), false);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr() ^ f.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() ^ t.expr())), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr() ^ f.expr())), false);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().iff(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().iff(f.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().iff(t.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().iff(f.expr()))), true);
+
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().imp(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(t.expr().imp(f.expr()))), false);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().imp(t.expr()))), true);
+        assert_eq!(assignment.eval_bool_expr(&(f.expr().imp(f.expr()))), true);
+
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Eq,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Ne,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Le,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Lt,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            true
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Ge,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+        assert_eq!(
+            assignment.eval_bool_expr(&BoolExpr::Cmp(
+                crate::arithmetic::CmpOp::Gt,
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            false
+        );
+
+        assert_eq!(assignment.eval_int_expr(&IntExpr::Const(42)), 42);
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Linear(vec![
+                (Box::new(a.expr()), 2),
+                (Box::new(b.expr()), 3)
+            ])),
+            2 * 42 + 3 * 100
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::If(
+                Box::new(t.expr()),
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            42
+        );
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::If(
+                Box::new(f.expr()),
+                Box::new(a.expr()),
+                Box::new(b.expr())
+            )),
+            100
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Abs(Box::new(a.expr()))),
+            42
+        );
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Abs(Box::new(IntExpr::Linear(vec![(
+                Box::new(a.expr()),
+                -1
+            )])))),
+            42
+        );
+
+        assert_eq!(
+            assignment.eval_int_expr(&IntExpr::Mul(Box::new(a.expr()), Box::new(b.expr()))),
+            42 * 100
+        );
     }
 }
