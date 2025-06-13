@@ -77,6 +77,80 @@ pub fn clone_stmt(stmt: &Stmt) -> Stmt {
     cloned
 }
 
+pub fn is_stmt_satisfied(assignment: &Assignment, stmt: &Stmt) -> bool {
+    match stmt {
+        Stmt::Expr(e) => crate::csp::test_utils::eval_bool_expr(assignment, e),
+        Stmt::AllDifferent(exprs) => {
+            let values = exprs
+                .iter()
+                .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
+                .collect::<Vec<_>>();
+            for i in 0..values.len() {
+                for j in (i + 1)..values.len() {
+                    if values[i] == values[j] {
+                        return false;
+                    }
+                }
+            }
+            true
+        }
+        Stmt::ActiveVerticesConnected(is_active, edges) => {
+            let is_active = is_active
+                .iter()
+                .map(|v| crate::csp::test_utils::eval_bool_expr(assignment, v))
+                .collect::<Vec<_>>();
+            crate::test_util::check_graph_active_vertices_connected(&is_active, &edges)
+        }
+        Stmt::Circuit(values) => {
+            let values = values
+                .iter()
+                .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
+                .collect::<Vec<_>>();
+            crate::test_util::check_circuit(&values)
+        }
+        Stmt::ExtensionSupports(vars, supports) => {
+            let values = vars
+                .iter()
+                .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
+                .collect::<Vec<_>>();
+            let mut isok = false;
+            for support in supports {
+                let mut flg = true;
+                for i in 0..values.len() {
+                    if let Some(n) = support[i] {
+                        if values[i] != n {
+                            flg = false;
+                        }
+                    }
+                }
+                if flg {
+                    isok = true;
+                }
+            }
+            isok
+        }
+        Stmt::GraphDivision(sizes, edges, edges_lit, opts) => {
+            assert!(!opts.require_extra_constraints());
+            let sizes = sizes
+                .iter()
+                .map(|e| {
+                    e.as_ref()
+                        .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
+                })
+                .collect::<Vec<_>>();
+            let edge_disconnected = edges_lit
+                .iter()
+                .map(|e| crate::csp::test_utils::eval_bool_expr(assignment, e))
+                .collect::<Vec<_>>();
+
+            crate::test_util::check_graph_division(&sizes, edges, &edge_disconnected)
+        }
+        Stmt::CustomConstraint(_, _) => {
+            todo!();
+        }
+    }
+}
+
 mod tests {
     use super::*;
 

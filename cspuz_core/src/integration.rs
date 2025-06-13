@@ -560,91 +560,9 @@ mod tests {
         }
 
         fn is_satisfied_csp(&self, assignment: &csp::Assignment) -> bool {
-            for stmt in &self.original_constr {
-                match stmt {
-                    Stmt::Expr(e) => {
-                        if !crate::csp::test_utils::eval_bool_expr(assignment, e) {
-                            return false;
-                        }
-                    }
-                    Stmt::AllDifferent(exprs) => {
-                        let values = exprs
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        for i in 0..values.len() {
-                            for j in (i + 1)..values.len() {
-                                if values[i] == values[j] {
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                    Stmt::ActiveVerticesConnected(is_active, edges) => {
-                        let is_active = is_active
-                            .iter()
-                            .map(|v| crate::csp::test_utils::eval_bool_expr(assignment, v))
-                            .collect::<Vec<_>>();
-                        if !test_util::check_graph_active_vertices_connected(&is_active, &edges) {
-                            return false;
-                        }
-                    }
-                    Stmt::Circuit(values) => {
-                        let values = values
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        if !test_util::check_circuit(&values) {
-                            return false;
-                        }
-                    }
-                    Stmt::ExtensionSupports(vars, supports) => {
-                        let values = vars
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        let mut isok = false;
-                        for support in supports {
-                            let mut flg = true;
-                            for i in 0..values.len() {
-                                if let Some(n) = support[i] {
-                                    if values[i] != n {
-                                        flg = false;
-                                    }
-                                }
-                            }
-                            if flg {
-                                isok = true;
-                            }
-                        }
-                        if !isok {
-                            return false;
-                        }
-                    }
-                    Stmt::GraphDivision(sizes, edges, edges_lit, opts) => {
-                        assert!(!opts.require_extra_constraints());
-                        let sizes = sizes
-                            .iter()
-                            .map(|e| {
-                                e.as_ref()
-                                    .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            })
-                            .collect::<Vec<_>>();
-                        let edge_disconnected = edges_lit
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_bool_expr(assignment, e))
-                            .collect::<Vec<_>>();
-
-                        if !test_util::check_graph_division(&sizes, edges, &edge_disconnected) {
-                            return false;
-                        }
-                    }
-                    Stmt::CustomConstraint(_, _) => {
-                        todo!();
-                    }
-                }
-            }
-            true
+            self.original_constr
+                .iter()
+                .all(|stmt| crate::csp::test_utils::is_stmt_satisfied(assignment, stmt))
         }
     }
 

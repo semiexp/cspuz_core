@@ -1271,64 +1271,9 @@ mod tests {
         }
 
         fn is_satisfied_csp(&self, assignment: &csp::Assignment) -> bool {
-            for stmt in &self.original_constr {
-                match stmt {
-                    Stmt::Expr(e) => {
-                        if !crate::csp::test_utils::eval_bool_expr(assignment, e) {
-                            return false;
-                        }
-                    }
-                    Stmt::AllDifferent(exprs) => {
-                        let values = exprs
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        for i in 0..values.len() {
-                            for j in (i + 1)..values.len() {
-                                if values[i] == values[j] {
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                    Stmt::ActiveVerticesConnected(_, _) => todo!(),
-                    Stmt::Circuit(vars) => {
-                        let values = vars
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        if !test_util::check_circuit(&values) {
-                            return false;
-                        }
-                    }
-                    Stmt::ExtensionSupports(vars, supports) => {
-                        let values = vars
-                            .iter()
-                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
-                            .collect::<Vec<_>>();
-                        let mut isok = false;
-                        for support in supports {
-                            let mut flg = true;
-                            for i in 0..values.len() {
-                                if let Some(n) = support[i] {
-                                    if values[i] != n {
-                                        flg = false;
-                                    }
-                                }
-                            }
-                            if flg {
-                                isok = true;
-                            }
-                        }
-                        if !isok {
-                            return false;
-                        }
-                    }
-                    Stmt::GraphDivision(_, _, _, _) => todo!(),
-                    Stmt::CustomConstraint(_, _) => todo!(),
-                }
-            }
-            true
+            self.original_constr
+                .iter()
+                .all(|stmt| crate::csp::test_utils::is_stmt_satisfied(assignment, stmt))
         }
 
         fn is_satisfied_norm(&self, assignment: &norm_csp::Assignment) -> bool {
