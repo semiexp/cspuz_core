@@ -1,10 +1,15 @@
+mod repr;
+
+#[cfg(test)]
+pub mod test_utils;
+
 use crate::arithmetic::CheckedInt;
 use crate::domain::Domain;
 use crate::util::{ConvertMapIndex, UpdateStatus};
 use std::collections::{btree_map, BTreeMap};
 use std::ops::{Index, IndexMut};
 
-pub use super::csp_repr::{BoolExpr, BoolVar, IntExpr, IntVar, Stmt};
+pub use repr::{BoolExpr, BoolVar, IntExpr, IntVar, Stmt};
 
 pub enum BoolVarStatus {
     Infeasible,

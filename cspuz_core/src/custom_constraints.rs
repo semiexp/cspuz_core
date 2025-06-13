@@ -208,7 +208,7 @@ unsafe impl<T: SimpleCustomConstraint, M: SolverManipulator> CustomPropagator<M>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::csp_repr::Stmt;
+    use crate::csp::Stmt;
     use crate::integration::IntegratedSolver;
 
     #[derive(PartialEq, Eq)]

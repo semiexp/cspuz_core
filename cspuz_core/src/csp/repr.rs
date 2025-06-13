@@ -132,7 +132,7 @@ impl Stmt {
 pub enum BoolExpr {
     Const(bool),
     Var(BoolVar),
-    NVar(super::norm_csp::BoolVar),
+    NVar(crate::norm_csp::BoolVar),
     And(Vec<Box<BoolExpr>>),
     Or(Vec<Box<BoolExpr>>),
     Not(Box<BoolExpr>),
@@ -264,7 +264,7 @@ impl Not for BoolExpr {
 pub enum IntExpr {
     Const(i32),
     Var(IntVar),
-    NVar(super::norm_csp::IntVar),
+    NVar(crate::norm_csp::IntVar),
     Linear(Vec<(Box<IntExpr>, i32)>),
     If(Box<BoolExpr>, Box<IntExpr>, Box<IntExpr>),
     Abs(Box<IntExpr>),
@@ -374,31 +374,5 @@ impl Mul<IntExpr> for IntExpr {
 
     fn mul(self, rhs: IntExpr) -> IntExpr {
         IntExpr::Mul(Box::new(self), Box::new(rhs))
-    }
-}
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    pub fn clone_stmt(stmt: &Stmt) -> Stmt {
-        let cloned = match &stmt {
-            Stmt::Expr(e) => Stmt::Expr(e.clone()),
-            Stmt::AllDifferent(exprs) => Stmt::AllDifferent(exprs.clone()),
-            Stmt::ActiveVerticesConnected(exprs, edges) => {
-                Stmt::ActiveVerticesConnected(exprs.clone(), edges.clone())
-            }
-            Stmt::Circuit(exprs) => Stmt::Circuit(exprs.clone()),
-            Stmt::ExtensionSupports(exprs, supports) => {
-                Stmt::ExtensionSupports(exprs.clone(), supports.clone())
-            }
-            Stmt::GraphDivision(sizes, edges, edges_lit, opts) => {
-                Stmt::GraphDivision(sizes.clone(), edges.clone(), edges_lit.clone(), *opts)
-            }
-            Stmt::CustomConstraint(_, _) => {
-                panic!("CustomConstraint cannot be cloned");
-            }
-        };
-        cloned
     }
 }
