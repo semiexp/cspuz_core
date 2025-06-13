@@ -1274,14 +1274,14 @@ mod tests {
             for stmt in &self.original_constr {
                 match stmt {
                     Stmt::Expr(e) => {
-                        if !assignment.eval_bool_expr(e) {
+                        if !crate::csp::test_utils::eval_bool_expr(assignment, e) {
                             return false;
                         }
                     }
                     Stmt::AllDifferent(exprs) => {
                         let values = exprs
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         for i in 0..values.len() {
                             for j in (i + 1)..values.len() {
@@ -1295,7 +1295,7 @@ mod tests {
                     Stmt::Circuit(vars) => {
                         let values = vars
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         if !test_util::check_circuit(&values) {
                             return false;
@@ -1304,7 +1304,7 @@ mod tests {
                     Stmt::ExtensionSupports(vars, supports) => {
                         let values = vars
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         let mut isok = false;
                         for support in supports {

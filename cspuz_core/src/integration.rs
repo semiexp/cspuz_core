@@ -563,14 +563,14 @@ mod tests {
             for stmt in &self.original_constr {
                 match stmt {
                     Stmt::Expr(e) => {
-                        if !assignment.eval_bool_expr(e) {
+                        if !crate::csp::test_utils::eval_bool_expr(assignment, e) {
                             return false;
                         }
                     }
                     Stmt::AllDifferent(exprs) => {
                         let values = exprs
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         for i in 0..values.len() {
                             for j in (i + 1)..values.len() {
@@ -583,7 +583,7 @@ mod tests {
                     Stmt::ActiveVerticesConnected(is_active, edges) => {
                         let is_active = is_active
                             .iter()
-                            .map(|v| assignment.eval_bool_expr(v))
+                            .map(|v| crate::csp::test_utils::eval_bool_expr(assignment, v))
                             .collect::<Vec<_>>();
                         if !test_util::check_graph_active_vertices_connected(&is_active, &edges) {
                             return false;
@@ -592,7 +592,7 @@ mod tests {
                     Stmt::Circuit(values) => {
                         let values = values
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         if !test_util::check_circuit(&values) {
                             return false;
@@ -601,7 +601,7 @@ mod tests {
                     Stmt::ExtensionSupports(vars, supports) => {
                         let values = vars
                             .iter()
-                            .map(|e| assignment.eval_int_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                             .collect::<Vec<_>>();
                         let mut isok = false;
                         for support in supports {
@@ -625,11 +625,14 @@ mod tests {
                         assert!(!opts.require_extra_constraints());
                         let sizes = sizes
                             .iter()
-                            .map(|e| e.as_ref().map(|e| assignment.eval_int_expr(e)))
+                            .map(|e| {
+                                e.as_ref()
+                                    .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
+                            })
                             .collect::<Vec<_>>();
                         let edge_disconnected = edges_lit
                             .iter()
-                            .map(|e| assignment.eval_bool_expr(e))
+                            .map(|e| crate::csp::test_utils::eval_bool_expr(assignment, e))
                             .collect::<Vec<_>>();
 
                         if !test_util::check_graph_division(&sizes, edges, &edge_disconnected) {
