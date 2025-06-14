@@ -209,7 +209,7 @@ mod tests {
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
-    use crate::norm_csp::LinearLit;
+    use crate::norm_csp::{Constraint, LinearLit};
 
     #[test]
     fn test_encode_linear_ge_order_encoding_native() {
@@ -231,7 +231,11 @@ mod tests {
             )];
             encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
 
-            tester.run_check(&lits);
+            tester.add_constraint(Constraint {
+                bool_lit: vec![],
+                linear_lit: lits.to_vec(),
+            });
+            tester.run_check();
         }
     }
 }

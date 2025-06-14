@@ -795,7 +795,7 @@ mod tests {
     use super::super::encode_constraint;
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::domain::Domain;
-    use crate::norm_csp::{Constraint, LinearLit};
+    use crate::norm_csp::{Constraint, ExtraConstraint, LinearLit};
 
     #[test]
     fn test_encode_log_var() {
@@ -803,7 +803,7 @@ mod tests {
 
         let _ = tester.add_int_var_log_encoding(Domain::range(2, 11));
 
-        tester.run_check(&[]);
+        tester.run_check();
     }
 
     #[test]
@@ -823,7 +823,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -843,7 +847,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -864,7 +872,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -884,7 +896,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -904,7 +920,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -924,7 +944,11 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -948,7 +972,11 @@ mod tests {
                 },
             );
 
-            tester.run_check(&lits);
+            tester.add_constraint(Constraint {
+                bool_lit: vec![],
+                linear_lit: lits.to_vec(),
+            });
+            tester.run_check();
         }
     }
 
@@ -965,6 +993,7 @@ mod tests {
             tester.add_clause_set(clause_set);
         }
 
-        tester.run_check_with_mul(&[], &[(x, y, z)]);
+        tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
+        tester.run_check();
     }
 }

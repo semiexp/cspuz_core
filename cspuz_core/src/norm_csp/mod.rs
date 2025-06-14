@@ -87,7 +87,7 @@ impl LinearLit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constraint {
     pub(super) bool_lit: Vec<BoolLit>,
     pub(super) linear_lit: Vec<LinearLit>,

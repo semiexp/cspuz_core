@@ -1206,55 +1206,37 @@ mod tests {
             ret
         }
 
-        pub fn enumerate_valid_assignments_by_literals(
-            &self,
-            lits: &[LinearLit],
-            mul: &[(IntVar, IntVar, IntVar)],
-        ) -> Vec<Vec<CheckedInt>> {
-            let domains = self
-                .int_vars
-                .iter()
-                .map(|&v| self.norm_csp.vars.int_var(v).enumerate())
-                .collect::<Vec<_>>();
-
-            let all_assignments = crate::test_utils::product_multi(&domains);
-            let valid_assignments = all_assignments
-                .into_iter()
-                .filter(|assignment| {
-                    for lit in lits {
-                        let sum = &lit.sum;
-                        let mut value = sum.constant;
-                        for (&var, &coef) in sum.iter() {
-                            let idx = self.int_vars.iter().position(|&v| v == var).unwrap();
-                            value += assignment[idx] * coef;
-                        }
-                        if !lit.op.compare(value, CheckedInt::new(0)) {
-                            return false;
-                        }
-                    }
-                    for &(x, y, m) in mul {
-                        let xi = self.int_vars.iter().position(|&v| v == x).unwrap();
-                        let yi = self.int_vars.iter().position(|&v| v == y).unwrap();
-                        let mi = self.int_vars.iter().position(|&v| v == m).unwrap();
-                        if assignment[xi] * assignment[yi] != assignment[mi] {
-                            return false;
-                        }
-                    }
-                    true
-                })
-                .collect();
-            valid_assignments
+        pub fn add_constraint(&mut self, constraint: Constraint) {
+            self.norm_csp.add_constraint(constraint);
         }
 
-        pub fn run_check(self, lits: &[LinearLit]) {
-            self.run_check_with_mul(lits, &[]);
+        pub fn add_extra_constraint(&mut self, constraint: ExtraConstraint) {
+            self.norm_csp.add_extra_constraint(constraint);
+        }
+
+        pub fn enumerate_valid_assignments_by_norm_csp(&self) -> Vec<Vec<CheckedInt>> {
+            let assignments = crate::norm_csp::test_utils::norm_csp_all_assignments_for_vars(
+                &self.norm_csp,
+                &[],
+                &self.int_vars,
+            );
+
+            assignments
+                .iter()
+                .map(|assignment| {
+                    self.int_vars
+                        .iter()
+                        .map(|&v| assignment.get_int(v).unwrap())
+                        .collect::<Vec<_>>()
+                })
+                .collect()
         }
 
         #[allow(unused)]
-        pub fn run_check_with_mul(mut self, lits: &[LinearLit], mul: &[(IntVar, IntVar, IntVar)]) {
+        pub fn run_check(mut self) {
             let int_vars = self.int_vars.clone();
 
-            let mut result_by_literals = self.enumerate_valid_assignments_by_literals(lits, mul);
+            let mut result_by_literals = self.enumerate_valid_assignments_by_norm_csp();
             result_by_literals.sort();
             let mut result_by_sat = self.enumerate_valid_assignments_by_sat();
             result_by_sat.sort();
@@ -1287,13 +1269,12 @@ mod tests {
                 let env = &mut tester.env();
                 let is_unsat = is_unsatisfiable_linear(env, &lits[0]);
 
-                encode_constraint(
-                    env,
-                    Constraint {
-                        bool_lit: vec![],
-                        linear_lit: lits.clone(),
-                    },
-                );
+                let constr = Constraint {
+                    bool_lit: vec![],
+                    linear_lit: lits,
+                };
+
+                encode_constraint(env, constr.clone());
 
                 // If the literal is unsatisfiable, the encoding does not take place
                 if !is_unsat {
@@ -1301,7 +1282,8 @@ mod tests {
                     assert!(tester.norm_csp.vars.int_vars_iter().count() > terms.len());
                 }
 
-                tester.run_check(&lits);
+                tester.add_constraint(constr);
+                tester.run_check();
             }
         }
     }

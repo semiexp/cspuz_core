@@ -430,7 +430,7 @@ mod tests {
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
-    use crate::norm_csp::LinearLit;
+    use crate::norm_csp::{Constraint, LinearLit};
 
     #[test]
     fn test_encode_simple_linear_direct_encoding() {
@@ -452,7 +452,11 @@ mod tests {
                     tester.add_clause(&clause);
                 }
             }
-            tester.run_check(&lits);
+            tester.add_constraint(Constraint {
+                bool_lit: vec![],
+                linear_lit: lits.to_vec(),
+            });
+            tester.run_check();
         }
     }
 
@@ -468,7 +472,11 @@ mod tests {
             let clause_set = encode_linear_eq_direct(&tester.env(), &lits[0].sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -487,7 +495,11 @@ mod tests {
             let clause_set = encode_linear_eq_direct(&tester.env(), &lits[0].sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 
     #[test]
@@ -506,6 +518,10 @@ mod tests {
             let clause_set = encode_linear_ne_direct(&tester.env(), &lits[0].sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint(Constraint {
+            bool_lit: vec![],
+            linear_lit: lits.to_vec(),
+        });
+        tester.run_check();
     }
 }
