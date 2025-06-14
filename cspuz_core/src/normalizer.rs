@@ -1095,13 +1095,10 @@ fn normalize_extension_supports(
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::super::csp;
     use super::super::domain::Domain;
     use super::super::norm_csp;
     use super::super::norm_csp::BoolVar as NBoolVar;
-    use super::super::norm_csp::IntVarRepresentation;
     use super::*;
-    use crate::test_utils;
 
     struct NormalizerTester {
         original_constr: Vec<Stmt>,
@@ -1153,7 +1150,8 @@ mod tests {
 
             normalize(&mut self.csp, &mut self.norm, &mut self.map, &self.config);
 
-            let mut norm_csp_assignments = crate::norm_csp::test_utils::norm_csp_all_assignments(&self.norm);
+            let mut norm_csp_assignments =
+                crate::norm_csp::test_utils::norm_csp_all_assignments(&self.norm);
 
             let mut csp_assignments_converted = csp_assignments
                 .into_iter()
@@ -1162,17 +1160,16 @@ mod tests {
                     for &v in &self.bool_vars {
                         match self.map.get_bool_var_raw(v) {
                             ConvertedBoolVar::Lit(lit) => {
-                                n_assignment.set_bool(lit.var, a.get_bool(v).unwrap() ^ lit.negated);
+                                n_assignment
+                                    .set_bool(lit.var, a.get_bool(v).unwrap() ^ lit.negated);
                             }
                             ConvertedBoolVar::NotConverted => (),
                             ConvertedBoolVar::Removed => (),
                         }
                     }
                     for (v, _) in &self.int_vars {
-                        n_assignment.set_int(
-                            self.map.get_int_var(*v).unwrap(),
-                            a.get_int(*v).unwrap(),
-                        );
+                        n_assignment
+                            .set_int(self.map.get_int_var(*v).unwrap(), a.get_int(*v).unwrap());
                     }
                     n_assignment
                 })
@@ -1200,7 +1197,8 @@ mod tests {
             }
 
             for a in &mut norm_csp_assignments {
-                a.bool_val.retain(|var, _| converted_bool_vars.contains(var));
+                a.bool_val
+                    .retain(|var, _| converted_bool_vars.contains(var));
                 a.int_val.retain(|var, _| converted_int_vars.contains(var));
             }
 
