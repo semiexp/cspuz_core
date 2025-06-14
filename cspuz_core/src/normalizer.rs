@@ -1262,7 +1262,10 @@ mod tests {
                             for i in 0..unfixed_int_vars.len() {
                                 n_assignment.set_int(unfixed_int_vars[i], ui[i].get());
                             }
-                            is_sat_norm |= self.is_satisfied_norm(&n_assignment);
+                            is_sat_norm |= crate::norm_csp::test_utils::is_norm_csp_satisfied(
+                                &n_assignment,
+                                &self.norm,
+                            );
                         }
                     }
                 }
@@ -1274,63 +1277,6 @@ mod tests {
             self.original_constr
                 .iter()
                 .all(|stmt| crate::csp::test_utils::is_stmt_satisfied(assignment, stmt))
-        }
-
-        fn is_satisfied_norm(&self, assignment: &norm_csp::Assignment) -> bool {
-            for constr in &self.norm.constraints {
-                if !assignment.eval_constraint(constr) {
-                    return false;
-                }
-            }
-            for constr in &self.norm.extra_constraints {
-                match constr {
-                    ExtraConstraint::ActiveVerticesConnected(is_active, edges) => {
-                        let is_active = is_active
-                            .iter()
-                            .map(|&v| assignment.get_bool(v.var).unwrap() ^ v.negated)
-                            .collect::<Vec<_>>();
-                        if !test_utils::check_graph_active_vertices_connected(&is_active, &edges) {
-                            return false;
-                        }
-                    }
-                    &ExtraConstraint::Mul(x, y, m) => {
-                        let val_x = assignment.get_int(x).unwrap();
-                        let val_y = assignment.get_int(y).unwrap();
-                        let val_m = assignment.get_int(m).unwrap();
-                        if val_x * val_y != val_m {
-                            return false;
-                        }
-                    }
-                    ExtraConstraint::ExtensionSupports(vars, supports) => {
-                        let values = vars
-                            .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
-                            .collect::<Vec<_>>();
-                        let mut isok = false;
-                        for support in supports {
-                            let mut flg = true;
-                            for i in 0..values.len() {
-                                if let Some(n) = support[i] {
-                                    if values[i] != n {
-                                        flg = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            if flg {
-                                isok = true;
-                                break;
-                            }
-                        }
-                        if !isok {
-                            return false;
-                        }
-                    }
-                    ExtraConstraint::GraphDivision(_, _, _, _) => todo!(),
-                    ExtraConstraint::CustomConstraint(_, _) => todo!(),
-                }
-            }
-            true
         }
     }
 
