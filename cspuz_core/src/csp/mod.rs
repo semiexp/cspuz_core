@@ -498,7 +498,7 @@ impl CSP {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Assignment {
     bool_val: BTreeMap<BoolVar, bool>,
     int_val: BTreeMap<IntVar, i32>,

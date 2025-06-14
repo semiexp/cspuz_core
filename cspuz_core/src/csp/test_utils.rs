@@ -151,6 +151,58 @@ pub fn is_stmt_satisfied(assignment: &Assignment, stmt: &Stmt) -> bool {
     }
 }
 
+pub fn is_csp_satisfied(assignment: &Assignment, csp: &CSP) -> bool {
+    for constraint in &csp.constraints {
+        if !is_stmt_satisfied(assignment, constraint) {
+            return false;
+        }
+    }
+
+    true
+}
+
+pub fn csp_all_assignments(csp: &CSP) -> Vec<Assignment> {
+    let mut ret = vec![];
+
+    let mut bool_domains = vec![];
+    for v in csp.vars.bool_vars_iter() {
+        let info = &csp.vars[v];
+        let mut dom = vec![];
+        if info.is_feasible(false) {
+            dom.push(false);
+        }
+        if info.is_feasible(true) {
+            dom.push(true);
+        }
+        bool_domains.push(dom);
+    }
+
+    let mut int_domains = vec![];
+    for v in csp.vars.int_vars_iter() {
+        let info = &csp.vars[v];
+        int_domains.push(info.domain.enumerate());
+    }
+
+    for (vb, vi) in crate::test_utils::product_binary(
+        &crate::test_utils::product_multi(&bool_domains),
+        &crate::test_utils::product_multi(&int_domains),
+    ) {
+        let mut assignment = Assignment::new();
+        for (v, b) in csp.vars.bool_vars_iter().zip(vb) {
+            assignment.set_bool(v, b);
+        }
+        for (v, i) in csp.vars.int_vars_iter().zip(vi) {
+            assignment.set_int(v, i.get());
+        }
+
+        if is_csp_satisfied(&assignment, csp) {
+            ret.push(assignment);
+        }
+    }
+
+    ret
+}
+
 mod tests {
     use super::*;
 
