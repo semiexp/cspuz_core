@@ -1,5 +1,8 @@
 // Normalized CSP
 
+#[cfg(test)]
+pub mod test_utils;
+
 use std::collections::BTreeMap;
 use std::ops::Not;
 
@@ -84,7 +87,7 @@ impl LinearLit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constraint {
     pub(super) bool_lit: Vec<BoolLit>,
     pub(super) linear_lit: Vec<LinearLit>,
@@ -490,10 +493,10 @@ impl NormCSP {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Assignment {
-    bool_val: BTreeMap<BoolVar, bool>,
-    int_val: BTreeMap<IntVar, CheckedInt>,
+    pub(crate) bool_val: BTreeMap<BoolVar, bool>,
+    pub(crate) int_val: BTreeMap<IntVar, CheckedInt>,
 }
 
 impl Assignment {
@@ -518,6 +521,14 @@ impl Assignment {
 
     pub fn get_int(&self, var: IntVar) -> Option<CheckedInt> {
         self.int_val.get(&var).copied()
+    }
+
+    pub fn remove_bool(&mut self, var: BoolVar) -> Option<bool> {
+        self.bool_val.remove(&var)
+    }
+
+    pub fn remove_int(&mut self, var: IntVar) -> Option<CheckedInt> {
+        self.int_val.remove(&var)
     }
 
     pub fn eval_constraint(&self, constr: &Constraint) -> bool {

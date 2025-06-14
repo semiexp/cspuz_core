@@ -225,13 +225,11 @@ mod tests {
             let y = tester.add_int_var(Domain::range(2, 6), false);
             let z = tester.add_int_var(Domain::range(-1, 4), false);
 
-            let lits = [LinearLit::new(
-                linear_sum(&[(x, 3), (y, -4), (z, 2)], -1),
-                CmpOp::Ge,
-            )];
-            encode_linear_ge_order_encoding_native(&mut tester.env(), &lits[0].sum);
+            let lit = LinearLit::new(linear_sum(&[(x, 3), (y, -4), (z, 2)], -1), CmpOp::Ge);
+            encode_linear_ge_order_encoding_native(&mut tester.env(), &lit.sum);
 
-            tester.run_check(&lits);
+            tester.add_constraint_linear_lit(lit);
+            tester.run_check();
         }
     }
 }

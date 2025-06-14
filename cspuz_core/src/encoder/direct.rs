@@ -445,14 +445,15 @@ mod tests {
             let mut tester = EncoderTester::new();
 
             let x = tester.add_int_var(Domain::range(-2, 5), true);
-            let lits = [LinearLit::new(linear_sum(&[(x, 1)], 1), op)];
+            let lit = LinearLit::new(linear_sum(&[(x, 1)], 1), op);
             {
-                let clause = encode_simple_linear_direct_encoding(&mut tester.env(), &lits[0]);
+                let clause = encode_simple_linear_direct_encoding(&mut tester.env(), &lit);
                 if let Some(clause) = clause {
                     tester.add_clause(&clause);
                 }
             }
-            tester.run_check(&lits);
+            tester.add_constraint_linear_lit(lit);
+            tester.run_check();
         }
     }
 
@@ -463,12 +464,13 @@ mod tests {
         let x = tester.add_int_var(Domain::range(0, 5), true);
         let y = tester.add_int_var(Domain::range(2, 6), true);
 
-        let lits = [LinearLit::new(linear_sum(&[(x, 2), (y, -1)], 1), CmpOp::Eq)];
+        let lit = LinearLit::new(linear_sum(&[(x, 2), (y, -1)], 1), CmpOp::Eq);
         {
-            let clause_set = encode_linear_eq_direct(&tester.env(), &lits[0].sum);
+            let clause_set = encode_linear_eq_direct(&tester.env(), &lit.sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint_linear_lit(lit);
+        tester.run_check();
     }
 
     #[test]
@@ -479,15 +481,13 @@ mod tests {
         let y = tester.add_int_var(Domain::range(2, 6), true);
         let z = tester.add_int_var(Domain::range(-1, 4), true);
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, -1), (z, 2)], -1),
-            CmpOp::Eq,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, -1), (z, 2)], -1), CmpOp::Eq);
         {
-            let clause_set = encode_linear_eq_direct(&tester.env(), &lits[0].sum);
+            let clause_set = encode_linear_eq_direct(&tester.env(), &lit.sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint_linear_lit(lit);
+        tester.run_check();
     }
 
     #[test]
@@ -498,14 +498,12 @@ mod tests {
         let y = tester.add_int_var(Domain::range(2, 6), true);
         let z = tester.add_int_var(Domain::range(-1, 4), true);
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, -1), (z, 2)], -1),
-            CmpOp::Ne,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, -1), (z, 2)], -1), CmpOp::Ne);
         {
-            let clause_set = encode_linear_ne_direct(&tester.env(), &lits[0].sum);
+            let clause_set = encode_linear_ne_direct(&tester.env(), &lit.sum);
             tester.add_clause_set(clause_set);
         }
-        tester.run_check(&lits);
+        tester.add_constraint_linear_lit(lit);
+        tester.run_check();
     }
 }

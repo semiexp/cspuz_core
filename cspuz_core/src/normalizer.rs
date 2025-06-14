@@ -1095,13 +1095,10 @@ fn normalize_extension_supports(
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::super::csp;
     use super::super::domain::Domain;
     use super::super::norm_csp;
     use super::super::norm_csp::BoolVar as NBoolVar;
-    use super::super::norm_csp::IntVarRepresentation;
     use super::*;
-    use crate::test_util;
 
     struct NormalizerTester {
         original_constr: Vec<Stmt>,
@@ -1149,243 +1146,66 @@ mod tests {
         }
 
         fn check(&mut self) {
+            let csp_assignments = crate::csp::test_utils::csp_all_assignments(&self.csp);
+
             normalize(&mut self.csp, &mut self.norm, &mut self.map, &self.config);
 
-            let mut unfixed_bool_vars = BTreeSet::<NBoolVar>::new();
-            for v in self.norm.bool_vars_iter() {
-                unfixed_bool_vars.insert(v);
-            }
+            let mut norm_csp_assignments =
+                crate::norm_csp::test_utils::norm_csp_all_assignments(&self.norm);
 
+            let mut csp_assignments_converted = csp_assignments
+                .into_iter()
+                .map(|a| {
+                    let mut n_assignment = norm_csp::Assignment::new();
+                    for &v in &self.bool_vars {
+                        match self.map.get_bool_var_raw(v) {
+                            ConvertedBoolVar::Lit(lit) => {
+                                n_assignment
+                                    .set_bool(lit.var, a.get_bool(v).unwrap() ^ lit.negated);
+                            }
+                            ConvertedBoolVar::NotConverted => (),
+                            ConvertedBoolVar::Removed => (),
+                        }
+                    }
+                    for (v, _) in &self.int_vars {
+                        n_assignment
+                            .set_int(self.map.get_int_var(*v).unwrap(), a.get_int(*v).unwrap());
+                    }
+                    n_assignment
+                })
+                .collect::<Vec<_>>();
+            csp_assignments_converted.sort();
+            csp_assignments_converted.dedup();
+
+            let mut converted_bool_vars = BTreeSet::<NBoolVar>::new();
             for v in &self.bool_vars {
                 match self.map.get_bool_var(*v) {
                     Some(v) => {
-                        // It is possible that multiple CSP variables are mapped to one normalized variable
-                        unfixed_bool_vars.remove(&v.var);
+                        converted_bool_vars.insert(v.var);
                     }
-                    None => {
-                        // TODO: corresponding NBoolVar may be absent once optimizations are introduced
-                        panic!();
-                    }
+                    None => (),
                 }
             }
-            let unfixed_bool_vars = unfixed_bool_vars.into_iter().collect::<Vec<_>>();
-
-            let mut unfixed_int_vars = BTreeSet::<NIntVar>::new();
-            for v in self.norm.int_vars_iter() {
-                unfixed_int_vars.insert(v);
-            }
-
+            let mut converted_int_vars = BTreeSet::<NIntVar>::new();
             for (v, _) in &self.int_vars {
                 match self.map.get_int_var(*v) {
                     Some(v) => {
-                        assert!(unfixed_int_vars.remove(&v));
+                        converted_int_vars.insert(v);
                     }
-                    None => {
-                        // TODO: corresponding NBoolVar may be absent once optimizations are introduced
-                        panic!();
-                    }
-                }
-            }
-            let unfixed_int_vars = unfixed_int_vars.into_iter().collect::<Vec<_>>();
-
-            let mut bool_domains = vec![];
-            for _ in &self.bool_vars {
-                bool_domains.push(vec![false, true]);
-            }
-            let mut int_domains = vec![];
-            for (_, domain) in &self.int_vars {
-                int_domains.push(domain.enumerate());
-            }
-
-            let mut unfixed_bool_domains = vec![];
-            for _ in &unfixed_bool_vars {
-                unfixed_bool_domains.push(vec![false, true]);
-            }
-            let mut unfixed_int_domains = vec![];
-            for nv in &unfixed_int_vars {
-                match &self.norm.vars.int_var(*nv) {
-                    IntVarRepresentation::Binary {
-                        cond: _,
-                        v_false,
-                        v_true,
-                    } => {
-                        assert!(v_false < v_true);
-                        unfixed_int_domains.push(vec![*v_false, *v_true]);
-                    }
-                    &IntVarRepresentation::Domain(domain) => {
-                        unfixed_int_domains.push(domain.enumerate());
-                    }
+                    None => (),
                 }
             }
 
-            for (vb, vi) in test_util::product_binary(
-                &test_util::product_multi(&bool_domains),
-                &test_util::product_multi(&int_domains),
-            ) {
-                let mut assignment = csp::Assignment::new();
-                for i in 0..self.bool_vars.len() {
-                    assignment.set_bool(self.bool_vars[i], vb[i]);
-                }
-                for i in 0..self.int_vars.len() {
-                    assignment.set_int(self.int_vars[i].0, vi[i].get());
-                }
-                let is_sat_csp = self.is_satisfied_csp(&assignment);
-                let mut is_sat_norm = false;
-                let mut inconsistent = false;
-                {
-                    let mut n_assignment = norm_csp::Assignment::new();
-                    for i in 0..self.bool_vars.len() {
-                        let lit = self.map.get_bool_var(self.bool_vars[i]).unwrap();
-                        if let Some(b) = n_assignment.get_bool(lit.var) {
-                            if vb[i] ^ lit.negated != b {
-                                inconsistent = true;
-                                break;
-                            }
-                        }
-                        n_assignment.set_bool(lit.var, vb[i] ^ lit.negated);
-                    }
-                    for i in 0..self.int_vars.len() {
-                        n_assignment.set_int(
-                            self.map.get_int_var(self.int_vars[i].0).unwrap(),
-                            vi[i].get(),
-                        );
-                    }
-                    if !inconsistent {
-                        for (ub, ui) in test_util::product_binary(
-                            &test_util::product_multi(&unfixed_bool_domains),
-                            &test_util::product_multi(&unfixed_int_domains),
-                        ) {
-                            let mut n_assignment = n_assignment.clone();
-                            for i in 0..unfixed_bool_vars.len() {
-                                n_assignment.set_bool(unfixed_bool_vars[i], ub[i]);
-                            }
-                            for i in 0..unfixed_int_vars.len() {
-                                n_assignment.set_int(unfixed_int_vars[i], ui[i].get());
-                            }
-                            is_sat_norm |= self.is_satisfied_norm(&n_assignment);
-                        }
-                    }
-                }
-                assert_eq!(is_sat_csp, is_sat_norm, "assignment: {:?}", assignment);
+            for a in &mut norm_csp_assignments {
+                a.bool_val
+                    .retain(|var, _| converted_bool_vars.contains(var));
+                a.int_val.retain(|var, _| converted_int_vars.contains(var));
             }
-        }
 
-        fn is_satisfied_csp(&self, assignment: &csp::Assignment) -> bool {
-            for stmt in &self.original_constr {
-                match stmt {
-                    Stmt::Expr(e) => {
-                        if !assignment.eval_bool_expr(e) {
-                            return false;
-                        }
-                    }
-                    Stmt::AllDifferent(exprs) => {
-                        let values = exprs
-                            .iter()
-                            .map(|e| assignment.eval_int_expr(e))
-                            .collect::<Vec<_>>();
-                        for i in 0..values.len() {
-                            for j in (i + 1)..values.len() {
-                                if values[i] == values[j] {
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                    Stmt::ActiveVerticesConnected(_, _) => todo!(),
-                    Stmt::Circuit(vars) => {
-                        let values = vars
-                            .iter()
-                            .map(|e| assignment.eval_int_expr(e))
-                            .collect::<Vec<_>>();
-                        if !test_util::check_circuit(&values) {
-                            return false;
-                        }
-                    }
-                    Stmt::ExtensionSupports(vars, supports) => {
-                        let values = vars
-                            .iter()
-                            .map(|e| assignment.eval_int_expr(e))
-                            .collect::<Vec<_>>();
-                        let mut isok = false;
-                        for support in supports {
-                            let mut flg = true;
-                            for i in 0..values.len() {
-                                if let Some(n) = support[i] {
-                                    if values[i] != n {
-                                        flg = false;
-                                    }
-                                }
-                            }
-                            if flg {
-                                isok = true;
-                            }
-                        }
-                        if !isok {
-                            return false;
-                        }
-                    }
-                    Stmt::GraphDivision(_, _, _, _) => todo!(),
-                    Stmt::CustomConstraint(_, _) => todo!(),
-                }
-            }
-            true
-        }
+            norm_csp_assignments.sort();
+            norm_csp_assignments.dedup();
 
-        fn is_satisfied_norm(&self, assignment: &norm_csp::Assignment) -> bool {
-            for constr in &self.norm.constraints {
-                if !assignment.eval_constraint(constr) {
-                    return false;
-                }
-            }
-            for constr in &self.norm.extra_constraints {
-                match constr {
-                    ExtraConstraint::ActiveVerticesConnected(is_active, edges) => {
-                        let is_active = is_active
-                            .iter()
-                            .map(|&v| assignment.get_bool(v.var).unwrap() ^ v.negated)
-                            .collect::<Vec<_>>();
-                        if !test_util::check_graph_active_vertices_connected(&is_active, &edges) {
-                            return false;
-                        }
-                    }
-                    &ExtraConstraint::Mul(x, y, m) => {
-                        let val_x = assignment.get_int(x).unwrap();
-                        let val_y = assignment.get_int(y).unwrap();
-                        let val_m = assignment.get_int(m).unwrap();
-                        if val_x * val_y != val_m {
-                            return false;
-                        }
-                    }
-                    ExtraConstraint::ExtensionSupports(vars, supports) => {
-                        let values = vars
-                            .iter()
-                            .map(|&v| assignment.get_int(v).unwrap())
-                            .collect::<Vec<_>>();
-                        let mut isok = false;
-                        for support in supports {
-                            let mut flg = true;
-                            for i in 0..values.len() {
-                                if let Some(n) = support[i] {
-                                    if values[i] != n {
-                                        flg = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            if flg {
-                                isok = true;
-                                break;
-                            }
-                        }
-                        if !isok {
-                            return false;
-                        }
-                    }
-                    ExtraConstraint::GraphDivision(_, _, _, _) => todo!(),
-                    ExtraConstraint::CustomConstraint(_, _) => todo!(),
-                }
-            }
-            true
+            assert_eq!(csp_assignments_converted, norm_csp_assignments);
         }
     }
 

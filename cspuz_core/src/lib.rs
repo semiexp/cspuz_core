@@ -21,4 +21,4 @@ pub mod sat;
 mod util;
 
 #[cfg(test)]
-mod test_util;
+mod test_utils;

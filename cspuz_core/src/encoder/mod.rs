@@ -1101,31 +1101,32 @@ fn encode_mul_naive(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntVar) {
 #[cfg(test)]
 mod tests {
     use super::super::{
-        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSPVars,
-        sat::SAT,
+        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSP, sat::SAT,
     };
     use super::*;
 
     pub(super) struct EncoderTester {
-        norm_vars: NormCSPVars,
+        norm_csp: NormCSP,
         sat: SAT,
         map: EncodeMap,
         pub config: Config,
+        int_vars: Vec<IntVar>,
     }
 
     impl EncoderTester {
         pub fn new() -> EncoderTester {
             EncoderTester {
-                norm_vars: NormCSPVars::new(),
+                norm_csp: NormCSP::new(),
                 sat: SAT::new(),
                 map: EncodeMap::new(),
                 config: Config::default(),
+                int_vars: vec![],
             }
         }
 
         pub fn env(&mut self) -> EncoderEnv {
             EncoderEnv {
-                norm_vars: &mut self.norm_vars,
+                norm_vars: &mut self.norm_csp.vars,
                 sat: &mut self.sat,
                 map: &mut self.map,
                 config: &self.config,
@@ -1144,15 +1145,17 @@ mod tests {
 
         pub fn add_int_var(&mut self, domain: Domain, is_direct_encoding: bool) -> IntVar {
             let v = self
-                .norm_vars
+                .norm_csp
+                .vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
 
             if is_direct_encoding {
                 self.map
-                    .convert_int_var_direct_encoding(&self.norm_vars, &mut self.sat, v);
+                    .convert_int_var_direct_encoding(&self.norm_csp.vars, &mut self.sat, v);
             } else {
                 self.map
-                    .convert_int_var_order_encoding(&self.norm_vars, &mut self.sat, v);
+                    .convert_int_var_order_encoding(&self.norm_csp.vars, &mut self.sat, v);
             }
 
             v
@@ -1161,21 +1164,20 @@ mod tests {
         #[allow(unused)]
         pub fn add_int_var_log_encoding(&mut self, domain: Domain) -> IntVar {
             let v = self
-                .norm_vars
+                .norm_csp
+                .vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
 
             self.map
-                .convert_int_var_log_encoding(&self.norm_vars, &mut self.sat, v);
+                .convert_int_var_log_encoding(&self.norm_csp.vars, &mut self.sat, v);
 
             v
         }
 
-        pub fn enumerate_valid_assignments_by_sat(
-            &mut self,
-            int_vars: &[IntVar],
-        ) -> Vec<Vec<CheckedInt>> {
+        pub fn enumerate_valid_assignments_by_sat(&mut self) -> Vec<Vec<CheckedInt>> {
             let mut sat_vars_set = std::collections::HashSet::new();
-            for var in int_vars {
+            for var in &self.int_vars {
                 for lit in self.map.int_map[*var].as_ref().unwrap().repr_literals() {
                     sat_vars_set.insert(lit.var());
                 }
@@ -1187,7 +1189,8 @@ mod tests {
 
             let mut ret = vec![];
             while let Some(model) = sat.solve() {
-                let values = int_vars
+                let values = self
+                    .int_vars
                     .iter()
                     .map(|&v| map.get_int_value_checked(&model, v).unwrap())
                     .collect::<Vec<_>>();
@@ -1203,69 +1206,46 @@ mod tests {
             ret
         }
 
-        pub fn enumerate_valid_assignments_by_literals(
-            &self,
-            lits: &[LinearLit],
-            mul: &[(IntVar, IntVar, IntVar)],
-            int_vars: &[IntVar],
-        ) -> Vec<Vec<CheckedInt>> {
-            let domains = int_vars
-                .iter()
-                .map(|&v| self.norm_vars.int_var(v).enumerate())
-                .collect::<Vec<_>>();
-
-            let all_assignments = crate::test_util::product_multi(&domains);
-            let valid_assignments = all_assignments
-                .into_iter()
-                .filter(|assignment| {
-                    for lit in lits {
-                        let sum = &lit.sum;
-                        let mut value = sum.constant;
-                        for (&var, &coef) in sum.iter() {
-                            let idx = int_vars.iter().position(|&v| v == var).unwrap();
-                            value += assignment[idx] * coef;
-                        }
-                        if !lit.op.compare(value, CheckedInt::new(0)) {
-                            return false;
-                        }
-                    }
-                    for &(x, y, m) in mul {
-                        let xi = int_vars.iter().position(|&v| v == x).unwrap();
-                        let yi = int_vars.iter().position(|&v| v == y).unwrap();
-                        let mi = int_vars.iter().position(|&v| v == m).unwrap();
-                        if assignment[xi] * assignment[yi] != assignment[mi] {
-                            return false;
-                        }
-                    }
-                    true
-                })
-                .collect();
-            valid_assignments
+        pub fn add_constraint_linear_lit(&mut self, lit: LinearLit) {
+            self.norm_csp.add_constraint(Constraint {
+                bool_lit: vec![],
+                linear_lit: vec![lit],
+            });
         }
 
-        pub fn run_check(self, lits: &[LinearLit]) {
-            self.run_check_with_mul(lits, &[]);
+        pub fn add_constraint(&mut self, constraint: Constraint) {
+            self.norm_csp.add_constraint(constraint);
+        }
+
+        pub fn add_extra_constraint(&mut self, constraint: ExtraConstraint) {
+            self.norm_csp.add_extra_constraint(constraint);
+        }
+
+        pub fn enumerate_valid_assignments_by_norm_csp(&self) -> Vec<Vec<CheckedInt>> {
+            let assignments = crate::norm_csp::test_utils::norm_csp_all_assignments_for_vars(
+                &self.norm_csp,
+                &[],
+                &self.int_vars,
+            );
+
+            assignments
+                .iter()
+                .map(|assignment| {
+                    self.int_vars
+                        .iter()
+                        .map(|&v| assignment.get_int(v).unwrap())
+                        .collect::<Vec<_>>()
+                })
+                .collect()
         }
 
         #[allow(unused)]
-        pub fn run_check_with_mul(mut self, lits: &[LinearLit], mul: &[(IntVar, IntVar, IntVar)]) {
-            let mut related_vars_set = std::collections::HashSet::new();
-            for lit in lits {
-                for (v, _) in lit.sum.iter() {
-                    related_vars_set.insert(*v);
-                }
-            }
-            for (x, y, m) in mul {
-                related_vars_set.insert(*x);
-                related_vars_set.insert(*y);
-                related_vars_set.insert(*m);
-            }
-            let related_vars = related_vars_set.into_iter().collect::<Vec<_>>();
+        pub fn run_check(mut self) {
+            let int_vars = self.int_vars.clone();
 
-            let mut result_by_literals =
-                self.enumerate_valid_assignments_by_literals(lits, mul, &related_vars);
+            let mut result_by_literals = self.enumerate_valid_assignments_by_norm_csp();
             result_by_literals.sort();
-            let mut result_by_sat = self.enumerate_valid_assignments_by_sat(&related_vars);
+            let mut result_by_sat = self.enumerate_valid_assignments_by_sat();
             result_by_sat.sort();
 
             assert_eq!(result_by_literals, result_by_sat);
@@ -1296,21 +1276,21 @@ mod tests {
                 let env = &mut tester.env();
                 let is_unsat = is_unsatisfiable_linear(env, &lits[0]);
 
-                encode_constraint(
-                    env,
-                    Constraint {
-                        bool_lit: vec![],
-                        linear_lit: lits.clone(),
-                    },
-                );
+                let constr = Constraint {
+                    bool_lit: vec![],
+                    linear_lit: lits,
+                };
+
+                encode_constraint(env, constr.clone());
 
                 // If the literal is unsatisfiable, the encoding does not take place
                 if !is_unsat {
                     // Ensure that auxiliary variables are created, or this test is meaningless
-                    assert!(tester.norm_vars.int_vars_iter().count() > terms.len());
+                    assert!(tester.norm_csp.vars.int_vars_iter().count() > terms.len());
                 }
 
-                tester.run_check(&lits);
+                tester.add_constraint(constr);
+                tester.run_check();
             }
         }
     }
@@ -1333,7 +1313,7 @@ mod tests {
                 let lit_vars = lit.sum.iter().map(|(v, _)| *v).collect::<Vec<_>>();
                 let lit_domains = lit_vars
                     .iter()
-                    .map(|&v| tester.norm_vars.int_var(v).enumerate())
+                    .map(|&v| tester.norm_csp.vars.int_var(v).enumerate())
                     .collect::<Vec<_>>();
 
                 let mut other_vars = vec![];
@@ -1356,11 +1336,11 @@ mod tests {
 
                 let other_vars_domains = other_vars
                     .iter()
-                    .map(|&v| tester.norm_vars.int_var(v).enumerate())
+                    .map(|&v| tester.norm_csp.vars.int_var(v).enumerate())
                     .collect::<Vec<_>>();
 
-                let assignments = crate::test_util::product_multi(&lit_domains);
-                let other_assignments = crate::test_util::product_multi(&other_vars_domains);
+                let assignments = crate::test_utils::product_multi(&lit_domains);
+                let other_assignments = crate::test_utils::product_multi(&other_vars_domains);
 
                 let is_satisfiable =
                     |lit: &LinearLit,
