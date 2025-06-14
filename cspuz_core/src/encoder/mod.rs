@@ -1111,6 +1111,7 @@ mod tests {
         sat: SAT,
         map: EncodeMap,
         pub config: Config,
+        int_vars: Vec<IntVar>,
     }
 
     impl EncoderTester {
@@ -1120,6 +1121,7 @@ mod tests {
                 sat: SAT::new(),
                 map: EncodeMap::new(),
                 config: Config::default(),
+                int_vars: vec![],
             }
         }
 
@@ -1146,6 +1148,7 @@ mod tests {
             let v = self
                 .norm_vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
 
             if is_direct_encoding {
                 self.map
@@ -1163,6 +1166,7 @@ mod tests {
             let v = self
                 .norm_vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
 
             self.map
                 .convert_int_var_log_encoding(&self.norm_vars, &mut self.sat, v);
@@ -1170,12 +1174,9 @@ mod tests {
             v
         }
 
-        pub fn enumerate_valid_assignments_by_sat(
-            &mut self,
-            int_vars: &[IntVar],
-        ) -> Vec<Vec<CheckedInt>> {
+        pub fn enumerate_valid_assignments_by_sat(&mut self) -> Vec<Vec<CheckedInt>> {
             let mut sat_vars_set = std::collections::HashSet::new();
-            for var in int_vars {
+            for var in &self.int_vars {
                 for lit in self.map.int_map[*var].as_ref().unwrap().repr_literals() {
                     sat_vars_set.insert(lit.var());
                 }
@@ -1187,7 +1188,8 @@ mod tests {
 
             let mut ret = vec![];
             while let Some(model) = sat.solve() {
-                let values = int_vars
+                let values = self
+                    .int_vars
                     .iter()
                     .map(|&v| map.get_int_value_checked(&model, v).unwrap())
                     .collect::<Vec<_>>();
@@ -1207,9 +1209,9 @@ mod tests {
             &self,
             lits: &[LinearLit],
             mul: &[(IntVar, IntVar, IntVar)],
-            int_vars: &[IntVar],
         ) -> Vec<Vec<CheckedInt>> {
-            let domains = int_vars
+            let domains = self
+                .int_vars
                 .iter()
                 .map(|&v| self.norm_vars.int_var(v).enumerate())
                 .collect::<Vec<_>>();
@@ -1222,7 +1224,7 @@ mod tests {
                         let sum = &lit.sum;
                         let mut value = sum.constant;
                         for (&var, &coef) in sum.iter() {
-                            let idx = int_vars.iter().position(|&v| v == var).unwrap();
+                            let idx = self.int_vars.iter().position(|&v| v == var).unwrap();
                             value += assignment[idx] * coef;
                         }
                         if !lit.op.compare(value, CheckedInt::new(0)) {
@@ -1230,9 +1232,9 @@ mod tests {
                         }
                     }
                     for &(x, y, m) in mul {
-                        let xi = int_vars.iter().position(|&v| v == x).unwrap();
-                        let yi = int_vars.iter().position(|&v| v == y).unwrap();
-                        let mi = int_vars.iter().position(|&v| v == m).unwrap();
+                        let xi = self.int_vars.iter().position(|&v| v == x).unwrap();
+                        let yi = self.int_vars.iter().position(|&v| v == y).unwrap();
+                        let mi = self.int_vars.iter().position(|&v| v == m).unwrap();
                         if assignment[xi] * assignment[yi] != assignment[mi] {
                             return false;
                         }
@@ -1249,23 +1251,11 @@ mod tests {
 
         #[allow(unused)]
         pub fn run_check_with_mul(mut self, lits: &[LinearLit], mul: &[(IntVar, IntVar, IntVar)]) {
-            let mut related_vars_set = std::collections::HashSet::new();
-            for lit in lits {
-                for (v, _) in lit.sum.iter() {
-                    related_vars_set.insert(*v);
-                }
-            }
-            for (x, y, m) in mul {
-                related_vars_set.insert(*x);
-                related_vars_set.insert(*y);
-                related_vars_set.insert(*m);
-            }
-            let related_vars = related_vars_set.into_iter().collect::<Vec<_>>();
+            let int_vars = self.int_vars.clone();
 
-            let mut result_by_literals =
-                self.enumerate_valid_assignments_by_literals(lits, mul, &related_vars);
+            let mut result_by_literals = self.enumerate_valid_assignments_by_literals(lits, mul);
             result_by_literals.sort();
-            let mut result_by_sat = self.enumerate_valid_assignments_by_sat(&related_vars);
+            let mut result_by_sat = self.enumerate_valid_assignments_by_sat();
             result_by_sat.sort();
 
             assert_eq!(result_by_literals, result_by_sat);
