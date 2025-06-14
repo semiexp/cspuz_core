@@ -1206,6 +1206,13 @@ mod tests {
             ret
         }
 
+        pub fn add_constraint_linear_lit(&mut self, lit: LinearLit) {
+            self.norm_csp.add_constraint(Constraint {
+                bool_lit: vec![],
+                linear_lit: vec![lit],
+            });
+        }
+
         pub fn add_constraint(&mut self, constraint: Constraint) {
             self.norm_csp.add_constraint(constraint);
         }

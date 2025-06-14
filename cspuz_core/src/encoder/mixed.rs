@@ -159,7 +159,7 @@ mod tests {
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
-    use crate::norm_csp::{Constraint, LinearLit};
+    use crate::norm_csp::LinearLit;
 
     #[test]
     fn test_encode_linear_ge_mixed() {
@@ -170,19 +170,13 @@ mod tests {
             let y = tester.add_int_var(Domain::range(2, 6), (mask & 2) != 0);
             let z = tester.add_int_var(Domain::range(-1, 4), (mask & 1) != 0);
 
-            let lits = [LinearLit::new(
-                linear_sum(&[(x, 3), (y, -4), (z, 2)], -1),
-                CmpOp::Ge,
-            )];
+            let lit = LinearLit::new(linear_sum(&[(x, 3), (y, -4), (z, 2)], -1), CmpOp::Ge);
             {
-                let clause_set = encode_linear_ge_mixed(&tester.env(), &lits[0].sum);
+                let clause_set = encode_linear_ge_mixed(&tester.env(), &lit.sum);
                 tester.add_clause_set(clause_set);
             }
 
-            tester.add_constraint(Constraint {
-                bool_lit: vec![],
-                linear_lit: lits.to_vec(),
-            });
+            tester.add_constraint_linear_lit(lit);
 
             tester.run_check();
         }

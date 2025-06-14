@@ -814,19 +814,13 @@ mod tests {
         let y = tester.add_int_var_log_encoding(Domain::range(3, 8));
         let z = tester.add_int_var_log_encoding(Domain::range(1, 22));
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, 2), (z, -1)], 0),
-            CmpOp::Eq,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -1)], 0), CmpOp::Eq);
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Eq);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Eq);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -838,19 +832,13 @@ mod tests {
         let y = tester.add_int_var_log_encoding(Domain::range(35, 80));
         let z = tester.add_int_var_log_encoding(Domain::range(90, 257));
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, 2), (z, -1)], -1),
-            CmpOp::Eq,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -1)], -1), CmpOp::Eq);
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Eq);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Eq);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -863,19 +851,16 @@ mod tests {
         let z = tester.add_int_var_log_encoding(Domain::range(3, 13));
         let w = tester.add_int_var_log_encoding(Domain::range(2, 17));
 
-        let lits = [LinearLit::new(
+        let lit = LinearLit::new(
             linear_sum(&[(x, 1033), (y, 254), (z, 516), (w, -2231)], 0),
             CmpOp::Eq,
-        )];
+        );
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Eq);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Eq);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -887,19 +872,13 @@ mod tests {
         let y = tester.add_int_var_log_encoding(Domain::range(3, 8));
         let z = tester.add_int_var_log_encoding(Domain::range(1, 5));
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, 2), (z, -3)], 0),
-            CmpOp::Ne,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -3)], 0), CmpOp::Ne);
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Ne);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Ne);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -911,19 +890,13 @@ mod tests {
         let y = tester.add_int_var_log_encoding(Domain::range(3, 8));
         let z = tester.add_int_var_log_encoding(Domain::range(1, 22));
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, 2), (z, -1)], 0),
-            CmpOp::Ge,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -1)], 0), CmpOp::Ge);
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Ge);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Ge);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -935,19 +908,13 @@ mod tests {
         let y = tester.add_int_var_log_encoding(Domain::range(35, 50));
         let z = tester.add_int_var_log_encoding(Domain::range(90, 107));
 
-        let lits = [LinearLit::new(
-            linear_sum(&[(x, 1), (y, 2), (z, -1)], -1),
-            CmpOp::Ge,
-        )];
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -1)], -1), CmpOp::Ge);
         {
-            let clause_set = encode_linear_log(&mut tester.env(), &lits[0].sum, CmpOp::Ge);
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Ge);
             tester.add_clause_set(clause_set);
         }
 
-        tester.add_constraint(Constraint {
-            bool_lit: vec![],
-            linear_lit: lits.to_vec(),
-        });
+        tester.add_constraint_linear_lit(lit);
         tester.run_check();
     }
 
@@ -964,18 +931,13 @@ mod tests {
                 linear_sum(&[(x, 1), (y, 2), (z, -1)], 0),
                 op,
             )];
-            encode_constraint(
-                &mut tester.env(),
-                Constraint {
-                    bool_lit: vec![],
-                    linear_lit: lits.clone(),
-                },
-            );
-
-            tester.add_constraint(Constraint {
+            let constraint = Constraint {
                 bool_lit: vec![],
-                linear_lit: lits.to_vec(),
-            });
+                linear_lit: lits.clone(),
+            };
+            encode_constraint(&mut tester.env(), constraint.clone());
+
+            tester.add_constraint(constraint);
             tester.run_check();
         }
     }
