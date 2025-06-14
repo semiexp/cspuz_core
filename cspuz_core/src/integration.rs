@@ -442,22 +442,13 @@ impl Model<'_> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::csp;
     use super::*;
     use crate::arithmetic::CmpOp;
     use crate::propagators::graph_division::GraphDivisionOptions;
-    use crate::test_utils;
-
-    enum DomainOrList {
-        Domain(Domain),
-        DomainList(Vec<CheckedInt>),
-    }
 
     struct IntegrationTester<'a> {
         original_constr: Vec<Stmt>,
         solver: IntegratedSolver<'a>,
-        bool_vars: Vec<BoolVar>,
-        int_vars: Vec<(IntVar, DomainOrList)>,
     }
 
     impl<'a> IntegrationTester<'a> {
@@ -465,8 +456,6 @@ mod tests {
             IntegrationTester {
                 original_constr: vec![],
                 solver: IntegratedSolver::new(),
-                bool_vars: vec![],
-                int_vars: vec![],
             }
         }
 
@@ -474,31 +463,19 @@ mod tests {
             IntegrationTester {
                 original_constr: vec![],
                 solver: IntegratedSolver::with_config(config),
-                bool_vars: vec![],
-                int_vars: vec![],
             }
         }
 
         fn new_bool_var(&mut self) -> BoolVar {
-            let ret = self.solver.new_bool_var();
-            self.bool_vars.push(ret);
-            ret
+            self.solver.new_bool_var()
         }
 
         fn new_int_var(&mut self, domain: Domain) -> IntVar {
-            let ret = self.solver.new_int_var(domain.clone());
-            self.int_vars.push((ret, DomainOrList::Domain(domain)));
-            ret
+            self.solver.new_int_var(domain.clone())
         }
 
         fn new_int_var_from_list(&mut self, domain_list: Vec<i32>) -> IntVar {
-            let l = domain_list
-                .iter()
-                .map(|&x| CheckedInt::new(x))
-                .collect::<Vec<_>>();
-            let ret = self.solver.new_int_var_from_list(domain_list);
-            self.int_vars.push((ret, DomainOrList::DomainList(l)));
-            ret
+            self.solver.new_int_var_from_list(domain_list)
         }
 
         fn add_expr(&mut self, expr: BoolExpr) {
@@ -511,58 +488,22 @@ mod tests {
             self.solver.add_constraint(stmt);
         }
 
-        fn check_expect(self, n_assignment_expected: usize, no_panic: bool) -> bool {
-            let n_assignment = self.solver.enumerate_valid_assignments().len();
-
-            if !no_panic {
-                assert_eq!(n_assignment, n_assignment_expected);
-            }
-
-            n_assignment == n_assignment_expected
-        }
-
         fn check(self) -> bool {
             self.check_internal(false)
         }
 
         fn check_internal(self, no_panic: bool) -> bool {
-            let mut bool_domains = vec![];
-            for _ in &self.bool_vars {
-                bool_domains.push(vec![false, true]);
-            }
-            let mut int_domains = vec![];
-            for (_, domain) in &self.int_vars {
-                int_domains.push(match domain {
-                    DomainOrList::Domain(dom) => dom.enumerate(),
-                    DomainOrList::DomainList(list) => list.clone(),
-                });
+            let mut expected = crate::csp::test_utils::csp_all_assignments(&self.solver.csp);
+            expected.sort();
+
+            let mut actual = self.solver.enumerate_valid_assignments();
+            actual.sort();
+
+            if !no_panic {
+                assert_eq!(actual, expected);
             }
 
-            let mut n_assignment_expected = 0;
-            for (vb, vi) in test_utils::product_binary(
-                &test_utils::product_multi(&bool_domains),
-                &test_utils::product_multi(&int_domains),
-            ) {
-                let mut assignment = csp::Assignment::new();
-                for i in 0..self.bool_vars.len() {
-                    assignment.set_bool(self.bool_vars[i], vb[i]);
-                }
-                for i in 0..self.int_vars.len() {
-                    assignment.set_int(self.int_vars[i].0, vi[i].get());
-                }
-                let is_sat_csp = self.is_satisfied_csp(&assignment);
-                if is_sat_csp {
-                    n_assignment_expected += 1;
-                }
-            }
-
-            self.check_expect(n_assignment_expected, no_panic)
-        }
-
-        fn is_satisfied_csp(&self, assignment: &csp::Assignment) -> bool {
-            self.original_constr
-                .iter()
-                .all(|stmt| crate::csp::test_utils::is_stmt_satisfied(assignment, stmt))
+            actual == expected
         }
     }
 
@@ -1192,7 +1133,7 @@ mod tests {
         let c = tester.new_int_var(Domain::range(1, 100));
         tester.add_expr((a.expr() * a.expr() + b.expr() * b.expr()).eq(c.expr() * c.expr()));
 
-        tester.check_expect(104, false);
+        tester.check();
     }
 
     #[test]
