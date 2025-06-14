@@ -1101,13 +1101,12 @@ fn encode_mul_naive(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntVar) {
 #[cfg(test)]
 mod tests {
     use super::super::{
-        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSPVars,
-        sat::SAT,
+        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSP, sat::SAT,
     };
     use super::*;
 
     pub(super) struct EncoderTester {
-        norm_vars: NormCSPVars,
+        norm_csp: NormCSP,
         sat: SAT,
         map: EncodeMap,
         pub config: Config,
@@ -1117,7 +1116,7 @@ mod tests {
     impl EncoderTester {
         pub fn new() -> EncoderTester {
             EncoderTester {
-                norm_vars: NormCSPVars::new(),
+                norm_csp: NormCSP::new(),
                 sat: SAT::new(),
                 map: EncodeMap::new(),
                 config: Config::default(),
@@ -1127,7 +1126,7 @@ mod tests {
 
         pub fn env(&mut self) -> EncoderEnv {
             EncoderEnv {
-                norm_vars: &mut self.norm_vars,
+                norm_vars: &mut self.norm_csp.vars,
                 sat: &mut self.sat,
                 map: &mut self.map,
                 config: &self.config,
@@ -1146,16 +1145,17 @@ mod tests {
 
         pub fn add_int_var(&mut self, domain: Domain, is_direct_encoding: bool) -> IntVar {
             let v = self
-                .norm_vars
+                .norm_csp
+                .vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
             self.int_vars.push(v);
 
             if is_direct_encoding {
                 self.map
-                    .convert_int_var_direct_encoding(&self.norm_vars, &mut self.sat, v);
+                    .convert_int_var_direct_encoding(&self.norm_csp.vars, &mut self.sat, v);
             } else {
                 self.map
-                    .convert_int_var_order_encoding(&self.norm_vars, &mut self.sat, v);
+                    .convert_int_var_order_encoding(&self.norm_csp.vars, &mut self.sat, v);
             }
 
             v
@@ -1164,12 +1164,13 @@ mod tests {
         #[allow(unused)]
         pub fn add_int_var_log_encoding(&mut self, domain: Domain) -> IntVar {
             let v = self
-                .norm_vars
+                .norm_csp
+                .vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
             self.int_vars.push(v);
 
             self.map
-                .convert_int_var_log_encoding(&self.norm_vars, &mut self.sat, v);
+                .convert_int_var_log_encoding(&self.norm_csp.vars, &mut self.sat, v);
 
             v
         }
@@ -1213,7 +1214,7 @@ mod tests {
             let domains = self
                 .int_vars
                 .iter()
-                .map(|&v| self.norm_vars.int_var(v).enumerate())
+                .map(|&v| self.norm_csp.vars.int_var(v).enumerate())
                 .collect::<Vec<_>>();
 
             let all_assignments = crate::test_utils::product_multi(&domains);
@@ -1297,7 +1298,7 @@ mod tests {
                 // If the literal is unsatisfiable, the encoding does not take place
                 if !is_unsat {
                     // Ensure that auxiliary variables are created, or this test is meaningless
-                    assert!(tester.norm_vars.int_vars_iter().count() > terms.len());
+                    assert!(tester.norm_csp.vars.int_vars_iter().count() > terms.len());
                 }
 
                 tester.run_check(&lits);
@@ -1323,7 +1324,7 @@ mod tests {
                 let lit_vars = lit.sum.iter().map(|(v, _)| *v).collect::<Vec<_>>();
                 let lit_domains = lit_vars
                     .iter()
-                    .map(|&v| tester.norm_vars.int_var(v).enumerate())
+                    .map(|&v| tester.norm_csp.vars.int_var(v).enumerate())
                     .collect::<Vec<_>>();
 
                 let mut other_vars = vec![];
@@ -1346,7 +1347,7 @@ mod tests {
 
                 let other_vars_domains = other_vars
                     .iter()
-                    .map(|&v| tester.norm_vars.int_var(v).enumerate())
+                    .map(|&v| tester.norm_csp.vars.int_var(v).enumerate())
                     .collect::<Vec<_>>();
 
                 let assignments = crate::test_utils::product_multi(&lit_domains);
