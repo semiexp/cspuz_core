@@ -58,13 +58,17 @@ pub fn is_norm_csp_satisfied(assignment: &Assignment, norm_csp: &NormCSP) -> boo
     true
 }
 
-pub fn norm_csp_all_assignments(norm_csp: &NormCSP) -> Vec<Assignment> {
+pub fn norm_csp_all_assignments_for_vars(
+    norm_csp: &NormCSP,
+    bool_vars: &[BoolVar],
+    int_vars: &[IntVar],
+) -> Vec<Assignment> {
     let mut ret = vec![];
 
-    let bool_domains = vec![vec![false, true]; norm_csp.vars.num_bool_var];
+    let bool_domains = vec![vec![false, true]; bool_vars.len()];
     let mut int_domains = vec![];
-    for i in 0..norm_csp.vars.num_int_vars() {
-        int_domains.push(norm_csp.vars.int_var[i].enumerate());
+    for v in int_vars {
+        int_domains.push(norm_csp.vars.int_var(*v).enumerate());
     }
 
     for (vb, vi) in crate::test_utils::product_binary(
@@ -72,11 +76,11 @@ pub fn norm_csp_all_assignments(norm_csp: &NormCSP) -> Vec<Assignment> {
         &crate::test_utils::product_multi(&int_domains),
     ) {
         let mut assignment = Assignment::new();
-        for (v, b) in norm_csp.vars.bool_vars_iter().zip(vb) {
-            assignment.set_bool(v, b);
+        for (v, b) in bool_vars.iter().zip(vb) {
+            assignment.set_bool(*v, b);
         }
-        for (v, i) in norm_csp.vars.int_vars_iter().zip(vi) {
-            assignment.set_int(v, i.get());
+        for (v, i) in int_vars.iter().zip(vi) {
+            assignment.set_int(*v, i.get());
         }
 
         if is_norm_csp_satisfied(&assignment, norm_csp) {
@@ -85,4 +89,11 @@ pub fn norm_csp_all_assignments(norm_csp: &NormCSP) -> Vec<Assignment> {
     }
 
     ret
+}
+
+pub fn norm_csp_all_assignments(norm_csp: &NormCSP) -> Vec<Assignment> {
+    let bool_vars = norm_csp.vars.bool_vars_iter().collect::<Vec<_>>();
+    let int_vars = norm_csp.vars.int_vars_iter().collect::<Vec<_>>();
+
+    norm_csp_all_assignments_for_vars(norm_csp, &bool_vars, &int_vars)
 }
