@@ -99,14 +99,14 @@ pub fn is_stmt_satisfied(assignment: &Assignment, stmt: &Stmt) -> bool {
                 .iter()
                 .map(|v| crate::csp::test_utils::eval_bool_expr(assignment, v))
                 .collect::<Vec<_>>();
-            crate::test_util::check_graph_active_vertices_connected(&is_active, &edges)
+            crate::test_utils::check_graph_active_vertices_connected(&is_active, &edges)
         }
         Stmt::Circuit(values) => {
             let values = values
                 .iter()
                 .map(|e| crate::csp::test_utils::eval_int_expr(assignment, e))
                 .collect::<Vec<_>>();
-            crate::test_util::check_circuit(&values)
+            crate::test_utils::check_circuit(&values)
         }
         Stmt::ExtensionSupports(vars, supports) => {
             let values = vars
@@ -143,7 +143,7 @@ pub fn is_stmt_satisfied(assignment: &Assignment, stmt: &Stmt) -> bool {
                 .map(|e| crate::csp::test_utils::eval_bool_expr(assignment, e))
                 .collect::<Vec<_>>();
 
-            crate::test_util::check_graph_division(&sizes, edges, &edge_disconnected)
+            crate::test_utils::check_graph_division(&sizes, edges, &edge_disconnected)
         }
         Stmt::CustomConstraint(_, _) => {
             todo!();

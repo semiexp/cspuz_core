@@ -446,7 +446,7 @@ mod tests {
     use super::*;
     use crate::arithmetic::CmpOp;
     use crate::propagators::graph_division::GraphDivisionOptions;
-    use crate::test_util;
+    use crate::test_utils;
 
     enum DomainOrList {
         Domain(Domain),
@@ -539,9 +539,9 @@ mod tests {
             }
 
             let mut n_assignment_expected = 0;
-            for (vb, vi) in test_util::product_binary(
-                &test_util::product_multi(&bool_domains),
-                &test_util::product_multi(&int_domains),
+            for (vb, vi) in test_utils::product_binary(
+                &test_utils::product_multi(&bool_domains),
+                &test_utils::product_multi(&int_domains),
             ) {
                 let mut assignment = csp::Assignment::new();
                 for i in 0..self.bool_vars.len() {

@@ -1101,7 +1101,7 @@ mod tests {
     use super::super::norm_csp::BoolVar as NBoolVar;
     use super::super::norm_csp::IntVarRepresentation;
     use super::*;
-    use crate::test_util;
+    use crate::test_utils;
 
     struct NormalizerTester {
         original_constr: Vec<Stmt>,
@@ -1218,9 +1218,9 @@ mod tests {
                 }
             }
 
-            for (vb, vi) in test_util::product_binary(
-                &test_util::product_multi(&bool_domains),
-                &test_util::product_multi(&int_domains),
+            for (vb, vi) in test_utils::product_binary(
+                &test_utils::product_multi(&bool_domains),
+                &test_utils::product_multi(&int_domains),
             ) {
                 let mut assignment = csp::Assignment::new();
                 for i in 0..self.bool_vars.len() {
@@ -1251,9 +1251,9 @@ mod tests {
                         );
                     }
                     if !inconsistent {
-                        for (ub, ui) in test_util::product_binary(
-                            &test_util::product_multi(&unfixed_bool_domains),
-                            &test_util::product_multi(&unfixed_int_domains),
+                        for (ub, ui) in test_utils::product_binary(
+                            &test_utils::product_multi(&unfixed_bool_domains),
+                            &test_utils::product_multi(&unfixed_int_domains),
                         ) {
                             let mut n_assignment = n_assignment.clone();
                             for i in 0..unfixed_bool_vars.len() {
@@ -1289,7 +1289,7 @@ mod tests {
                             .iter()
                             .map(|&v| assignment.get_bool(v.var).unwrap() ^ v.negated)
                             .collect::<Vec<_>>();
-                        if !test_util::check_graph_active_vertices_connected(&is_active, &edges) {
+                        if !test_utils::check_graph_active_vertices_connected(&is_active, &edges) {
                             return false;
                         }
                     }

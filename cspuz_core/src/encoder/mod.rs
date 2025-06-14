@@ -1214,7 +1214,7 @@ mod tests {
                 .map(|&v| self.norm_vars.int_var(v).enumerate())
                 .collect::<Vec<_>>();
 
-            let all_assignments = crate::test_util::product_multi(&domains);
+            let all_assignments = crate::test_utils::product_multi(&domains);
             let valid_assignments = all_assignments
                 .into_iter()
                 .filter(|assignment| {
@@ -1359,8 +1359,8 @@ mod tests {
                     .map(|&v| tester.norm_vars.int_var(v).enumerate())
                     .collect::<Vec<_>>();
 
-                let assignments = crate::test_util::product_multi(&lit_domains);
-                let other_assignments = crate::test_util::product_multi(&other_vars_domains);
+                let assignments = crate::test_utils::product_multi(&lit_domains);
+                let other_assignments = crate::test_utils::product_multi(&other_vars_domains);
 
                 let is_satisfiable =
                     |lit: &LinearLit,
