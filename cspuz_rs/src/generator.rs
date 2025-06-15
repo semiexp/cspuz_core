@@ -307,8 +307,6 @@ where
     }
 }
 
-// TODO: this test is temporarily disabled because it depends on slitherlink puzzle implementation
-/*
 #[cfg(test)]
 mod tests {
     use rand::SeedableRng;
@@ -325,9 +323,8 @@ mod tests {
                 height
             ];
 
-        let solver = |problem: &Vec<Vec<Option<i32>>>| {
-            crate::puzzle::slitherlink::solve_slitherlink(problem)
-        };
+        let solver =
+            |problem: &Vec<Vec<Option<i32>>>| crate::test_utils::solve_slitherlink(problem);
         let mut rng = rand::rngs::StdRng::seed_from_u64(42);
         let generated = Generator::new(
             solver,
@@ -338,10 +335,9 @@ mod tests {
         .generate(&mut rng);
         assert!(generated.is_some());
         let generated = generated.unwrap();
-        let ans = crate::puzzle::slitherlink::solve_slitherlink(&generated);
+        let ans = crate::test_utils::solve_slitherlink(&generated);
         assert!(ans.is_some());
         let ans = ans.unwrap();
         assert!(default_uniqueness_checker()(&generated, &ans));
     }
 }
-*/

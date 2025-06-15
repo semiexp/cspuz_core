@@ -9,3 +9,6 @@ pub mod solver;
 
 #[cfg(feature = "generator")]
 pub mod generator;
+
+#[cfg(test)]
+pub mod test_utils;
