@@ -22,8 +22,8 @@ run_partial_coverage() {
     cp -r target/llvm-cov/html/ "${OUT_DIR}/${module}"
 }
 
-run_partial_coverage csp csp.rs
-run_partial_coverage norm_csp norm_csp.rs
+run_partial_coverage csp csp/
+run_partial_coverage norm_csp norm_csp/
 run_partial_coverage normalizer normalizer.rs
 run_partial_coverage encoder encoder/
 run_partial_coverage integration integration.rs
