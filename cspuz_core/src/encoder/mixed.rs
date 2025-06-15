@@ -159,7 +159,7 @@ mod tests {
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
-    use crate::norm_csp::LinearLit;
+    use crate::norm_csp::{BoolLit, LinearLit};
 
     #[test]
     fn test_encode_linear_ge_mixed() {
@@ -171,6 +171,33 @@ mod tests {
             let z = tester.add_int_var(Domain::range(-1, 4), (mask & 1) != 0);
 
             let lit = LinearLit::new(linear_sum(&[(x, 3), (y, -4), (z, 2)], -1), CmpOp::Ge);
+            {
+                let clause_set = encode_linear_ge_mixed(&tester.env(), &lit.sum);
+                tester.add_clause_set(clause_set);
+            }
+
+            tester.add_constraint_linear_lit(lit);
+
+            tester.run_check();
+        }
+    }
+
+    #[test]
+    fn test_encode_linear_ge_mixed_binary() {
+        for mask in 0..8 {
+            let mut tester = EncoderTester::new();
+
+            let x = tester.add_bool_var();
+            let a = tester.add_int_var(Domain::range(0, 5), (mask & 4) != 0);
+            let b = tester.add_int_var(Domain::range(1, 6), (mask & 2) != 0);
+            let c = tester.add_int_var_binary(
+                BoolLit::new(x, true),
+                CheckedInt::new(0),
+                CheckedInt::new(2),
+                (mask & 1) != 0,
+            );
+
+            let lit = LinearLit::new(linear_sum(&[(a, 3), (b, -4), (c, 2)], -1), CmpOp::Ge);
             {
                 let clause_set = encode_linear_ge_mixed(&tester.env(), &lit.sum);
                 tester.add_clause_set(clause_set);
