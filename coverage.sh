@@ -5,9 +5,10 @@ set -eux
 # move to the script's directory
 cd "$(dirname "$0")"
 
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
 BUILD_DIR="target/llvm-cov-target"
-OUT_DIR="target/coverage"
-rm -rf "$OUT_DIR"
+OUT_DIR="target/coverage/${TIMESTAMP}"
 mkdir -p "$OUT_DIR"
 
 cargo llvm-cov --html -p cspuz_core -p cspuz_rs
@@ -27,3 +28,6 @@ run_partial_coverage norm_csp norm_csp/
 run_partial_coverage normalizer normalizer.rs
 run_partial_coverage encoder encoder/
 run_partial_coverage integration integration.rs
+
+echo "Done!"
+echo "Output directory: $(realpath $OUT_DIR)"
