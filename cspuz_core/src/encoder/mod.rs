@@ -357,6 +357,13 @@ impl EncodeMap {
     pub fn get_int_value(&self, model: &SATModel, var: IntVar) -> Option<i32> {
         self.get_int_value_checked(model, var).map(CheckedInt::get)
     }
+
+    /// Returns the literal representing `var == n` if it exists.
+    pub(crate) fn int_equal_lit(&self, var: IntVar, n: CheckedInt) -> Option<Lit> {
+        let encoding = self.int_map[var].as_ref()?.direct_encoding.as_ref()?;
+        let idx = encoding.domain.binary_search(&n).ok()?;
+        Some(encoding.lits[idx])
+    }
 }
 
 struct EncoderEnv<'a, 'b, 'c, 'd> {
