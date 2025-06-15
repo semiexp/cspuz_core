@@ -1158,13 +1158,7 @@ mod tests {
             v
         }
 
-        pub fn add_int_var(&mut self, domain: Domain, is_direct_encoding: bool) -> IntVar {
-            let v = self
-                .norm_csp
-                .vars
-                .new_int_var(IntVarRepresentation::Domain(domain));
-            self.int_vars.push(v);
-
+        fn convert_int_var(&mut self, v: IntVar, is_direct_encoding: bool) {
             if is_direct_encoding {
                 self.map
                     .convert_int_var_direct_encoding(&self.norm_csp.vars, &mut self.sat, v);
@@ -1172,6 +1166,38 @@ mod tests {
                 self.map
                     .convert_int_var_order_encoding(&self.norm_csp.vars, &mut self.sat, v);
             }
+        }
+
+        pub fn add_int_var(&mut self, domain: Domain, is_direct_encoding: bool) -> IntVar {
+            let v = self
+                .norm_csp
+                .vars
+                .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
+
+            self.convert_int_var(v, is_direct_encoding);
+
+            v
+        }
+
+        pub fn add_int_var_binary(
+            &mut self,
+            cond: BoolLit,
+            v_false: CheckedInt,
+            v_true: CheckedInt,
+            is_direct_encoding: bool,
+        ) -> IntVar {
+            let v = self
+                .norm_csp
+                .vars
+                .new_int_var(IntVarRepresentation::Binary {
+                    cond,
+                    v_false,
+                    v_true,
+                });
+            self.int_vars.push(v);
+
+            self.convert_int_var(v, is_direct_encoding);
 
             v
         }
@@ -1259,6 +1285,25 @@ mod tests {
 
             assignments
                 .iter()
+                .filter(|assignment| {
+                    for v in &self.int_vars {
+                        let repr = self.norm_csp.vars.int_var(*v);
+                        if let &IntVarRepresentation::Binary {
+                            cond,
+                            v_false,
+                            v_true,
+                        } = repr
+                        {
+                            let cond = assignment.get_bool(cond.var).unwrap() ^ cond.negated;
+                            let actual = assignment.get_int(*v).unwrap();
+                            let expected = if cond { v_true.get() } else { v_false.get() };
+                            if actual != expected {
+                                return false;
+                            }
+                        }
+                    }
+                    true
+                })
                 .map(|assignment| {
                     let bool_values = self
                         .bool_vars
