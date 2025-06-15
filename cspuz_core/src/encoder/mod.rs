@@ -1110,6 +1110,7 @@ mod tests {
         sat: SAT,
         map: EncodeMap,
         pub config: Config,
+        bool_vars: Vec<BoolVar>,
         int_vars: Vec<IntVar>,
     }
 
@@ -1120,6 +1121,7 @@ mod tests {
                 sat: SAT::new(),
                 map: EncodeMap::new(),
                 config: Config::default(),
+                bool_vars: vec![],
                 int_vars: vec![],
             }
         }
@@ -1141,6 +1143,19 @@ mod tests {
             for i in 0..clause_set.len() {
                 self.sat.add_clause(&clause_set[i]);
             }
+        }
+
+        pub fn add_bool_var(&mut self) -> BoolVar {
+            let v = self.add_bool_var_lazy();
+            self.map
+                .convert_bool_var(&self.norm_csp.vars, &mut self.sat, v);
+            v
+        }
+
+        pub fn add_bool_var_lazy(&mut self) -> BoolVar {
+            let v = self.norm_csp.new_bool_var();
+            self.bool_vars.push(v);
+            v
         }
 
         pub fn add_int_var(&mut self, domain: Domain, is_direct_encoding: bool) -> IntVar {
@@ -1175,8 +1190,12 @@ mod tests {
             v
         }
 
-        pub fn enumerate_valid_assignments_by_sat(&mut self) -> Vec<Vec<CheckedInt>> {
+        pub fn enumerate_valid_assignments_by_sat(&mut self) -> Vec<(Vec<bool>, Vec<CheckedInt>)> {
             let mut sat_vars_set = std::collections::HashSet::new();
+            for var in &self.bool_vars {
+                let lit = self.map.get_bool_var(*var).unwrap();
+                sat_vars_set.insert(lit.var());
+            }
             for var in &self.int_vars {
                 for lit in self.map.int_map[*var].as_ref().unwrap().repr_literals() {
                     sat_vars_set.insert(lit.var());
@@ -1189,12 +1208,22 @@ mod tests {
 
             let mut ret = vec![];
             while let Some(model) = sat.solve() {
-                let values = self
+                let bool_values = self
+                    .bool_vars
+                    .iter()
+                    .map(|&v| {
+                        let lit = map.get_bool_var(v).unwrap();
+                        model.assignment(lit.var()) ^ lit.is_negated()
+                    })
+                    .collect::<Vec<_>>();
+
+                let int_values = self
                     .int_vars
                     .iter()
                     .map(|&v| map.get_int_value_checked(&model, v).unwrap())
                     .collect::<Vec<_>>();
-                ret.push(values);
+
+                ret.push((bool_values, int_values));
 
                 let refutation_clause = sat_vars
                     .iter()
@@ -1221,20 +1250,27 @@ mod tests {
             self.norm_csp.add_extra_constraint(constraint);
         }
 
-        pub fn enumerate_valid_assignments_by_norm_csp(&self) -> Vec<Vec<CheckedInt>> {
+        pub fn enumerate_valid_assignments_by_norm_csp(&self) -> Vec<(Vec<bool>, Vec<CheckedInt>)> {
             let assignments = crate::norm_csp::test_utils::norm_csp_all_assignments_for_vars(
                 &self.norm_csp,
-                &[],
+                &self.bool_vars,
                 &self.int_vars,
             );
 
             assignments
                 .iter()
                 .map(|assignment| {
-                    self.int_vars
+                    let bool_values = self
+                        .bool_vars
+                        .iter()
+                        .map(|&v| assignment.get_bool(v).unwrap())
+                        .collect::<Vec<_>>();
+                    let int_values = self
+                        .int_vars
                         .iter()
                         .map(|&v| assignment.get_int(v).unwrap())
-                        .collect::<Vec<_>>()
+                        .collect::<Vec<_>>();
+                    (bool_values, int_values)
                 })
                 .collect()
         }
@@ -1258,6 +1294,103 @@ mod tests {
             ret.add_coef(var, CheckedInt::new(coef));
         }
         ret
+    }
+
+    #[test]
+    fn test_encode_bool_literals() {
+        {
+            let mut tester = EncoderTester::new();
+
+            let x = tester.add_bool_var();
+            let y = tester.add_bool_var();
+            let z = tester.add_bool_var();
+
+            let constraint = Constraint {
+                bool_lit: vec![
+                    BoolLit::new(x, false),
+                    BoolLit::new(y, true),
+                    BoolLit::new(z, false),
+                ],
+                linear_lit: vec![],
+            };
+
+            encode_constraint(&mut tester.env(), constraint.clone());
+            tester.add_constraint(constraint);
+
+            tester.run_check();
+        }
+
+        {
+            let mut tester = EncoderTester::new();
+
+            let x = tester.add_bool_var_lazy();
+            let y = tester.add_bool_var_lazy();
+            let z = tester.add_bool_var_lazy();
+
+            let constraint = Constraint {
+                bool_lit: vec![BoolLit::new(x, false), BoolLit::new(y, true)],
+                linear_lit: vec![],
+            };
+            encode_constraint(&mut tester.env(), constraint.clone());
+            tester.add_constraint(constraint);
+
+            let constraint = Constraint {
+                bool_lit: vec![
+                    BoolLit::new(x, true),
+                    BoolLit::new(y, true),
+                    BoolLit::new(z, false),
+                ],
+                linear_lit: vec![],
+            };
+
+            encode_constraint(&mut tester.env(), constraint.clone());
+            tester.add_constraint(constraint);
+
+            tester.run_check();
+        }
+    }
+
+    #[test]
+    fn test_encode_bool_and_linear_literals() {
+        for n in 1..=3 {
+            let mut tester = EncoderTester::new();
+
+            let x = tester.add_bool_var();
+            let y = tester.add_bool_var();
+
+            let a = tester.add_int_var(Domain::range(0, 3), false);
+            let b = tester.add_int_var(Domain::range(0, 3), false);
+            let c = tester.add_int_var(Domain::range(0, 3), false);
+
+            let mut linear_lits = vec![];
+            if n >= 1 {
+                linear_lits.push(LinearLit::new(
+                    linear_sum(&[(a, 1), (b, 1), (c, -1)], 2),
+                    CmpOp::Ge,
+                ));
+            }
+            if n >= 2 {
+                linear_lits.push(LinearLit::new(
+                    linear_sum(&[(b, 1), (c, 1), (a, -1)], 1),
+                    CmpOp::Ge,
+                ));
+            }
+            if n >= 3 {
+                linear_lits.push(LinearLit::new(
+                    linear_sum(&[(c, 1), (a, 1), (b, -1)], 0),
+                    CmpOp::Ge,
+                ));
+            }
+            let constraint = Constraint {
+                bool_lit: vec![BoolLit::new(x, false), BoolLit::new(y, true)],
+                linear_lit: linear_lits,
+            };
+
+            encode_constraint(&mut tester.env(), constraint.clone());
+            tester.add_constraint(constraint);
+
+            tester.run_check();
+        }
     }
 
     #[test]
