@@ -212,6 +212,17 @@ impl PyConfig {
         }
         Ok(())
     }
+
+    #[getter]
+    fn get_optimize_polarity(&mut self) -> PyResult<bool> {
+        Ok(self.config.optimize_polarity)
+    }
+
+    #[setter]
+    fn set_optimize_polarity(&mut self, value: bool) -> PyResult<()> {
+        self.config.optimize_polarity = value;
+        Ok(())
+    }
 }
 
 static mut GLOBAL_CONFIG: PyConfig = PyConfig::new();
