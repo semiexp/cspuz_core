@@ -275,7 +275,7 @@ impl<'a> IntegratedSolver<'a> {
             self.add_expr(BoolExpr::Or(refutation));
 
             if self.config.optimize_polarity {
-                // To make the conversion faster, it is better to find assignments in which many variables
+                // To accelerate convergence, it is better to find assignments in which many variables
                 // are assigned with values that are different from current values.
                 // Here we set the polarity of the variables so that the negation of the current value is
                 // preferred.
@@ -291,7 +291,14 @@ impl<'a> IntegratedSolver<'a> {
                     }
                 }
 
-                // TODO: support int variables
+                for (&v, &n) in assignment.int_iter() {
+                    if let Some(v) = self.normalize_map.get_int_var(v) {
+                        let eq_lit = self.encode_map.int_equal_lit(v, CheckedInt::new(n));
+                        if let Some(eq_lit) = eq_lit {
+                            self.sat.set_polarity(eq_lit.var(), !eq_lit.is_negated());
+                        }
+                    }
+                }
             }
 
             iterations += 1;
