@@ -256,7 +256,20 @@ impl CSPVars {
             IntExpr::Mul(x, y) => {
                 self.constant_folding_int(x);
                 self.constant_folding_int(y);
-                // TODO: implement constant folding
+
+                if let (IntExpr::Const(a), IntExpr::Const(b)) = (x.as_ref(), y.as_ref()) {
+                    *expr = IntExpr::Const(a * b);
+                } else if matches!(x.as_ref(), IntExpr::Const(0))
+                    || matches!(y.as_ref(), IntExpr::Const(0))
+                {
+                    *expr = IntExpr::Const(0);
+                } else if let IntExpr::Const(c) = x.as_ref() {
+                    let y_val = std::mem::replace(y.as_mut(), IntExpr::Const(0));
+                    *expr = IntExpr::Linear(vec![(Box::new(y_val), *c)]);
+                } else if let IntExpr::Const(c) = y.as_ref() {
+                    let x_val = std::mem::replace(x.as_mut(), IntExpr::Const(0));
+                    *expr = IntExpr::Linear(vec![(Box::new(x_val), *c)]);
+                }
             }
         }
     }
@@ -779,6 +792,26 @@ mod tests {
         let mut expr = x.expr().ite(a.expr(), n.expr()) * a.expr();
         csp.vars.constant_folding_int(&mut expr);
         assert_eq!(expr, x.expr().ite(a.expr(), IntExpr::Const(1)) * a.expr());
+
+        let mut expr = IntExpr::Const(4) * IntExpr::Const(2);
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Const(8));
+
+        let mut expr = IntExpr::Const(4) * a.expr();
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Linear(vec![(Box::new(a.expr()), 4)]));
+
+        let mut expr = a.expr() * IntExpr::Const(2);
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Linear(vec![(Box::new(a.expr()), 2)]));
+
+        let mut expr = IntExpr::Const(0) * a.expr();
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Const(0));
+
+        let mut expr = a.expr() * IntExpr::Const(0);
+        csp.vars.constant_folding_int(&mut expr);
+        assert_eq!(expr, IntExpr::Const(0));
     }
 
     #[test]
