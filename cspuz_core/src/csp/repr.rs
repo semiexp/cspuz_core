@@ -121,9 +121,84 @@ impl Stmt {
                 }
                 write!(out, ")")?;
             }
-            Stmt::ExtensionSupports(_, _) => todo!(),
-            Stmt::GraphDivision(_, _, _, _) => todo!(),
-            Stmt::CustomConstraint(_, _) => todo!(),
+            Stmt::ExtensionSupports(exprs, supports) => {
+                write!(out, "(extension-supports")?;
+                for expr in exprs {
+                    write!(out, " ")?;
+                    expr.pretty_print(out)?;
+                }
+                write!(out, " supports=[")?;
+                let mut is_first_tuple = true;
+                for tuple in supports {
+                    if !is_first_tuple {
+                        write!(out, " ")?;
+                    } else {
+                        is_first_tuple = false;
+                    }
+                    write!(out, "(")?;
+                    let mut is_first_val = true;
+                    for val in tuple {
+                        if !is_first_val {
+                            write!(out, ",")?;
+                        } else {
+                            is_first_val = false;
+                        }
+                        match val {
+                            Some(v) => write!(out, "{}", v)?,
+                            None => write!(out, "*")?,
+                        }
+                    }
+                    write!(out, ")")?;
+                }
+                write!(out, "])")?;
+            }
+            Stmt::GraphDivision(sizes, edges, edges_lit, _opts) => {
+                write!(out, "(graph-division")?;
+                write!(out, " sizes=[")?;
+                let mut is_first = true;
+                for size in sizes {
+                    if !is_first {
+                        write!(out, " ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    match size {
+                        Some(expr) => expr.pretty_print(out)?,
+                        None => write!(out, "*")?,
+                    }
+                }
+                write!(out, "]")?;
+                write!(out, " graph=[")?;
+                let mut is_first = true;
+                for &(u, v) in edges {
+                    if !is_first {
+                        write!(out, " ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    write!(out, "{}--{}", u, v)?;
+                }
+                write!(out, "]")?;
+                write!(out, " edges=[")?;
+                let mut is_first = true;
+                for edge_expr in edges_lit {
+                    if !is_first {
+                        write!(out, " ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    edge_expr.pretty_print(out)?;
+                }
+                write!(out, "])")?;
+            }
+            Stmt::CustomConstraint(exprs, _) => {
+                write!(out, "(custom-constraint")?;
+                for expr in exprs {
+                    write!(out, " ")?;
+                    expr.pretty_print(out)?;
+                }
+                write!(out, ")")?;
+            }
         }
         Ok(())
     }
