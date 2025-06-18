@@ -342,7 +342,7 @@ impl EncodeMap {
                         ret |= 1 << i;
                     }
                 }
-                Some(CheckedInt::new(ret))
+                Some(CheckedInt::new(ret) + encoding.offset)
             }
 
             #[cfg(not(feature = "csp-extra-constraints"))]
