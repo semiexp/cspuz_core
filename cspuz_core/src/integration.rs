@@ -1671,6 +1671,13 @@ mod tests {
         tester.check();
     }
 
+    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+    enum FuzzerLogEncodingMode {
+        None,
+        Allow,
+        Force,
+    }
+
     struct Fuzzer {
         random_state: u64,
     }
@@ -1704,9 +1711,11 @@ mod tests {
             num_int_vars: usize,
             num_exprs: usize,
             max_complexity: u32,
+            log_encoding_mode: FuzzerLogEncodingMode,
         ) {
             let mut tester = IntegrationTester::with_config(Config {
-                use_log_encoding: false, // do not use log encoding because negative numbers are not supported
+                use_log_encoding: log_encoding_mode != FuzzerLogEncodingMode::None,
+                force_use_log_encoding: log_encoding_mode == FuzzerLogEncodingMode::Force,
                 ..Config::default()
             });
 
@@ -1889,13 +1898,25 @@ mod tests {
     #[test]
     fn test_integration_fuzz_quick() {
         let mut fuzzer = Fuzzer::new();
-        for _ in 0..1000 {
-            let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
-            let num_int_vars = fuzzer.next_i32(1, 4) as usize;
-            let num_exprs = fuzzer.next_i32(2, 11) as usize;
-            let max_complexity = 7;
+        for (mode, rep) in [
+            (FuzzerLogEncodingMode::None, 1000),
+            (FuzzerLogEncodingMode::Allow, 500),
+            (FuzzerLogEncodingMode::Force, 100),
+        ] {
+            for _ in 0..rep {
+                let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
+                let num_int_vars = fuzzer.next_i32(1, 4) as usize;
+                let num_exprs = fuzzer.next_i32(2, 11) as usize;
+                let max_complexity = 7;
 
-            fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity);
+                fuzzer.run_single_trial(
+                    num_bool_vars,
+                    num_int_vars,
+                    num_exprs,
+                    max_complexity,
+                    mode,
+                );
+            }
         }
     }
 
@@ -1903,13 +1924,25 @@ mod tests {
     #[ignore] // This test can take a long time to run
     fn test_integration_fuzz_long() {
         let mut fuzzer = Fuzzer::new();
-        for _ in 0..100000 {
-            let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
-            let num_int_vars = fuzzer.next_i32(1, 5) as usize;
-            let num_exprs = fuzzer.next_i32(2, 12) as usize;
-            let max_complexity = 10;
+        for (mode, rep) in [
+            (FuzzerLogEncodingMode::None, 100000),
+            (FuzzerLogEncodingMode::Allow, 50000),
+            (FuzzerLogEncodingMode::Force, 10000),
+        ] {
+            for _ in 0..rep {
+                let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
+                let num_int_vars = fuzzer.next_i32(1, 5) as usize;
+                let num_exprs = fuzzer.next_i32(2, 12) as usize;
+                let max_complexity = 10;
 
-            fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity);
+                fuzzer.run_single_trial(
+                    num_bool_vars,
+                    num_int_vars,
+                    num_exprs,
+                    max_complexity,
+                    mode,
+                );
+            }
         }
     }
 }
