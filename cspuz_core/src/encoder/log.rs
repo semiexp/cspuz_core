@@ -8,7 +8,8 @@ use super::order::{LinearInfoForOrderEncoding, OrderEncoding};
 use super::{new_var, new_vars_as_lits, ClauseSet, EncoderEnv, LinearInfo, LinearLit};
 use crate::arithmetic::{CheckedInt, CmpOp, Range};
 use crate::domain::Domain;
-use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum};
+use crate::encoder::EncodeMap;
+use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum, NormCSPVars};
 use crate::sat::{Lit, SAT};
 
 /// Representation of a log-encoded variable.
@@ -23,7 +24,12 @@ pub(super) struct LogEncoding {
     pub offset: CheckedInt,
 }
 
-pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
+pub fn encode_var_log(
+    encode_map: &mut EncodeMap,
+    norm_vars: &NormCSPVars,
+    sat: &mut SAT,
+    repr: &IntVarRepresentation,
+) -> LogEncoding {
     match repr {
         IntVarRepresentation::Domain(domain) => {
             let low = domain.lower_bound_checked();
@@ -94,8 +100,51 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
                 offset,
             }
         }
-        IntVarRepresentation::Binary { .. } => {
-            todo!();
+        &IntVarRepresentation::Binary {
+            cond,
+            v_false,
+            v_true,
+        } => {
+            let cond = encode_map.convert_bool_lit(norm_vars, sat, cond);
+
+            assert!(v_false < v_true);
+
+            let offset = if v_false < 0 {
+                v_false
+            } else {
+                CheckedInt::new(0)
+            };
+            let shifted_v_false = v_false - offset;
+            let shifted_v_true = v_true - offset;
+            let n_bits = (32 - shifted_v_true.get().leading_zeros()) as usize;
+
+            let mut lits = vec![];
+            for i in 0..n_bits {
+                match (
+                    (shifted_v_false.get() >> i) & 1,
+                    (shifted_v_true.get() >> i) & 1,
+                ) {
+                    (0, 0) => {
+                        let lit = sat.new_var().as_lit(false);
+                        lits.push(lit);
+                        sat.add_clause(&[!lit]);
+                    }
+                    (0, 1) => lits.push(cond),
+                    (1, 0) => lits.push(!cond),
+                    (1, 1) => {
+                        let lit = sat.new_var().as_lit(false);
+                        lits.push(lit);
+                        sat.add_clause(&[lit]);
+                    }
+                    _ => unreachable!(),
+                }
+            }
+
+            LogEncoding {
+                lits,
+                range: Range::new(v_false, v_true),
+                offset,
+            }
         }
     }
 }
@@ -874,7 +923,7 @@ mod tests {
     use super::super::encode_constraint;
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::domain::Domain;
-    use crate::norm_csp::{Constraint, ExtraConstraint, LinearLit};
+    use crate::norm_csp::{BoolLit, Constraint, ExtraConstraint, LinearLit};
 
     #[test]
     fn test_encode_log_var() {
@@ -937,6 +986,31 @@ mod tests {
 
         // Test sparse domain with negative and positive values
         let _x = tester.add_int_var_log_encoding(Domain::enumerative(vec![-10, -5, 0, 3, 8]));
+
+        tester.run_check();
+    }
+
+    #[test]
+    fn test_encode_log_var_binary() {
+        let mut tester = EncoderTester::new();
+
+        // Test binary variable with log encoding
+        let x = tester.add_bool_var();
+        let _a = tester.add_int_var_log_encoding_binary(
+            BoolLit::new(x, true),
+            CheckedInt::new(1),
+            CheckedInt::new(3),
+        );
+        let _b = tester.add_int_var_log_encoding_binary(
+            BoolLit::new(x, true),
+            CheckedInt::new(-3),
+            CheckedInt::new(-1),
+        );
+        let _c = tester.add_int_var_log_encoding_binary(
+            BoolLit::new(x, true),
+            CheckedInt::new(-2),
+            CheckedInt::new(3),
+        );
 
         tester.run_check();
     }
