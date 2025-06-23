@@ -1,16 +1,15 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs::graph::InnerGridEdges;
-use cspuz_rs_puzzles::puzzles::tetrominous;
+use cspuz_rs_puzzles::puzzles::polyominous;
 
-const TETROMINO_NAMES: [&'static str; 5] =
-    ["I", "L", "O", "S", "T"];
-
+const PENTOMINO_NAMES: [&'static str; 12] =
+    ["F", "I", "L", "N", "P", "T", "U", "V", "W", "X", "Y", "Z"];
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues, default_borders) =
-        tetrominous::deserialize_tetrominous_problem(url).ok_or("invalid url")?;
-    let border = tetrominous::solve_tetrominous(&clues, &default_borders).ok_or("no answer")?;
+        polyominous::deserialize_pentominous_problem(url).ok_or("invalid url")?;
+    let border = polyominous::solve_pentominous(&clues, &default_borders).ok_or("no answer")?;
 
     let height = clues.len();
     let width = clues[0].len();
@@ -24,7 +23,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     x,
                     "black",
                     if n >= 0 {
-                        ItemKind::Text(TETROMINO_NAMES[n as usize])
+                        ItemKind::Text(PENTOMINO_NAMES[n as usize])
                     } else {
                         ItemKind::Fill
                     },
