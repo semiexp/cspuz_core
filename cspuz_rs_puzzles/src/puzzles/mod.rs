@@ -29,6 +29,7 @@ pub mod firefly;
 pub mod firewalk;
 pub mod fivecells;
 pub mod forestwalk;
+pub mod fourcells;
 pub mod geradeweg;
 pub mod guidearrow;
 pub mod hashi;
