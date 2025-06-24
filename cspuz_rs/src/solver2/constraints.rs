@@ -21,7 +21,11 @@ pub fn all<T: BoolArrayLike>(values: T) -> NdArray<(), CSPBoolExpr> {
 }
 
 pub fn sum<T: IntArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
-    let terms = values.to_vec().into_iter().map(|x| (Box::new(x), 1)).collect();
+    let terms = values
+        .to_vec()
+        .into_iter()
+        .map(|x| (Box::new(x), 1))
+        .collect();
     NdArray {
         shape: (),
         data: vec![CSPIntExpr::Linear(terms)],
@@ -29,7 +33,16 @@ pub fn sum<T: IntArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
 }
 
 pub fn count_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
-    let terms = values.to_vec().into_iter().map(|x| (Box::new(x.ite(CSPIntExpr::Const(1), CSPIntExpr::Const(0))), 1)).collect();
+    let terms = values
+        .to_vec()
+        .into_iter()
+        .map(|x| {
+            (
+                Box::new(x.ite(CSPIntExpr::Const(1), CSPIntExpr::Const(0))),
+                1,
+            )
+        })
+        .collect();
     NdArray {
         shape: (),
         data: vec![CSPIntExpr::Linear(terms)],

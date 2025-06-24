@@ -1,6 +1,6 @@
-use std::ops::{Bound, RangeBounds};
-use crate::items::Arrow;
 pub use super::traits::{Operand, PropagateBinary, PropagateTernary};
+use crate::items::Arrow;
+use std::ops::{Bound, RangeBounds};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 use cspuz_core::csp::BoolVar as CSPBoolVar;
@@ -84,7 +84,7 @@ impl<S: Clone> Operand for NdArray<S, CSPIntVar> {
 // Accessors
 // ==========
 
-impl<T: Clone> NdArray<(usize, ), T> {
+impl<T: Clone> NdArray<(usize,), T> {
     pub fn len(&self) -> usize {
         self.shape.0
     }
@@ -96,7 +96,7 @@ impl<T: Clone> NdArray<(usize, ), T> {
         }
     }
 
-    pub fn reverse(&self) -> NdArray<(usize, ), T> {
+    pub fn reverse(&self) -> NdArray<(usize,), T> {
         let mut data = self.data.clone();
         data.reverse();
         NdArray {
@@ -124,7 +124,7 @@ fn resolve_range<T: RangeBounds<usize>>(len: usize, range: &T) -> (usize, usize)
     }
 }
 
-impl<T: Clone> NdArray<(usize, ), T> {
+impl<T: Clone> NdArray<(usize,), T> {
     pub fn reshape_as_2d(&self, shape: (usize, usize)) -> NdArray<(usize, usize), T> {
         let (height, width) = shape;
         assert_eq!(height * width, self.data.len());
@@ -134,7 +134,7 @@ impl<T: Clone> NdArray<(usize, ), T> {
         }
     }
 
-    pub fn slice<I: RangeBounds<usize>>(&self, idx: I) -> NdArray<(usize, ), T> {
+    pub fn slice<I: RangeBounds<usize>>(&self, idx: I) -> NdArray<(usize,), T> {
         let (start, end) = resolve_range(self.len(), &idx);
         NdArray {
             shape: (end - start,),
@@ -204,7 +204,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         }
     }
 
-    pub fn select<I, X>(&self, idx: I) -> NdArray<(usize, ), T>
+    pub fn select<I, X>(&self, idx: I) -> NdArray<(usize,), T>
     where
         I: IntoIterator<Item = X>,
         X: std::borrow::Borrow<(usize, usize)>,
@@ -223,24 +223,28 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         }
     }
 
-    pub fn slice_fixed_y<X: RangeBounds<usize>>(&self, idx: (usize, X)) -> NdArray<(usize, ), T> {
+    pub fn slice_fixed_y<X: RangeBounds<usize>>(&self, idx: (usize, X)) -> NdArray<(usize,), T> {
         let (y, xs) = idx;
         let (_, w) = self.shape;
         let (x_start, x_end) = resolve_range(w, &xs);
 
-        let items: Vec<_> = (x_start..x_end).map(|x| self.at_raw((y, x)).clone()).collect();
+        let items: Vec<_> = (x_start..x_end)
+            .map(|x| self.at_raw((y, x)).clone())
+            .collect();
         NdArray {
             shape: (items.len(),),
             data: items,
         }
     }
 
-    pub fn slice_fixed_x<Y: RangeBounds<usize>>(&self, idx: (Y, usize)) -> NdArray<(usize, ), T> {
+    pub fn slice_fixed_x<Y: RangeBounds<usize>>(&self, idx: (Y, usize)) -> NdArray<(usize,), T> {
         let (ys, x) = idx;
         let (h, _) = self.shape;
         let (y_start, y_end) = resolve_range(h, &ys);
 
-        let items: Vec<T> = (y_start..y_end).map(|y| self.at_raw((y, x)).clone()).collect();
+        let items: Vec<T> = (y_start..y_end)
+            .map(|y| self.at_raw((y, x)).clone())
+            .collect();
         NdArray {
             shape: (items.len(),),
             data: items,
@@ -269,7 +273,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         }
     }
 
-    pub fn flatten(&self) -> NdArray<(usize, ), T> {
+    pub fn flatten(&self) -> NdArray<(usize,), T> {
         NdArray {
             shape: (self.shape.0 * self.shape.1,),
             data: self.data.clone(),
@@ -285,7 +289,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         }
     }
 
-    pub fn four_neighbors(&self, idx: (usize, usize)) -> NdArray<(usize, ), T> {
+    pub fn four_neighbors(&self, idx: (usize, usize)) -> NdArray<(usize,), T> {
         self.select(self.four_neighbor_indices(idx))
     }
 
@@ -293,7 +297,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         &self,
         cell: (usize, usize),
         arrow: Arrow,
-    ) -> Option<NdArray<(usize, ), T>> {
+    ) -> Option<NdArray<(usize,), T>> {
         let (y, x) = cell;
         match arrow {
             Arrow::Unspecified => None,
@@ -370,14 +374,23 @@ binary_op!(imp, CSPBoolExpr, CSPBoolExpr, |x, y| x.imp(y));
 binary_op!(iff, CSPBoolExpr, CSPBoolExpr, |x, y| x.iff(y));
 
 impl<S, A> NdArray<S, A> {
-    pub fn ite<'a, B, C>(&'a self, if_true: B, if_false: C) -> <(&'a NdArray<S, A>, B, C) as PropagateTernary<CSPBoolExpr, CSPIntExpr, CSPIntExpr, CSPIntExpr>>::Output
+    pub fn ite<'a, B, C>(
+        &'a self,
+        if_true: B,
+        if_false: C,
+    ) -> <(&'a NdArray<S, A>, B, C) as PropagateTernary<
+        CSPBoolExpr,
+        CSPIntExpr,
+        CSPIntExpr,
+        CSPIntExpr,
+    >>::Output
     where
-        (&'a NdArray<S, A>, B, C): PropagateTernary<CSPBoolExpr, CSPIntExpr, CSPIntExpr, CSPIntExpr>,
+        (&'a NdArray<S, A>, B, C):
+            PropagateTernary<CSPBoolExpr, CSPIntExpr, CSPIntExpr, CSPIntExpr>,
         B: Operand<Value = CSPIntExpr>,
         C: Operand<Value = CSPIntExpr>,
     {
-        (self, if_true, if_false).propagate_ternary(|cond, true_val, false_val| {
-            cond.ite(true_val, false_val)
-        })
+        (self, if_true, if_false)
+            .propagate_ternary(|cond, true_val, false_val| cond.ite(true_val, false_val))
     }
 }

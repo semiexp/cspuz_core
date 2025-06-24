@@ -220,8 +220,7 @@ impl<'a> Solver<'a> {
     /// let a = &solver.bool_var_2d((3, 4));
     /// solver.add_expr(a);  // BoolVarArray2D is also supported
     /// ```
-    pub fn add_expr<T: BoolArrayLike>(&mut self, exprs: T)
-    {
+    pub fn add_expr<T: BoolArrayLike>(&mut self, exprs: T) {
         exprs
             .to_vec()
             .into_iter()
@@ -239,14 +238,16 @@ impl<'a> Solver<'a> {
     ///
     /// assert!(solver.solve().is_none());
     /// ```
-    pub fn all_different<T: IntArrayLike>(&mut self, exprs: T)
-    {
+    pub fn all_different<T: IntArrayLike>(&mut self, exprs: T) {
         let exprs = exprs.to_vec();
         self.solver.add_constraint(Stmt::AllDifferent(exprs));
     }
 
-    pub fn add_active_vertices_connected<T: BoolArrayLike>(&mut self, exprs: T, graph: &[(usize, usize)])
-    {
+    pub fn add_active_vertices_connected<T: BoolArrayLike>(
+        &mut self,
+        exprs: T,
+        graph: &[(usize, usize)],
+    ) {
         let vertices = exprs.to_vec();
         let n_vertices = vertices.len();
         for &(u, v) in graph {
@@ -290,8 +291,11 @@ impl<'a> Solver<'a> {
         ));
     }
 
-    pub fn add_custom_constraint<T: BoolArrayLike>(&mut self, constraint: Box<dyn PropagatorGenerator>, vars: T)
-    {
+    pub fn add_custom_constraint<T: BoolArrayLike>(
+        &mut self,
+        constraint: Box<dyn PropagatorGenerator>,
+        vars: T,
+    ) {
         self.solver
             .add_constraint(Stmt::CustomConstraint(vars.to_vec(), constraint));
     }
@@ -474,20 +478,34 @@ pub trait FromModel {
     fn from_model(&self, model: &Model) -> Self::Output;
 }
 
-impl<S> FromModel for NdArray<S, CSPBoolVar> where S: traits::ArrayShape<bool> {
+impl<S> FromModel for NdArray<S, CSPBoolVar>
+where
+    S: traits::ArrayShape<bool>,
+{
     type Output = <S as traits::ArrayShape<bool>>::Output;
 
     fn from_model(&self, model: &Model) -> Self::Output {
-        let data = self.data.iter().map(|var| model.model.get_bool(*var)).collect();
+        let data = self
+            .data
+            .iter()
+            .map(|var| model.model.get_bool(*var))
+            .collect();
         self.shape.instantiate(data)
     }
 }
 
-impl<S> FromModel for NdArray<S, CSPIntVar> where S: traits::ArrayShape<i32> {
+impl<S> FromModel for NdArray<S, CSPIntVar>
+where
+    S: traits::ArrayShape<i32>,
+{
     type Output = <S as traits::ArrayShape<i32>>::Output;
 
     fn from_model(&self, model: &Model) -> Self::Output {
-        let data = self.data.iter().map(|var| model.model.get_int(*var)).collect();
+        let data = self
+            .data
+            .iter()
+            .map(|var| model.model.get_int(*var))
+            .collect();
         self.shape.instantiate(data)
     }
 }
@@ -530,11 +548,12 @@ where
     type Output = <S as traits::ArrayShape<Option<bool>>>::Output;
     type OutputUnwrap = <S as traits::ArrayShape<bool>>::Output;
 
-    fn from_irrefutable_facts(
-        &self,
-        irrefutable_facts: &OwnedPartialModel,
-    ) -> Self::Output {
-        let data = self.data.iter().map(|var| irrefutable_facts.assignment.get_bool(*var)).collect();
+    fn from_irrefutable_facts(&self, irrefutable_facts: &OwnedPartialModel) -> Self::Output {
+        let data = self
+            .data
+            .iter()
+            .map(|var| irrefutable_facts.assignment.get_bool(*var))
+            .collect();
         self.shape.instantiate(data)
     }
 
@@ -542,7 +561,11 @@ where
         &self,
         irrefutable_facts: &OwnedPartialModel,
     ) -> Self::OutputUnwrap {
-        let data = self.data.iter().map(|var| irrefutable_facts.assignment.get_bool(*var).unwrap()).collect();
+        let data = self
+            .data
+            .iter()
+            .map(|var| irrefutable_facts.assignment.get_bool(*var).unwrap())
+            .collect();
         self.shape.instantiate(data)
     }
 }
@@ -554,11 +577,12 @@ where
     type Output = <S as traits::ArrayShape<Option<i32>>>::Output;
     type OutputUnwrap = <S as traits::ArrayShape<i32>>::Output;
 
-    fn from_irrefutable_facts(
-        &self,
-        irrefutable_facts: &OwnedPartialModel,
-    ) -> Self::Output {
-        let data = self.data.iter().map(|var| irrefutable_facts.assignment.get_int(*var)).collect();
+    fn from_irrefutable_facts(&self, irrefutable_facts: &OwnedPartialModel) -> Self::Output {
+        let data = self
+            .data
+            .iter()
+            .map(|var| irrefutable_facts.assignment.get_int(*var))
+            .collect();
         self.shape.instantiate(data)
     }
 
@@ -566,7 +590,11 @@ where
         &self,
         irrefutable_facts: &OwnedPartialModel,
     ) -> Self::OutputUnwrap {
-        let data = self.data.iter().map(|var| irrefutable_facts.assignment.get_int(*var).unwrap()).collect();
+        let data = self
+            .data
+            .iter()
+            .map(|var| irrefutable_facts.assignment.get_int(*var).unwrap())
+            .collect();
         self.shape.instantiate(data)
     }
 }

@@ -18,7 +18,7 @@ impl<T> ArrayShape<T> for () {
     }
 }
 
-impl<T> ArrayShape<T> for (usize, ) {
+impl<T> ArrayShape<T> for (usize,) {
     type Output = Vec<T>;
 
     fn instantiate(&self, data: Vec<T>) -> Self::Output {
@@ -50,7 +50,10 @@ pub trait BroadcastShape<T> {
     fn broadcast_with(&self, other: &T) -> Self::Output;
 }
 
-impl<T> BroadcastShape<T> for T where T: std::fmt::Debug + PartialEq + Clone {
+impl<T> BroadcastShape<T> for T
+where
+    T: std::fmt::Debug + PartialEq + Clone,
+{
     type Output = T;
 
     fn broadcast_with(&self, other: &T) -> Self::Output {
@@ -62,10 +65,10 @@ impl<T> BroadcastShape<T> for T where T: std::fmt::Debug + PartialEq + Clone {
     }
 }
 
-impl BroadcastShape<(usize, )> for () {
-    type Output = (usize, );
+impl BroadcastShape<(usize,)> for () {
+    type Output = (usize,);
 
-    fn broadcast_with(&self, other: &(usize, )) -> Self::Output {
+    fn broadcast_with(&self, other: &(usize,)) -> Self::Output {
         *other
     }
 }
@@ -78,8 +81,8 @@ impl BroadcastShape<(usize, usize)> for () {
     }
 }
 
-impl BroadcastShape<()> for (usize, ) {
-    type Output = (usize, );
+impl BroadcastShape<()> for (usize,) {
+    type Output = (usize,);
 
     fn broadcast_with(&self, _other: &()) -> Self::Output {
         *self
@@ -104,11 +107,13 @@ pub trait Operand {
 pub trait PropagateBinary<X, Y, T> {
     type Output;
 
-    fn propagate_binary<F>(&self, func: F) -> Self::Output where
+    fn propagate_binary<F>(&self, func: F) -> Self::Output
+    where
         F: Fn(X, Y) -> T;
 }
 
-impl<A, B, X, Y, T> PropagateBinary<X, Y, T> for (A, B) where 
+impl<A, B, X, Y, T> PropagateBinary<X, Y, T> for (A, B)
+where
     A: Operand<Value = X>,
     B: Operand<Value = Y>,
     A::Shape: BroadcastShape<B::Shape>,
@@ -117,7 +122,8 @@ impl<A, B, X, Y, T> PropagateBinary<X, Y, T> for (A, B) where
 {
     type Output = NdArray<<A::Shape as BroadcastShape<B::Shape>>::Output, T>;
 
-    fn propagate_binary<F>(&self, func: F) -> Self::Output where
+    fn propagate_binary<F>(&self, func: F) -> Self::Output
+    where
         F: Fn(X, Y) -> T,
     {
         let (lhs, rhs) = self;
@@ -135,18 +141,23 @@ impl<A, B, X, Y, T> PropagateBinary<X, Y, T> for (A, B) where
             data.push(func(lhs_value.clone(), rhs_value.clone()));
         }
 
-        NdArray { shape: out_shape, data }
+        NdArray {
+            shape: out_shape,
+            data,
+        }
     }
 }
 
 pub trait PropagateTernary<X, Y, Z, T> {
     type Output;
 
-    fn propagate_ternary<F>(&self, func: F) -> Self::Output where
+    fn propagate_ternary<F>(&self, func: F) -> Self::Output
+    where
         F: Fn(X, Y, Z) -> T;
 }
 
-impl<A, B, C, X, Y, Z, T> PropagateTernary<X, Y, Z, T> for (A, B, C) where
+impl<A, B, C, X, Y, Z, T> PropagateTernary<X, Y, Z, T> for (A, B, C)
+where
     A: Operand<Value = X>,
     B: Operand<Value = Y>,
     C: Operand<Value = Z>,
@@ -158,9 +169,11 @@ impl<A, B, C, X, Y, Z, T> PropagateTernary<X, Y, Z, T> for (A, B, C) where
 {
     type Output = NdArray<
         <<A::Shape as BroadcastShape<B::Shape>>::Output as BroadcastShape<C::Shape>>::Output,
-        T>;
+        T,
+    >;
 
-    fn propagate_ternary<F>(&self, func: F) -> Self::Output where
+    fn propagate_ternary<F>(&self, func: F) -> Self::Output
+    where
         F: Fn(X, Y, Z) -> T,
     {
         let (a, b, c) = self;
@@ -183,7 +196,10 @@ impl<A, B, C, X, Y, Z, T> PropagateTernary<X, Y, Z, T> for (A, B, C) where
             data.push(func(a_value.clone(), b_value.clone(), c_value.clone()));
         }
 
-        NdArray { shape: out_shape, data }
+        NdArray {
+            shape: out_shape,
+            data,
+        }
     }
 }
 
@@ -192,12 +208,14 @@ pub trait BoolArrayLike {
 }
 
 impl<T> BoolArrayLike for T
-where 
+where
     T: IntoIterator,
     T::Item: Operand<Value = CSPBoolExpr>,
 {
     fn to_vec(self) -> Vec<CSPBoolExpr> {
-        self.into_iter().map(|x| x.as_ndarray().data.remove(0)).collect()
+        self.into_iter()
+            .map(|x| x.as_ndarray().data.remove(0))
+            .collect()
     }
 }
 
@@ -206,11 +224,13 @@ pub trait IntArrayLike {
 }
 
 impl<T> IntArrayLike for T
-where 
+where
     T: IntoIterator,
     T::Item: Operand<Value = CSPIntExpr>,
 {
     fn to_vec(self) -> Vec<CSPIntExpr> {
-        self.into_iter().map(|x| x.as_ndarray().data.remove(0)).collect()
+        self.into_iter()
+            .map(|x| x.as_ndarray().data.remove(0))
+            .collect()
     }
 }
