@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
-use cspuz_rs_puzzles::puzzles::fourcells;
+use cspuz_rs_puzzles::puzzles::n_cells;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = fourcells::deserialize_problem(url).ok_or("invalid url")?;
-    let border = fourcells::solve_fourcells(&problem).ok_or("no answer")?;
+    let problem = n_cells::deserialize_fourcells_problem(url).ok_or("invalid url")?;
+    let border = n_cells::solve_fourcells(&problem).ok_or("no answer")?;
 
     let height = problem.len();
     let width = problem[0].len();
