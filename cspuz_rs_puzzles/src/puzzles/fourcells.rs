@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn test_fourcells_problem() {
         let problem = problem_for_tests();
-        let ans = solve_fivecells(&problem);
+        let ans = solve_fourcells(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
         #[rustfmt::skip]
