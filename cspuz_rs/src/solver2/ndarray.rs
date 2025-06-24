@@ -1,5 +1,7 @@
 pub use super::traits::{Operand, PropagateBinary, PropagateTernary};
 use crate::items::Arrow;
+use crate::solver2::traits::BoolArrayLike;
+use crate::solver2::traits::IntArrayLike;
 use std::ops::{Bound, RangeBounds};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
@@ -392,5 +394,40 @@ impl<S, A> NdArray<S, A> {
     {
         (self, if_true, if_false)
             .propagate_ternary(|cond, true_val, false_val| cond.ite(true_val, false_val))
+    }
+
+    pub fn any<'a>(&'a self) -> NdArray<(), CSPBoolExpr>
+    where
+        &'a Self: BoolArrayLike,
+    {
+        super::constraints::any(self)
+    }
+
+    pub fn all<'a>(&'a self) -> NdArray<(), CSPBoolExpr>
+    where
+        &'a Self: BoolArrayLike,
+    {
+        super::constraints::all(self)
+    }
+
+    pub fn sum<'a>(&'a self) -> NdArray<(), CSPIntExpr>
+    where
+        &'a Self: IntArrayLike,
+    {
+        super::constraints::sum(self)
+    }
+
+    pub fn count_true<'a>(&'a self) -> NdArray<(), CSPIntExpr>
+    where
+        &'a Self: BoolArrayLike,
+    {
+        super::constraints::count_true(self)
+    }
+
+    pub fn consecutive_prefix_true<'a>(&'a self) -> NdArray<(), CSPIntExpr>
+    where
+        &'a Self: BoolArrayLike,
+    {
+        super::constraints::consecutive_prefix_true(self)
     }
 }

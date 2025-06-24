@@ -48,3 +48,17 @@ pub fn count_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
         data: vec![CSPIntExpr::Linear(terms)],
     }
 }
+
+pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
+    let terms = values.to_vec();
+
+    let mut ret = CSPIntExpr::Const(0);
+    for t in terms.into_iter().rev() {
+        ret = t.ite(ret + CSPIntExpr::Const(1), CSPIntExpr::Const(0));
+    }
+
+    NdArray {
+        shape: (),
+        data: vec![ret],
+    }
+}
