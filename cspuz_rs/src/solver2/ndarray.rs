@@ -83,6 +83,27 @@ macro_rules! impl_operand {
                 }
             }
         }
+
+        impl<S: Clone> Operand for &&NdArray<S, $expr_type> {
+            type Shape = S;
+            type Value = $expr_type;
+
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                (**self).clone()
+            }
+        }
+
+        impl<S: Clone> Operand for &&NdArray<S, $var_type> {
+            type Shape = S;
+            type Value = $expr_type;
+
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                NdArray {
+                    shape: self.shape.clone(),
+                    data: self.data.iter().map(|v| v.expr()).collect(),
+                }
+            }
+        }
     };
 }
 

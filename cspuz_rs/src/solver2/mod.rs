@@ -2,6 +2,8 @@ pub mod constraints;
 pub mod ndarray;
 pub mod traits;
 
+use std::borrow::Borrow;
+
 pub use cspuz_core::config::{Config, GraphDivisionMode};
 pub use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 pub use cspuz_core::csp::BoolVar as CSPBoolVar;
@@ -330,10 +332,11 @@ impl<'a> Solver<'a> {
     /// ```
     pub fn add_answer_key_bool<T>(&mut self, keys: T)
     where
-        T: IntoIterator<Item = BoolVar>,
+        T: IntoIterator,
+        T::Item: std::borrow::Borrow<BoolVar>,
     {
         self.answer_key_bool
-            .extend(keys.into_iter().map(|x| x.data[0].clone()))
+            .extend(keys.into_iter().map(|x| x.borrow().data[0].clone()))
     }
 
     /// Registers the specified integer variable(s) as the answer key(s).
@@ -342,10 +345,11 @@ impl<'a> Solver<'a> {
     /// registered as the answer key. Answer keys are used in `irrefutable_facts` and `answer_iter` methods.
     pub fn add_answer_key_int<T>(&mut self, keys: T)
     where
-        T: IntoIterator<Item = IntVar>,
+        T: IntoIterator,
+        T::Item: std::borrow::Borrow<IntVar>,
     {
         self.answer_key_int
-            .extend(keys.into_iter().map(|x| x.data[0].clone()))
+            .extend(keys.into_iter().map(|x| x.borrow().data[0].clone()))
     }
 
     pub fn encode(&mut self) -> bool {
