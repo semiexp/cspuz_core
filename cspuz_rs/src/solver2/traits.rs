@@ -128,6 +128,14 @@ impl Operand for i32 {
     }
 }
 
+fn propagated_len(a: usize, b: usize) -> usize {
+    if a == 1 {
+        b
+    } else {
+        a
+    }
+}
+
 pub trait PropagateBinary<X, Y, T> {
     type Output;
 
@@ -155,11 +163,12 @@ where
         let rhs = rhs.as_ndarray();
 
         let out_shape = lhs.shape.broadcast_with(&rhs.shape);
+        let r_len = propagated_len(lhs.data.len(), rhs.data.len());
 
         assert!(lhs.data.len() == rhs.data.len() || lhs.data.len() == 1 || rhs.data.len() == 1);
 
         let mut data = vec![];
-        for i in 0..(lhs.data.len().max(rhs.data.len())) {
+        for i in 0..r_len {
             let lhs_value = &lhs.data[if lhs.data.len() == 1 { 0 } else { i }];
             let rhs_value = &rhs.data[if rhs.data.len() == 1 { 0 } else { i }];
             data.push(func(lhs_value.clone(), rhs_value.clone()));
@@ -206,7 +215,10 @@ where
         let c = c.as_ndarray();
 
         let out_shape = a.shape.broadcast_with(&b.shape).broadcast_with(&c.shape);
-        let r_len = a.data.len().max(b.data.len()).max(c.data.len());
+        let r_len = propagated_len(
+            propagated_len(a.data.len(), b.data.len()),
+            c.data.len(),
+        );
 
         assert!(a.data.len() == r_len || a.data.len() == 1);
         assert!(b.data.len() == r_len || b.data.len() == 1);
