@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context, KudamonoBorder,
 };
-use cspuz_rs::solver::{any, count_true, Solver, false_};
+use cspuz_rs::solver::{any, count_true, false_, Solver};
 
 pub fn solve_double_lits(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,

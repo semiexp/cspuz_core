@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, Rooms, Size,
 };
-use cspuz_rs::solver::{any, count_true, Solver, false_};
+use cspuz_rs::solver::{any, count_true, false_, Solver};
 
 pub fn solve_lits(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,

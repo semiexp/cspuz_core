@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::strip_prefix;
-use cspuz_rs::solver::{Solver, false_};
+use cspuz_rs::solver::{false_, Solver};
 
 pub fn solve_ringring(is_black: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(is_black);

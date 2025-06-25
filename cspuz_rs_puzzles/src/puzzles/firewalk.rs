@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{count_true, BoolExpr, Solver, false_, true_};
+use cspuz_rs::solver::{count_true, false_, true_, BoolExpr, Solver};
 
 pub fn solve_firewalk(
     fire_cell: &[Vec<bool>],

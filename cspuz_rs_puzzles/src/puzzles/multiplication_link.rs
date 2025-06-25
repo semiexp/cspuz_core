@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use cspuz_rs::solver::{any, Solver, false_};
+use cspuz_rs::solver::{any, false_, Solver};
 
 pub fn solve_multiplication_link(
     clues: &[Vec<Option<i32>>],

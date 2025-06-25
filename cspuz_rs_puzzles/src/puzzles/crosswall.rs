@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{get_kudamono_url_info, kudamono_order, Context, DecInt, Sequencer};
-use cspuz_rs::solver::{any, int_constant, Solver, true_};
+use cspuz_rs::solver::{any, int_constant, true_, Solver};
 
 pub fn solve_crosswall(
     clues: &[Vec<Option<(i32, i32)>>],

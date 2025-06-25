@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, HexInt,
     Optionalize, Seq, Size, Spaces,
 };
-use cspuz_rs::solver::{any, count_true, BoolVarArray1D, Solver, true_};
+use cspuz_rs::solver::{any, count_true, true_, BoolVarArray1D, Solver};
 
 pub fn solve_coral(
     clue_vertical: &[Option<Vec<i32>>],

@@ -1,6 +1,4 @@
-use crate::solver::{
-    all, any, Solver, BoolExpr, ndarray::NdArray, traits::IntArrayLike,
-};
+use crate::solver::{all, any, ndarray::NdArray, traits::IntArrayLike, BoolExpr, Solver};
 
 /// Adds a constraint that, if `condition` is true (or not present),
 /// - given values are all different,

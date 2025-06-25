@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
     RoomsWithValues, Size, Spaces,
 };
-use cspuz_rs::solver::{count_true, Solver, false_};
+use cspuz_rs::solver::{count_true, false_, Solver};
 
 pub fn solve_nagenawa(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,

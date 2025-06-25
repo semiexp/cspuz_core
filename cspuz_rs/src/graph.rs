@@ -1,11 +1,9 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, BoolVar, BoolVarArray1D, BoolVarArray2D, CSPBoolExpr,
-    CSPIntExpr, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
-    OwnedPartialModel, Solver,
-    traits::BoolArrayLike, traits::Operand,
-    ndarray::NdArray,
+    count_true, ndarray::NdArray, traits::BoolArrayLike, traits::Operand, BoolVar, BoolVarArray1D,
+    BoolVarArray2D, CSPBoolExpr, CSPIntExpr, FromModel, FromOwnedPartialModel,
+    GraphDivisionOptions, Model, OwnedPartialModel, Solver,
 };
 
 /// A struct for representing an undirected graph.
@@ -487,8 +485,11 @@ impl FromOwnedPartialModel for BoolInnerGridEdges {
 /// let answer = answer.unwrap();
 /// assert_eq!(answer.get(is_active), vec![true, true, true, true]);
 /// ```
-pub fn active_vertices_connected<T: BoolArrayLike>(solver: &mut Solver, is_active: T, graph: &Graph)
-{
+pub fn active_vertices_connected<T: BoolArrayLike>(
+    solver: &mut Solver,
+    is_active: T,
+    graph: &Graph,
+) {
     solver.add_active_vertices_connected(is_active, &graph.edges);
 }
 
@@ -572,8 +573,8 @@ pub fn active_vertices_connected_via_active_edges<T1: BoolArrayLike, T2: BoolArr
     is_active_edge: T2,
     graph: &Graph,
 ) {
-    let is_active_vertex = NdArray::<(usize, ), _>::from_raw(is_active_vertex.to_vec());
-    let is_active_edge = NdArray::<(usize, ), _>::from_raw(is_active_edge.to_vec());
+    let is_active_vertex = NdArray::<(usize,), _>::from_raw(is_active_vertex.to_vec());
+    let is_active_edge = NdArray::<(usize,), _>::from_raw(is_active_edge.to_vec());
     assert_eq!(is_active_vertex.len(), graph.n_vertices());
     assert_eq!(is_active_edge.len(), graph.n_edges());
 
@@ -802,10 +803,7 @@ pub fn graph_division_2d_with_options<T>(
     T: Operand<Shape = (usize, usize), Value = CSPIntExpr> + Clone,
 {
     let (edges, graph) = edges.clone().dual().representation();
-    let sizes = sizes.as_ndarray()
-        .into_iter()
-        .map(Some)
-        .collect::<Vec<_>>();
+    let sizes = sizes.as_ndarray().into_iter().map(Some).collect::<Vec<_>>();
     solver.add_graph_division_with_options(&sizes, &graph.edges, edges, opts)
 }
 

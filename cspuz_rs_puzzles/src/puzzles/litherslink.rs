@@ -2,7 +2,7 @@ use crate::puzzles::slitherlink::combinator;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{problem_to_url, url_to_problem};
-use cspuz_rs::solver::{Solver, true_};
+use cspuz_rs::solver::{true_, Solver};
 
 pub fn solve_litherslink(
     clues: &[Vec<Option<i32>>],

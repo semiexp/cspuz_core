@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context,
 };
-use cspuz_rs::solver::{int_constant, BoolExpr, BoolVarArray1D, IntExpr, Solver, false_, true_};
+use cspuz_rs::solver::{false_, int_constant, true_, BoolExpr, BoolVarArray1D, IntExpr, Solver};
 
 pub fn solve_the_longest(
     clues: &graph::GridEdges<Vec<Vec<bool>>>,

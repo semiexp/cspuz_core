@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, Grid,
     HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{Solver, true_};
+use cspuz_rs::solver::{true_, Solver};
 use std::collections::VecDeque;
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;

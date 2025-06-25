@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, Rooms, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, true_};
+use cspuz_rs::solver::{true_, Solver};
 
 pub fn solve_nurimaze(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,

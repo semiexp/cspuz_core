@@ -215,10 +215,7 @@ where
         let c = c.as_ndarray();
 
         let out_shape = a.shape.broadcast_with(&b.shape).broadcast_with(&c.shape);
-        let r_len = propagated_len(
-            propagated_len(a.data.len(), b.data.len()),
-            c.data.len(),
-        );
+        let r_len = propagated_len(propagated_len(a.data.len(), b.data.len()), c.data.len());
 
         assert!(a.data.len() == r_len || a.data.len() == 1);
         assert!(b.data.len() == r_len || b.data.len() == 1);

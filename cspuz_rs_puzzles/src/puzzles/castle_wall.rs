@@ -5,7 +5,7 @@ use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumberedArrowCombinator,
     Optionalize, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, false_};
+use cspuz_rs::solver::{false_, Solver};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {

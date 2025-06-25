@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{Solver, false_};
+use cspuz_rs::solver::{false_, Solver};
 
 pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);

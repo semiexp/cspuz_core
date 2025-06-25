@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     from_base36, problem_to_url, to_base36, url_to_problem, Choice, Combinator, Context, Grid,
     Optionalize, Spaces,
 };
-use cspuz_rs::solver::{all, any, count_true, Solver, false_};
+use cspuz_rs::solver::{all, any, count_true, false_, Solver};
 
 const EIGHT_NEIGHBORS: [(i32, i32); 8] = [
     (-1, -1),
