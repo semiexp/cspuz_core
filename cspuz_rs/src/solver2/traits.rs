@@ -104,6 +104,30 @@ pub trait Operand {
     fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value>;
 }
 
+impl Operand for bool {
+    type Shape = ();
+    type Value = CSPBoolExpr;
+
+    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+        NdArray {
+            shape: (),
+            data: vec![CSPBoolExpr::Const(*self)],
+        }
+    }
+}
+
+impl Operand for i32 {
+    type Shape = ();
+    type Value = CSPIntExpr;
+
+    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+        NdArray {
+            shape: (),
+            data: vec![CSPIntExpr::Const(*self)],
+        }
+    }
+}
+
 pub trait PropagateBinary<X, Y, T> {
     type Output;
 

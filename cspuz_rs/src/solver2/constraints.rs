@@ -62,3 +62,17 @@ pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIn
         data: vec![ret],
     }
 }
+
+pub fn bool_constant(b: bool) -> NdArray<(), CSPBoolExpr> {
+    NdArray {
+        shape: (),
+        data: vec![CSPBoolExpr::Const(b)],
+    }
+}
+
+pub fn int_constant(n: i32) -> NdArray<(), CSPIntExpr> {
+    NdArray {
+        shape: (),
+        data: vec![CSPIntExpr::Const(n)],
+    }
+}

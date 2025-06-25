@@ -1,6 +1,6 @@
-mod constraints;
-mod ndarray;
-mod traits;
+pub mod constraints;
+pub mod ndarray;
+pub mod traits;
 
 pub use cspuz_core::config::{Config, GraphDivisionMode};
 pub use cspuz_core::csp::BoolExpr as CSPBoolExpr;
@@ -31,6 +31,8 @@ pub type IntVarArray1D = NdArray<(usize,), CSPIntVar>;
 pub type IntVarArray2D = NdArray<(usize, usize), CSPIntVar>;
 pub type IntExprArray1D = NdArray<(usize,), CSPIntExpr>;
 pub type IntExprArray2D = NdArray<(usize, usize), CSPIntExpr>;
+
+pub use constraints::{all, any, sum, count_true, consecutive_prefix_true, bool_constant, int_constant};
 
 pub struct Solver<'a> {
     solver: IntegratedSolver<'a>,

@@ -2,7 +2,7 @@ pub use super::traits::{Operand, PropagateBinary, PropagateTernary};
 use crate::items::Arrow;
 use crate::solver2::traits::BoolArrayLike;
 use crate::solver2::traits::IntArrayLike;
-use std::ops::{Bound, RangeBounds};
+use std::ops::{Bound, Not, RangeBounds};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 use cspuz_core::csp::BoolVar as CSPBoolVar;
@@ -12,8 +12,8 @@ use cspuz_core::csp::IntVar as CSPIntVar;
 // TODO: we may want to avoid Vec<T> for 0-dimensional arrays
 #[derive(Debug, Clone)]
 pub struct NdArray<S, T> {
-    pub(super) shape: S,
-    pub(super) data: Vec<T>,
+    pub(crate) shape: S,
+    pub(crate) data: Vec<T>,
 }
 
 impl<S, T> IntoIterator for NdArray<S, T> {
@@ -40,44 +40,90 @@ impl<S, T: Clone> IntoIterator for &NdArray<S, T> {
     }
 }
 
-impl<S: Clone> Operand for NdArray<S, CSPBoolExpr> {
-    type Shape = S;
-    type Value = CSPBoolExpr;
+macro_rules! impl_operand {
+    ($var_type:ty, $expr_type:ty) => {
+        impl<S: Clone> Operand for NdArray<S, $expr_type> {
+            type Shape = S;
+            type Value = $expr_type;
 
-    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
-        self.clone()
-    }
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                self.clone()
+            }
+        }
+
+        impl<S: Clone> Operand for NdArray<S, $var_type> {
+            type Shape = S;
+            type Value = $expr_type;
+
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                NdArray {
+                    shape: self.shape.clone(),
+                    data: self.data.iter().map(|v| v.expr()).collect(),
+                }
+            }
+        }
+
+        impl<S: Clone> Operand for &NdArray<S, $expr_type> {
+            type Shape = S;
+            type Value = $expr_type;
+
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                (*self).clone()
+            }
+        }
+
+        impl<S: Clone> Operand for &NdArray<S, $var_type> {
+            type Shape = S;
+            type Value = $expr_type;
+
+            fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+                NdArray {
+                    shape: self.shape.clone(),
+                    data: self.data.iter().map(|v| v.expr()).collect(),
+                }
+            }
+        }
+    };
 }
 
-impl<S: Clone> Operand for NdArray<S, CSPBoolVar> {
-    type Shape = S;
-    type Value = CSPBoolExpr;
+impl_operand!(CSPBoolVar, CSPBoolExpr);
+impl_operand!(CSPIntVar, CSPIntExpr);
 
-    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+// ==========
+// Builders
+// ==========
+
+impl<T> NdArray<(usize, ), T> {
+    pub fn new<I>(data: I) -> NdArray<(usize,), T>
+    where
+        I: IntoIterator<Item = NdArray<(), T>>,
+    {
+        let data: Vec<T> = data.into_iter().map(|mut v| v.data.remove(0)).collect();
         NdArray {
-            shape: self.shape.clone(),
-            data: self.data.iter().map(|v| v.expr()).collect(),
+            shape: (data.len(),),
+            data,
+        }
+    }
+
+    pub(crate) fn from_raw(data: Vec<T>) -> NdArray<(usize,), T> {
+        NdArray {
+            shape: (data.len(),),
+            data,
         }
     }
 }
 
-impl<S: Clone> Operand for NdArray<S, CSPIntExpr> {
-    type Shape = S;
-    type Value = CSPIntExpr;
-
-    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
-        self.clone()
-    }
-}
-
-impl<S: Clone> Operand for NdArray<S, CSPIntVar> {
-    type Shape = S;
-    type Value = CSPIntExpr;
-
-    fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
+impl<T> NdArray<(usize, usize), T> {
+    pub fn new<I>(shape: (usize, usize), data: I) -> NdArray<(usize, usize), T>
+    where
+        I: IntoIterator<Item = NdArray<(), T>>,
+    {
+        let (height, width) = shape;
+        let data: Vec<T> = data.into_iter().map(|mut v| v.data.remove(0)).collect();
+        assert_eq!(height * width, data.len());
         NdArray {
-            shape: self.shape.clone(),
-            data: self.data.iter().map(|v| v.expr()).collect(),
+            shape,
+            data,
         }
     }
 }
@@ -315,6 +361,30 @@ impl<T: Clone> NdArray<(usize, usize), T> {
 // Operators
 // ==========
 
+impl<S, A> Not for NdArray<S, A> where NdArray<S, A>: Operand<Value = CSPBoolExpr> {
+    type Output = NdArray<<Self as Operand>::Shape, <Self as Operand>::Value>;
+
+    fn not(self) -> Self::Output {
+        let e = self.as_ndarray();
+        NdArray {
+            shape: e.shape,
+            data: e.data.into_iter().map(|v| v.not()).collect(),
+        }
+    }
+}
+
+impl<'a, S, A> Not for &'a NdArray<S, A> where &'a NdArray<S, A>: Operand<Value = CSPBoolExpr> {
+    type Output = NdArray<<Self as Operand>::Shape, <Self as Operand>::Value>;
+
+    fn not(self) -> Self::Output {
+        let e = self.as_ndarray();
+        NdArray {
+            shape: e.shape,
+            data: e.data.into_iter().map(|v| v.not()).collect(),
+        }
+    }
+}
+
 macro_rules! binary_op_overload {
     ($trait_name:ident, $trait_func:ident, $input_type:ty, $output_type:ty, $op:tt) => {
         use std::ops::$trait_name;
@@ -375,6 +445,12 @@ binary_op!(lt, CSPIntExpr, CSPBoolExpr, |x, y| x.lt(y));
 binary_op!(imp, CSPBoolExpr, CSPBoolExpr, |x, y| x.imp(y));
 binary_op!(iff, CSPBoolExpr, CSPBoolExpr, |x, y| x.iff(y));
 
+impl<S, A> NdArray<S, A> where Self: Operand {
+    pub fn expr(&self) -> NdArray<<Self as Operand>::Shape, <Self as Operand>::Value> {
+        self.as_ndarray()
+    }
+}
+
 impl<S, A> NdArray<S, A> {
     pub fn ite<'a, B, C>(
         &'a self,
@@ -429,5 +505,44 @@ impl<S, A> NdArray<S, A> {
         &'a Self: BoolArrayLike,
     {
         super::constraints::consecutive_prefix_true(self)
+    }
+}
+
+impl<A> NdArray<(usize, usize), A> where Self: Operand<Shape = (usize, usize), Value = CSPBoolExpr> {
+    pub fn conv2d_and(&self, filter: (usize, usize)) -> NdArray<(usize, usize), CSPBoolExpr> {
+        self.conv2d_impl(filter, CSPBoolExpr::And)
+    }
+
+    pub fn conv2d_or(&self, filter: (usize, usize)) -> NdArray<(usize, usize), CSPBoolExpr> {
+        self.conv2d_impl(filter, CSPBoolExpr::Or)
+    }
+
+    fn conv2d_impl<F>(&self, filter: (usize, usize), op: F) -> NdArray<(usize, usize), CSPBoolExpr>
+    where
+        F: Fn(Vec<Box<CSPBoolExpr>>) -> CSPBoolExpr,
+    {
+        let orig = self.as_ndarray();
+        let (h, w) = orig.shape;
+        let (fh, fw) = filter;
+        assert!(h >= fh);
+        assert!(w >= fw);
+
+        let mut data = vec![];
+        for y in 0..=(h - fh) {
+            for x in 0..=(w - fw) {
+                let mut part = vec![];
+                for dy in 0..fh {
+                    for dx in 0..fw {
+                        part.push(Box::new(orig.data[(y + dy) * w + (x + dx)].clone()));
+                    }
+                }
+                data.push(op(part));
+            }
+        }
+
+        NdArray {
+            shape: (h - fh + 1, w - fw + 1),
+            data,
+        }
     }
 }

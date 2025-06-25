@@ -1,9 +1,11 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, Array0DImpl, Array2DImpl, BoolVar, BoolVarArray1D, BoolVarArray2D, CSPBoolExpr,
-    CSPIntExpr, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model, Operand,
-    OwnedPartialModel, Solver, Value,
+    count_true, BoolVar, BoolVarArray1D, BoolVarArray2D, CSPBoolExpr,
+    CSPIntExpr, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
+    OwnedPartialModel, Solver,
+    traits::BoolArrayLike, traits::Operand,
+    ndarray::NdArray,
 };
 
 /// A struct for representing an undirected graph.
@@ -485,10 +487,7 @@ impl FromOwnedPartialModel for BoolInnerGridEdges {
 /// let answer = answer.unwrap();
 /// assert_eq!(answer.get(is_active), vec![true, true, true, true]);
 /// ```
-pub fn active_vertices_connected<T>(solver: &mut Solver, is_active: T, graph: &Graph)
-where
-    T: IntoIterator,
-    <T as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
+pub fn active_vertices_connected<T: BoolArrayLike>(solver: &mut Solver, is_active: T, graph: &Graph)
 {
     solver.add_active_vertices_connected(is_active, &graph.edges);
 }
@@ -525,9 +524,9 @@ where
 /// ```
 pub fn active_vertices_connected_2d<T>(solver: &mut Solver, is_active: T)
 where
-    T: Operand<Output = Array2DImpl<CSPBoolExpr>>,
+    T: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
 {
-    let is_active = is_active.as_expr_array_value();
+    let is_active = is_active.as_ndarray();
     let graph = infer_graph_from_2d_array(is_active.shape());
     active_vertices_connected(solver, is_active, &graph)
 }
@@ -567,32 +566,21 @@ where
 /// assert_eq!(answer.get(is_active_vertex), vec![true, true, true, true]);
 /// assert_eq!(answer.get(is_active_edge), vec![true, true, false, true]);
 /// ```
-pub fn active_vertices_connected_via_active_edges<T1, T2>(
+pub fn active_vertices_connected_via_active_edges<T1: BoolArrayLike, T2: BoolArrayLike>(
     solver: &mut Solver,
     is_active_vertex: T1,
     is_active_edge: T2,
     graph: &Graph,
-) where
-    T1: IntoIterator,
-    <T1 as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
-    T2: IntoIterator,
-    <T2 as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
-{
-    let is_active_vertex: Vec<Value<Array0DImpl<CSPBoolExpr>>> = is_active_vertex
-        .into_iter()
-        .map(|x| x.as_expr_array_value())
-        .collect();
-    let is_active_edge: Vec<Value<Array0DImpl<CSPBoolExpr>>> = is_active_edge
-        .into_iter()
-        .map(|x| x.as_expr_array_value())
-        .collect();
+) {
+    let is_active_vertex = NdArray::<(usize, ), _>::from_raw(is_active_vertex.to_vec());
+    let is_active_edge = NdArray::<(usize, ), _>::from_raw(is_active_edge.to_vec());
     assert_eq!(is_active_vertex.len(), graph.n_vertices());
     assert_eq!(is_active_edge.len(), graph.n_edges());
 
     let mut is_edge_used = vec![];
     for i in 0..is_active_edge.len() {
         let v = solver.bool_var().expr();
-        solver.add_expr(v.imp(&is_active_edge[i]));
+        solver.add_expr(v.imp(&is_active_edge.at(i)));
         is_edge_used.push(v);
     }
 
@@ -640,9 +628,9 @@ pub fn active_vertices_connected_2d_region<T>(
     is_active: T,
     indices: &[(usize, usize)],
 ) where
-    T: Operand<Output = Array2DImpl<CSPBoolExpr>>,
+    T: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
 {
-    let is_active = is_active.as_expr_array_value();
+    let is_active = is_active.as_ndarray();
 
     let mut indices = indices.to_owned();
     indices.sort();
@@ -693,19 +681,12 @@ pub fn active_vertices_connected_2d_region<T>(
 /// let answer = answer.unwrap();
 /// assert_eq!(answer.get(is_active_edge), vec![true, true, true, false]);
 /// ```
-pub fn active_edges_single_cycle<T>(
+pub fn active_edges_single_cycle<T: BoolArrayLike>(
     solver: &mut Solver,
     is_active_edge: T,
     graph: &Graph,
-) -> BoolVarArray1D
-where
-    T: IntoIterator,
-    <T as IntoIterator>::Item: Operand<Output = Array0DImpl<CSPBoolExpr>>,
-{
-    let is_active_edge: Vec<Value<Array0DImpl<CSPBoolExpr>>> = is_active_edge
-        .into_iter()
-        .map(|x| x.as_expr_array_value())
-        .collect::<Vec<_>>();
+) -> BoolVarArray1D {
+    let is_active_edge = NdArray::<(usize,), _>::from_raw(is_active_edge.to_vec());
     assert_eq!(is_active_edge.len(), graph.n_edges());
 
     let mut adj: Vec<Vec<(usize, usize)>> = vec![]; // (edge id, adjacent vertex)
@@ -720,7 +701,7 @@ where
     // degree constraints
     let is_passed = solver.bool_var_1d(graph.n_vertices());
     for u in 0..graph.n_vertices() {
-        let adj_edges = adj[u].iter().map(|&(i, _)| is_active_edge[i].clone());
+        let adj_edges = adj[u].iter().map(|&(i, _)| is_active_edge.at(i).clone());
         solver.add_expr(count_true(adj_edges).eq(is_passed.at(u).ite(2, 0)));
     }
 
@@ -807,7 +788,7 @@ pub fn single_cycle_grid_edges(solver: &mut Solver, grid_frame: &BoolGridEdges) 
 /// ```
 pub fn graph_division_2d<T>(solver: &mut Solver, sizes: &T, edges: &BoolInnerGridEdges)
 where
-    T: Operand<Output = Array2DImpl<CSPIntExpr>> + Clone,
+    T: Operand<Shape = (usize, usize), Value = CSPIntExpr> + Clone,
 {
     graph_division_2d_with_options(solver, sizes, edges, GraphDivisionOptions::default());
 }
@@ -818,12 +799,10 @@ pub fn graph_division_2d_with_options<T>(
     edges: &BoolInnerGridEdges,
     opts: GraphDivisionOptions,
 ) where
-    T: Operand<Output = Array2DImpl<CSPIntExpr>> + Clone,
+    T: Operand<Shape = (usize, usize), Value = CSPIntExpr> + Clone,
 {
     let (edges, graph) = edges.clone().dual().representation();
-    let sizes = sizes
-        .clone()
-        .as_expr_array_value()
+    let sizes = sizes.as_ndarray()
         .into_iter()
         .map(Some)
         .collect::<Vec<_>>();
