@@ -2,7 +2,7 @@ use crate::util;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver, false_};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ShakashakaCell {
@@ -48,12 +48,12 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
                     is_empty.push(a.eq(0));
                     is_white_angle.push(a.eq(0) | a.eq(1));
                 } else {
-                    is_empty.push(FALSE);
+                    is_empty.push(false_());
                 }
             } else {
-                diagonals.push(FALSE);
-                diagonals.push(FALSE);
-                is_empty.push(FALSE);
+                diagonals.push(false_());
+                diagonals.push(false_());
+                is_empty.push(false_());
             }
             if y < h && x > 0 {
                 let a = &ans.at((y, x - 1));
@@ -63,12 +63,12 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
                     is_empty.push(a.eq(0));
                     is_white_angle.push(a.eq(0) | a.eq(2));
                 } else {
-                    is_empty.push(FALSE);
+                    is_empty.push(false_());
                 }
             } else {
-                diagonals.push(FALSE);
-                diagonals.push(FALSE);
-                is_empty.push(FALSE);
+                diagonals.push(false_());
+                diagonals.push(false_());
+                is_empty.push(false_());
             }
             if y < h && x < w {
                 let a = &ans.at((y, x));
@@ -78,12 +78,12 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
                     is_empty.push(a.eq(0));
                     is_white_angle.push(a.eq(0) | a.eq(3));
                 } else {
-                    is_empty.push(FALSE);
+                    is_empty.push(false_());
                 }
             } else {
-                diagonals.push(FALSE);
-                diagonals.push(FALSE);
-                is_empty.push(FALSE);
+                diagonals.push(false_());
+                diagonals.push(false_());
+                is_empty.push(false_());
             }
             if y > 0 && x < w {
                 let a = &ans.at((y - 1, x));
@@ -93,12 +93,12 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
                     is_empty.push(a.eq(0));
                     is_white_angle.push(a.eq(0) | a.eq(4));
                 } else {
-                    is_empty.push(FALSE);
+                    is_empty.push(false_());
                 }
             } else {
-                diagonals.push(FALSE);
-                diagonals.push(FALSE);
-                is_empty.push(FALSE);
+                diagonals.push(false_());
+                diagonals.push(false_());
+                is_empty.push(false_());
             }
 
             for i in 0..8 {

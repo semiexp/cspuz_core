@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, Rooms, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, TRUE};
+use cspuz_rs::solver::{Solver, true_};
 
 pub fn solve_nurimaze(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -66,7 +66,7 @@ pub fn solve_nurimaze(
             }
         }
     }
-    aux_graph_vertices.push(TRUE);
+    aux_graph_vertices.push(true_());
     graph::active_vertices_connected(&mut solver, aux_graph_vertices, &aux_graph);
 
     // no 2x2 all-black/white cells

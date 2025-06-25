@@ -76,3 +76,11 @@ pub fn int_constant(n: i32) -> NdArray<(), CSPIntExpr> {
         data: vec![CSPIntExpr::Const(n)],
     }
 }
+
+pub fn true_() -> NdArray<(), CSPBoolExpr> {
+    bool_constant(true)
+}
+
+pub fn false_() -> NdArray<(), CSPBoolExpr> {
+    bool_constant(false)
+}

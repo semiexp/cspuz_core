@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, HexInt,
     Optionalize, Seq, Size, Spaces,
 };
-use cspuz_rs::solver::{any, count_true, BoolVarArray1D, Solver, TRUE};
+use cspuz_rs::solver::{any, count_true, BoolVarArray1D, Solver, true_};
 
 pub fn solve_coral(
     clue_vertical: &[Option<Vec<i32>>],
@@ -40,7 +40,7 @@ pub fn solve_coral(
             }
         }
     }
-    aux_vertices.push(TRUE);
+    aux_vertices.push(true_());
     graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
 
     for y in 0..(h - 1) {

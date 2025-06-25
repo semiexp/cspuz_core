@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver, false_};
 
 pub fn solve_spokes(
     clues: &[Vec<Option<i32>>],
@@ -33,47 +33,47 @@ pub fn solve_spokes(
             if y > 0 {
                 neighbors.push(is_line.vertical.at((y - 1, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
             if y < h - 1 {
                 neighbors.push(is_line.vertical.at((y, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if x > 0 {
                 neighbors.push(is_line.horizontal.at((y, x - 1)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
             if x < w - 1 {
                 neighbors.push(is_line.horizontal.at((y, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if y > 0 && x > 0 {
                 neighbors.push(diagonal_dr.at((y - 1, x - 1)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if y < h - 1 && x < w - 1 {
                 neighbors.push(diagonal_dr.at((y, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if y > 0 && x < w - 1 {
                 neighbors.push(diagonal_dl.at((y - 1, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if y < h - 1 && x > 0 {
                 neighbors.push(diagonal_dl.at((y, x - 1)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             if let Some(n) = clues[y][x] {

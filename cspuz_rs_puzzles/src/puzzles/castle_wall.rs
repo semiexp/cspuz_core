@@ -5,7 +5,7 @@ use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumberedArrowCombinator,
     Optionalize, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, FALSE};
+use cspuz_rs::solver::{Solver, false_};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -30,12 +30,12 @@ pub fn solve_castle_wall(
         for x in 0..w {
             if y < h - 1 {
                 let a = if x == 0 {
-                    FALSE
+                    false_()
                 } else {
                     cell_sides.at((y, x - 1)).expr()
                 };
                 let b = if x == w - 1 {
-                    FALSE
+                    false_()
                 } else {
                     cell_sides.at((y, x)).expr()
                 };
@@ -43,12 +43,12 @@ pub fn solve_castle_wall(
             }
             if x < w - 1 {
                 let a = if y == 0 {
-                    FALSE
+                    false_()
                 } else {
                     cell_sides.at((y - 1, x)).expr()
                 };
                 let b = if y == h - 1 {
-                    FALSE
+                    false_()
                 } else {
                     cell_sides.at((y, x)).expr()
                 };

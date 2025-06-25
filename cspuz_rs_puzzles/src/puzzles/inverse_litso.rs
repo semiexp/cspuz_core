@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, Rooms, Size,
 };
-use cspuz_rs::solver::{any, count_true, Solver, FALSE};
+use cspuz_rs::solver::{any, count_true, Solver, false_};
 
 pub fn solve_inverse_litso(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -37,22 +37,22 @@ pub fn solve_inverse_litso(
             if y > 0 && !borders.horizontal[y - 1][x] {
                 neighbors.push(!is_black.at((y - 1, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
             if x > 0 && !borders.vertical[y][x - 1] {
                 neighbors.push(!is_black.at((y, x - 1)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
             if y < h - 1 && !borders.horizontal[y][x] {
                 neighbors.push(!is_black.at((y + 1, x)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
             if x < w - 1 && !borders.vertical[y][x] {
                 neighbors.push(!is_black.at((y, x + 1)).expr());
             } else {
-                neighbors.push(FALSE);
+                neighbors.push(false_());
             }
 
             solver.add_expr(kind.at((y, x)).eq(1).imp(count_true(&neighbors).eq(1)));

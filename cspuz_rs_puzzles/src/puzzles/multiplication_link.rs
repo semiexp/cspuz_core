@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use cspuz_rs::solver::{any, Solver, FALSE};
+use cspuz_rs::solver::{any, Solver, false_};
 
 pub fn solve_multiplication_link(
     clues: &[Vec<Option<i32>>],
@@ -27,12 +27,12 @@ pub fn solve_multiplication_link(
                 }
 
                 solver.add_expr(
-                    is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
-                        ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
+                    is_line.horizontal.at_offset((y, x), (0, -1), false_())
+                        ^ is_line.horizontal.at_offset((y, x), (0, 0), false_()),
                 );
                 solver.add_expr(
-                    is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
-                        ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
+                    is_line.vertical.at_offset((y, x), (-1, 0), false_())
+                        ^ is_line.vertical.at_offset((y, x), (0, 0), false_()),
                 );
 
                 let len_x = &solver.int_var(1, w as i32 - 1);

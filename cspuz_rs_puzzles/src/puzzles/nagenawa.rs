@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
     RoomsWithValues, Size, Spaces,
 };
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver, false_};
 
 pub fn solve_nagenawa(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -46,27 +46,27 @@ pub fn solve_nagenawa(
 
             let is_corner = &solver.bool_var();
             solver.add_expr(is_corner.iff(
-                is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
-                    ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
+                is_line.vertical.at_offset((y, x), (-1, 0), false_())
+                    ^ is_line.vertical.at_offset((y, x), (0, 0), false_()),
             ));
             solver.add_expr(is_corner.iff(
-                is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
-                    ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
+                is_line.horizontal.at_offset((y, x), (0, -1), false_())
+                    ^ is_line.horizontal.at_offset((y, x), (0, 0), false_()),
             ));
             solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), FALSE))
+                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), false_()))
                     .imp(vertical_y.at((y, x)).eq(0)),
             );
             solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), FALSE))
+                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), false_()))
                     .imp(vertical_y.at((y, x)).eq(vertical_h.at((y, x)))),
             );
             solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), FALSE))
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), false_()))
                     .imp(horizontal_x.at((y, x)).eq(0)),
             );
             solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), FALSE))
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), false_()))
                     .imp(horizontal_x.at((y, x)).eq(horizontal_w.at((y, x)))),
             );
             solver.add_expr(is_corner.imp(
