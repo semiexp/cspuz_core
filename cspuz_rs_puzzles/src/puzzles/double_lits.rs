@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context, KudamonoBorder,
 };
-use cspuz_rs::solver::{any, count_true, false_, Solver};
+use cspuz_rs::solver::{any, count_true, Solver, FALSE};
 
 pub fn solve_double_lits(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -61,22 +61,22 @@ pub fn solve_double_lits(
                 if y > 0 && !borders.horizontal[y - 1][x] {
                     neighbors.push(sub_boards[t].at((y - 1, x)).expr());
                 } else {
-                    neighbors.push(false_());
+                    neighbors.push(FALSE);
                 }
                 if x > 0 && !borders.vertical[y][x - 1] {
                     neighbors.push(sub_boards[t].at((y, x - 1)).expr());
                 } else {
-                    neighbors.push(false_());
+                    neighbors.push(FALSE);
                 }
                 if y < h - 1 && !borders.horizontal[y][x] {
                     neighbors.push(sub_boards[t].at((y + 1, x)).expr());
                 } else {
-                    neighbors.push(false_());
+                    neighbors.push(FALSE);
                 }
                 if x < w - 1 && !borders.vertical[y][x] {
                     neighbors.push(sub_boards[t].at((y, x + 1)).expr());
                 } else {
-                    neighbors.push(false_());
+                    neighbors.push(FALSE);
                 }
 
                 solver.add_expr(kinds[t].at((y, x)).eq(1).imp(count_true(&neighbors).eq(1)));

@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{get_kudamono_url_info, kudamono_order, Context, DecInt, Sequencer};
-use cspuz_rs::solver::{any, int_constant, true_, Solver};
+use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
 
 pub fn solve_crosswall(
     clues: &[Vec<Option<(i32, i32)>>],
@@ -142,7 +142,7 @@ pub fn solve_crosswall(
                 is_active.push(is_seed.at((y, x)).expr());
             }
         }
-        is_active.push(true_());
+        is_active.push(TRUE);
         graph::active_vertices_connected(&mut solver, is_active, &aux_graph);
     }
     for y in 0..h {

@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{count_true, false_, true_, BoolExpr, Solver};
+use cspuz_rs::solver::{count_true, BoolExpr, Solver, FALSE, TRUE};
 
 pub fn solve_firewalk(
     fire_cell: &[Vec<bool>],
@@ -29,14 +29,14 @@ pub fn solve_firewalk(
         for x in 0..(w - 1) {
             let up;
             if y == 0 {
-                up = false_();
+                up = FALSE;
             } else {
                 up = is_inner.at((y - 1, x)).expr();
             }
 
             let down;
             if y == h - 1 {
-                down = false_();
+                down = FALSE;
             } else {
                 down = is_inner.at((y, x)).expr();
             }
@@ -48,14 +48,14 @@ pub fn solve_firewalk(
         for x in 0..w {
             let left;
             if x == 0 {
-                left = false_();
+                left = FALSE;
             } else {
                 left = is_inner.at((y, x - 1)).expr();
             }
 
             let right;
             if x == w - 1 {
-                right = false_();
+                right = FALSE;
             } else {
                 right = is_inner.at((y, x)).expr();
             }
@@ -113,7 +113,7 @@ pub fn solve_firewalk(
         for x in 0..(w - 1) {
             for i in 0..cell_ids[y][x].len() {
                 for j in 0..cell_ids[y][x + 1].len() {
-                    let mut condition = true_();
+                    let mut condition = TRUE;
 
                     if cell_ids[y][x].len() == 2 {
                         if i == 0 {

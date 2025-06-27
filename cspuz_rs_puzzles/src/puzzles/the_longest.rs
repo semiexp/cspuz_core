@@ -2,7 +2,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context,
 };
-use cspuz_rs::solver::{false_, int_constant, true_, BoolExpr, BoolVarArray1D, IntExpr, Solver};
+use cspuz_rs::solver::{int_constant, BoolExpr, BoolVarArray1D, IntExpr, Solver, FALSE, TRUE};
 
 pub fn solve_the_longest(
     clues: &graph::GridEdges<Vec<Vec<bool>>>,
@@ -159,7 +159,7 @@ pub fn solve_the_longest(
 
     graph::active_vertices_connected_via_active_edges(
         &mut solver,
-        &vec![true_(); h * w + 1],
+        &vec![TRUE; h * w + 1],
         &aux_edges,
         &aux_graph,
     );
@@ -168,14 +168,14 @@ pub fn solve_the_longest(
         for x in 0..w {
             let up;
             if y == 0 {
-                up = false_();
+                up = FALSE;
             } else {
                 up = edge_len_down.at((y - 1, x)).eq(edge_max.at((y - 1, x)));
             }
 
             let down;
             if y == h {
-                down = false_();
+                down = FALSE;
             } else {
                 down = edge_len_up.at((y, x)).eq(edge_max.at((y, x)));
             }
@@ -192,14 +192,14 @@ pub fn solve_the_longest(
         for x in 0..=w {
             let left;
             if x == 0 {
-                left = false_();
+                left = FALSE;
             } else {
                 left = edge_len_right.at((y, x - 1)).eq(edge_max.at((y, x - 1)));
             }
 
             let right;
             if x == w {
-                right = false_();
+                right = FALSE;
             } else {
                 right = edge_len_left.at((y, x)).eq(edge_max.at((y, x)));
             }

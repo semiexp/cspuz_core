@@ -56,13 +56,5 @@ pub fn int_constant(n: i32) -> NdArray<(), CSPIntExpr> {
     NdArray::<(), _>::from_raw(CSPIntExpr::Const(n))
 }
 
-pub fn true_() -> NdArray<(), CSPBoolExpr> {
-    bool_constant(true)
-}
-
-pub fn false_() -> NdArray<(), CSPBoolExpr> {
-    bool_constant(false)
-}
-
 pub const TRUE: NdArray<(), CSPBoolExpr> = NdArray::<(), _>::from_raw(CSPBoolExpr::Const(true));
 pub const FALSE: NdArray<(), CSPBoolExpr> = NdArray::<(), _>::from_raw(CSPBoolExpr::Const(false));

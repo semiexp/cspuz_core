@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{any, int_constant, true_, Solver};
+use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
 
 pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -104,7 +104,7 @@ pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
             aux_graph_v.push(v.expr());
         }
     }
-    aux_graph_v.push(true_());
+    aux_graph_v.push(TRUE);
     graph::active_vertices_connected(&mut solver, &aux_graph_v, &aux_graph);
 
     solver.irrefutable_facts().map(|f| f.get(is_black))

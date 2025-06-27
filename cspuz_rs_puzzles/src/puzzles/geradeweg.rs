@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{false_, Solver};
+use cspuz_rs::solver::{Solver, FALSE};
 
 pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
@@ -24,12 +24,12 @@ pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdge
                     let has_left = if x > 0 {
                         is_line.horizontal.at((y, x - 1)).expr()
                     } else {
-                        false_()
+                        FALSE
                     };
                     let has_right = if x < w - 1 {
                         is_line.horizontal.at((y, x)).expr()
                     } else {
-                        false_()
+                        FALSE
                     };
 
                     solver.add_expr(
@@ -50,12 +50,12 @@ pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdge
                     let has_up = if y > 0 {
                         is_line.vertical.at((y - 1, x)).expr()
                     } else {
-                        false_()
+                        FALSE
                     };
                     let has_down = if y < h - 1 {
                         is_line.vertical.at((y, x)).expr()
                     } else {
-                        false_()
+                        FALSE
                     };
 
                     solver.add_expr(

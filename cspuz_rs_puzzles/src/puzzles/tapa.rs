@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     from_base36, problem_to_url, to_base36, url_to_problem, Choice, Combinator, Context, Grid,
     Optionalize, Spaces,
 };
-use cspuz_rs::solver::{all, any, count_true, false_, Solver};
+use cspuz_rs::solver::{all, any, count_true, Solver, FALSE};
 
 const EIGHT_NEIGHBORS: [(i32, i32); 8] = [
     (-1, -1),
@@ -40,7 +40,7 @@ pub fn solve_tapa(clues: &[Vec<Option<[i32; 4]>>]) -> Option<Vec<Vec<Option<bool
                     if 0 <= y2 && y2 < h as i32 && 0 <= x2 && x2 < w as i32 {
                         neighbors.push(is_black.at((y2 as usize, x2 as usize)).expr());
                     } else {
-                        neighbors.push(false_());
+                        neighbors.push(FALSE);
                     }
                 }
 

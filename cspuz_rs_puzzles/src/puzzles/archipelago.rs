@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, Grid,
     HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{true_, Solver};
+use cspuz_rs::solver::{Solver, TRUE};
 use std::collections::VecDeque;
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
@@ -82,7 +82,7 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
             .expr()
             .into_iter()
             .chain((is_black & nums.eq(n)).into_iter())
-            .chain([true_()].into_iter())
+            .chain([TRUE].into_iter())
             .collect::<Vec<_>>();
         graph::active_vertices_connected(&mut solver, &vertices, &mut aux_graph);
     }

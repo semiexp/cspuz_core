@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::strip_prefix;
-use cspuz_rs::solver::{false_, Solver};
+use cspuz_rs::solver::{Solver, FALSE};
 
 pub fn solve_ringring(is_black: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(is_black);
@@ -47,27 +47,27 @@ pub fn solve_ringring(is_black: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrre
 
             let is_corner = &solver.bool_var();
             solver.add_expr(is_corner.iff(
-                is_line.vertical.at_offset((y, x), (-1, 0), false_())
-                    ^ is_line.vertical.at_offset((y, x), (0, 0), false_()),
+                is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
+                    ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
             ));
             solver.add_expr(is_corner.iff(
-                is_line.horizontal.at_offset((y, x), (0, -1), false_())
-                    ^ is_line.horizontal.at_offset((y, x), (0, 0), false_()),
+                is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
+                    ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
             ));
             solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), false_()))
+                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), FALSE))
                     .imp(vertical_y.at((y, x)).eq(0)),
             );
             solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), false_()))
+                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), FALSE))
                     .imp(vertical_y.at((y, x)).eq(vertical_h.at((y, x)))),
             );
             solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), false_()))
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), FALSE))
                     .imp(horizontal_x.at((y, x)).eq(0)),
             );
             solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), false_()))
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), FALSE))
                     .imp(horizontal_x.at((y, x)).eq(horizontal_w.at((y, x)))),
             );
             solver.add_expr(is_corner.imp(
