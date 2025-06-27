@@ -1,4 +1,4 @@
-pub use super::traits::{Operand, PropagateBinary, PropagateTernary};
+use super::traits::{ArrayShape, Item, Operand, PropagateBinary, PropagateTernary};
 use crate::items::Arrow;
 use crate::solver2::traits::BoolArrayLike;
 use crate::solver2::traits::IntArrayLike;
@@ -11,38 +11,52 @@ use cspuz_core::csp::IntVar as CSPIntVar;
 
 // TODO: we may want to avoid Vec<T> for 0-dimensional arrays
 #[derive(Debug, Clone)]
-pub struct NdArray<S, T> {
+pub struct NdArray<S, T: Clone>
+where
+    S: ArrayShape<T>,
+{
     pub(crate) shape: S,
-    pub(crate) data: Vec<T>,
+    pub(crate) data: S::ContainerType,
 }
 
-impl<S, T> IntoIterator for NdArray<S, T> {
+impl<S, T: Clone> IntoIterator for NdArray<S, T>
+where
+    S: ArrayShape<T>,
+{
     type Item = NdArray<(), T>;
-    type IntoIter = std::iter::Map<std::vec::IntoIter<T>, fn(T) -> Self::Item>;
+    type IntoIter =
+        std::iter::Map<<S::ContainerType as IntoIterator>::IntoIter, fn(T) -> Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.data.into_iter().map(|v| NdArray {
             shape: (),
-            data: vec![v],
+            data: Item(v),
         })
     }
 }
 
-impl<S, T: Clone> IntoIterator for &NdArray<S, T> {
+impl<S, T: Clone> IntoIterator for &NdArray<S, T>
+where
+    S: ArrayShape<T>,
+{
     type Item = NdArray<(), T>;
-    type IntoIter = std::iter::Map<std::vec::IntoIter<T>, fn(T) -> Self::Item>;
+    type IntoIter =
+        std::iter::Map<<S::ContainerType as IntoIterator>::IntoIter, fn(T) -> Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.data.clone().into_iter().map(|v| NdArray {
             shape: (),
-            data: vec![v],
+            data: Item(v),
         })
     }
 }
 
 macro_rules! impl_operand {
     ($var_type:ty, $expr_type:ty) => {
-        impl<S: Clone> Operand for NdArray<S, $expr_type> {
+        impl<S: Clone> Operand for NdArray<S, $expr_type>
+        where
+            S: ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
@@ -51,19 +65,25 @@ macro_rules! impl_operand {
             }
         }
 
-        impl<S: Clone> Operand for NdArray<S, $var_type> {
+        impl<S: Clone> Operand for NdArray<S, $var_type>
+        where
+            S: ArrayShape<$var_type> + ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
             fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
                 NdArray {
                     shape: self.shape.clone(),
-                    data: self.data.iter().map(|v| v.expr()).collect(),
+                    data: self.data.clone().into_iter().map(|v| v.expr()).collect(),
                 }
             }
         }
 
-        impl<S: Clone> Operand for &NdArray<S, $expr_type> {
+        impl<S: Clone> Operand for &NdArray<S, $expr_type>
+        where
+            S: ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
@@ -72,19 +92,25 @@ macro_rules! impl_operand {
             }
         }
 
-        impl<S: Clone> Operand for &NdArray<S, $var_type> {
+        impl<S: Clone> Operand for &NdArray<S, $var_type>
+        where
+            S: ArrayShape<$var_type> + ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
             fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
                 NdArray {
                     shape: self.shape.clone(),
-                    data: self.data.iter().map(|v| v.expr()).collect(),
+                    data: self.data.clone().into_iter().map(|v| v.expr()).collect(),
                 }
             }
         }
 
-        impl<S: Clone> Operand for &&NdArray<S, $expr_type> {
+        impl<S: Clone> Operand for &&NdArray<S, $expr_type>
+        where
+            S: ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
@@ -93,14 +119,17 @@ macro_rules! impl_operand {
             }
         }
 
-        impl<S: Clone> Operand for &&NdArray<S, $var_type> {
+        impl<S: Clone> Operand for &&NdArray<S, $var_type>
+        where
+            S: ArrayShape<$var_type> + ArrayShape<$expr_type>,
+        {
             type Shape = S;
             type Value = $expr_type;
 
             fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
                 NdArray {
                     shape: self.shape.clone(),
-                    data: self.data.iter().map(|v| v.expr()).collect(),
+                    data: self.data.clone().into_iter().map(|v| v.expr()).collect(),
                 }
             }
         }
@@ -114,12 +143,12 @@ impl_operand!(CSPIntVar, CSPIntExpr);
 // Builders
 // ==========
 
-impl<T> NdArray<(usize,), T> {
+impl<T: Clone> NdArray<(usize,), T> {
     pub fn new<I>(data: I) -> NdArray<(usize,), T>
     where
         I: IntoIterator<Item = NdArray<(), T>>,
     {
-        let data: Vec<T> = data.into_iter().map(|mut v| v.data.remove(0)).collect();
+        let data: Vec<T> = data.into_iter().map(|v| v.data.0).collect();
         NdArray {
             shape: (data.len(),),
             data,
@@ -134,13 +163,13 @@ impl<T> NdArray<(usize,), T> {
     }
 }
 
-impl<T> NdArray<(usize, usize), T> {
+impl<T: Clone> NdArray<(usize, usize), T> {
     pub fn new<I>(shape: (usize, usize), data: I) -> NdArray<(usize, usize), T>
     where
         I: IntoIterator<Item = NdArray<(), T>>,
     {
         let (height, width) = shape;
-        let data: Vec<T> = data.into_iter().map(|mut v| v.data.remove(0)).collect();
+        let data: Vec<T> = data.into_iter().map(|v| v.data.0).collect();
         assert_eq!(height * width, data.len());
         NdArray { shape, data }
     }
@@ -158,7 +187,7 @@ impl<T: Clone> NdArray<(usize,), T> {
     pub fn at(&self, idx: usize) -> NdArray<(), T> {
         NdArray {
             shape: (),
-            data: vec![self.data[idx].clone()],
+            data: Item(self.data[idx].clone()),
         }
     }
 
@@ -209,7 +238,7 @@ impl<T: Clone> NdArray<(usize,), T> {
     }
 }
 
-impl<T> NdArray<(usize, usize), T> {
+impl<T: Clone> NdArray<(usize, usize), T> {
     pub fn shape(&self) -> (usize, usize) {
         self.shape
     }
@@ -245,11 +274,11 @@ impl<T: Clone> NdArray<(usize, usize), T> {
     pub fn at(&self, idx: (usize, usize)) -> NdArray<(), T> {
         NdArray {
             shape: (),
-            data: vec![self.at_raw(idx).clone()],
+            data: Item(self.at_raw(idx).clone()),
         }
     }
 
-    pub fn at_offset<D, E>(
+    pub fn at_offset<D, E: Clone>(
         &self,
         idx: (usize, usize),
         offset: (i32, i32),
@@ -381,7 +410,10 @@ impl<T: Clone> NdArray<(usize, usize), T> {
 
 impl<S, A> Not for NdArray<S, A>
 where
+    S: ArrayShape<A>,
+    A: Clone,
     NdArray<S, A>: Operand<Value = CSPBoolExpr>,
+    <Self as Operand>::Shape: ArrayShape<<Self as Operand>::Value>,
 {
     type Output = NdArray<<Self as Operand>::Shape, <Self as Operand>::Value>;
 
@@ -396,7 +428,10 @@ where
 
 impl<'a, S, A> Not for &'a NdArray<S, A>
 where
+    S: ArrayShape<A>,
+    A: Clone,
     &'a NdArray<S, A>: Operand<Value = CSPBoolExpr>,
+    <Self as Operand>::Shape: ArrayShape<<Self as Operand>::Value>,
 {
     type Output = NdArray<<Self as Operand>::Shape, <Self as Operand>::Value>;
 
@@ -415,6 +450,8 @@ macro_rules! binary_op_overload {
 
         impl<A, B, S> $trait_name<B> for NdArray<S, A>
         where
+            S: ArrayShape<A>,
+            A: Clone,
             (NdArray<S, A>, B): PropagateBinary<$input_type, $input_type, $output_type>,
         {
             type Output = <(NdArray<S, A>, B) as PropagateBinary<$input_type, $input_type, $output_type>>::Output;
@@ -428,6 +465,8 @@ macro_rules! binary_op_overload {
 
         impl<'a, A, B, S> $trait_name<B> for &'a NdArray<S, A>
         where
+            S: ArrayShape<A>,
+            A: Clone,
             (&'a NdArray<S, A>, B): PropagateBinary<$input_type, $input_type, $output_type>,
         {
             type Output = <(&'a NdArray<S, A>, B) as PropagateBinary<$input_type, $input_type, $output_type>>::Output;
@@ -449,7 +488,7 @@ binary_op_overload!(Sub, sub, CSPIntExpr, CSPIntExpr, -);
 
 macro_rules! binary_op {
     ($func_name:ident, $input_type:ty, $output_type:ty, $op_func:expr) => {
-        impl<S, A> NdArray<S, A> {
+        impl<S, A: Clone> NdArray<S, A> where S: ArrayShape<A> {
             pub fn $func_name<'a, B>(&'a self, rhs: B) -> <(&'a NdArray<S, A>, B) as PropagateBinary<$input_type, $input_type, $output_type>>::Output
             where
                 (&'a NdArray<S, A>, B): PropagateBinary<$input_type, $input_type, $output_type>,
@@ -469,16 +508,21 @@ binary_op!(lt, CSPIntExpr, CSPBoolExpr, |x, y| x.lt(y));
 binary_op!(imp, CSPBoolExpr, CSPBoolExpr, |x, y| x.imp(y));
 binary_op!(iff, CSPBoolExpr, CSPBoolExpr, |x, y| x.iff(y));
 
-impl<S, A> NdArray<S, A>
+impl<S, A: Clone> NdArray<S, A>
 where
+    S: ArrayShape<A>,
     Self: Operand,
+    <Self as Operand>::Shape: ArrayShape<<Self as Operand>::Value>,
 {
     pub fn expr(&self) -> NdArray<<Self as Operand>::Shape, <Self as Operand>::Value> {
         self.as_ndarray()
     }
 }
 
-impl<S, A> NdArray<S, A> {
+impl<S, A: Clone> NdArray<S, A>
+where
+    S: ArrayShape<A>,
+{
     pub fn ite<'a, B, C>(
         &'a self,
         if_true: B,
@@ -535,7 +579,7 @@ impl<S, A> NdArray<S, A> {
     }
 }
 
-impl<A> NdArray<(usize, usize), A>
+impl<A: Clone> NdArray<(usize, usize), A>
 where
     Self: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
 {

@@ -1,5 +1,5 @@
 use super::ndarray::NdArray;
-use super::traits::{BoolArrayLike, IntArrayLike};
+use super::traits::{BoolArrayLike, IntArrayLike, Item};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 use cspuz_core::csp::IntExpr as CSPIntExpr;
@@ -8,7 +8,7 @@ pub fn any<T: BoolArrayLike>(values: T) -> NdArray<(), CSPBoolExpr> {
     let terms = values.to_vec().into_iter().map(Box::new).collect();
     NdArray {
         shape: (),
-        data: vec![CSPBoolExpr::Or(terms)],
+        data: Item(CSPBoolExpr::Or(terms)),
     }
 }
 
@@ -16,7 +16,7 @@ pub fn all<T: BoolArrayLike>(values: T) -> NdArray<(), CSPBoolExpr> {
     let terms = values.to_vec().into_iter().map(Box::new).collect();
     NdArray {
         shape: (),
-        data: vec![CSPBoolExpr::And(terms)],
+        data: Item(CSPBoolExpr::And(terms)),
     }
 }
 
@@ -28,7 +28,7 @@ pub fn sum<T: IntArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
         .collect();
     NdArray {
         shape: (),
-        data: vec![CSPIntExpr::Linear(terms)],
+        data: Item(CSPIntExpr::Linear(terms)),
     }
 }
 
@@ -45,7 +45,7 @@ pub fn count_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
         .collect();
     NdArray {
         shape: (),
-        data: vec![CSPIntExpr::Linear(terms)],
+        data: Item(CSPIntExpr::Linear(terms)),
     }
 }
 
@@ -59,21 +59,21 @@ pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIn
 
     NdArray {
         shape: (),
-        data: vec![ret],
+        data: Item(ret),
     }
 }
 
 pub fn bool_constant(b: bool) -> NdArray<(), CSPBoolExpr> {
     NdArray {
         shape: (),
-        data: vec![CSPBoolExpr::Const(b)],
+        data: Item(CSPBoolExpr::Const(b)),
     }
 }
 
 pub fn int_constant(n: i32) -> NdArray<(), CSPIntExpr> {
     NdArray {
         shape: (),
-        data: vec![CSPIntExpr::Const(n)],
+        data: Item(CSPIntExpr::Const(n)),
     }
 }
 
@@ -84,3 +84,13 @@ pub fn true_() -> NdArray<(), CSPBoolExpr> {
 pub fn false_() -> NdArray<(), CSPBoolExpr> {
     bool_constant(false)
 }
+
+pub const TRUE: NdArray<(), CSPBoolExpr> = NdArray {
+    shape: (),
+    data: Item(CSPBoolExpr::Const(true)),
+};
+
+pub const FALSE: NdArray<(), CSPBoolExpr> = NdArray {
+    shape: (),
+    data: Item(CSPBoolExpr::Const(false)),
+};

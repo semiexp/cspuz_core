@@ -74,12 +74,12 @@ impl<'a> Solver<'a> {
     pub fn bool_var(&mut self) -> BoolVar {
         NdArray {
             shape: (),
-            data: vec![self.solver.new_bool_var()],
+            data: traits::Item(self.solver.new_bool_var()),
         }
     }
 
     pub fn add_prenormalize_var(&mut self, var: BoolVar) {
-        self.solver.add_prenormalize_var(var.data[0].clone());
+        self.solver.add_prenormalize_var(var.data.0.clone());
     }
 
     /// Creates and returns a new 1D array of boolean variables of the specified length.
@@ -126,7 +126,7 @@ impl<'a> Solver<'a> {
     pub fn int_var(&mut self, low: i32, high: i32) -> IntVar {
         NdArray {
             shape: (),
-            data: vec![self.solver.new_int_var(Domain::range(low, high))],
+            data: traits::Item(self.solver.new_int_var(Domain::range(low, high))),
         }
     }
 
@@ -143,7 +143,7 @@ impl<'a> Solver<'a> {
     pub fn int_var_from_domain(&mut self, domain: Vec<i32>) -> IntVar {
         NdArray {
             shape: (),
-            data: vec![self.solver.new_int_var_from_list(domain)],
+            data: traits::Item(self.solver.new_int_var_from_list(domain)),
         }
     }
 
@@ -287,7 +287,7 @@ impl<'a> Solver<'a> {
     ) {
         let sizes = sizes
             .into_iter()
-            .map(|x| x.clone().map(|x| x.data[0].clone()))
+            .map(|x| x.clone().map(|x| x.data.0.clone()))
             .collect::<Vec<_>>();
         self.solver.add_constraint(Stmt::GraphDivision(
             sizes,
@@ -338,7 +338,7 @@ impl<'a> Solver<'a> {
         T::Item: std::borrow::Borrow<BoolVar>,
     {
         self.answer_key_bool
-            .extend(keys.into_iter().map(|x| x.borrow().data[0].clone()))
+            .extend(keys.into_iter().map(|x| x.borrow().data.0.clone()))
     }
 
     /// Registers the specified integer variable(s) as the answer key(s).
@@ -351,7 +351,7 @@ impl<'a> Solver<'a> {
         T::Item: std::borrow::Borrow<IntVar>,
     {
         self.answer_key_int
-            .extend(keys.into_iter().map(|x| x.borrow().data[0].clone()))
+            .extend(keys.into_iter().map(|x| x.borrow().data.0.clone()))
     }
 
     pub fn encode(&mut self) -> bool {
@@ -488,15 +488,16 @@ pub trait FromModel {
 
 impl<S> FromModel for NdArray<S, CSPBoolVar>
 where
-    S: traits::ArrayShape<bool>,
+    S: traits::ArrayShape<bool> + traits::ArrayShape<CSPBoolVar>,
 {
     type Output = <S as traits::ArrayShape<bool>>::Output;
 
     fn from_model(&self, model: &Model) -> Self::Output {
         let data = self
             .data
-            .iter()
-            .map(|var| model.model.get_bool(*var))
+            .clone()
+            .into_iter()
+            .map(|var| model.model.get_bool(var))
             .collect();
         self.shape.instantiate(data)
     }
@@ -504,15 +505,16 @@ where
 
 impl<S> FromModel for NdArray<S, CSPIntVar>
 where
-    S: traits::ArrayShape<i32>,
+    S: traits::ArrayShape<i32> + traits::ArrayShape<CSPIntVar>,
 {
     type Output = <S as traits::ArrayShape<i32>>::Output;
 
     fn from_model(&self, model: &Model) -> Self::Output {
         let data = self
             .data
-            .iter()
-            .map(|var| model.model.get_int(*var))
+            .clone()
+            .into_iter()
+            .map(|var| model.model.get_int(var))
             .collect();
         self.shape.instantiate(data)
     }
@@ -551,7 +553,7 @@ pub trait FromOwnedPartialModel {
 
 impl<S> FromOwnedPartialModel for NdArray<S, CSPBoolVar>
 where
-    S: traits::ArrayShape<bool> + traits::ArrayShape<Option<bool>>,
+    S: traits::ArrayShape<bool> + traits::ArrayShape<Option<bool>> + traits::ArrayShape<CSPBoolVar>,
 {
     type Output = <S as traits::ArrayShape<Option<bool>>>::Output;
     type OutputUnwrap = <S as traits::ArrayShape<bool>>::Output;
@@ -559,8 +561,9 @@ where
     fn from_irrefutable_facts(&self, irrefutable_facts: &OwnedPartialModel) -> Self::Output {
         let data = self
             .data
-            .iter()
-            .map(|var| irrefutable_facts.assignment.get_bool(*var))
+            .clone()
+            .into_iter()
+            .map(|var| irrefutable_facts.assignment.get_bool(var))
             .collect();
         self.shape.instantiate(data)
     }
@@ -571,8 +574,9 @@ where
     ) -> Self::OutputUnwrap {
         let data = self
             .data
-            .iter()
-            .map(|var| irrefutable_facts.assignment.get_bool(*var).unwrap())
+            .clone()
+            .into_iter()
+            .map(|var| irrefutable_facts.assignment.get_bool(var).unwrap())
             .collect();
         self.shape.instantiate(data)
     }
@@ -580,7 +584,7 @@ where
 
 impl<S> FromOwnedPartialModel for NdArray<S, CSPIntVar>
 where
-    S: traits::ArrayShape<i32> + traits::ArrayShape<Option<i32>>,
+    S: traits::ArrayShape<i32> + traits::ArrayShape<Option<i32>> + traits::ArrayShape<CSPIntVar>,
 {
     type Output = <S as traits::ArrayShape<Option<i32>>>::Output;
     type OutputUnwrap = <S as traits::ArrayShape<i32>>::Output;
@@ -588,8 +592,9 @@ where
     fn from_irrefutable_facts(&self, irrefutable_facts: &OwnedPartialModel) -> Self::Output {
         let data = self
             .data
-            .iter()
-            .map(|var| irrefutable_facts.assignment.get_int(*var))
+            .clone()
+            .into_iter()
+            .map(|var| irrefutable_facts.assignment.get_int(var))
             .collect();
         self.shape.instantiate(data)
     }
@@ -600,8 +605,9 @@ where
     ) -> Self::OutputUnwrap {
         let data = self
             .data
-            .iter()
-            .map(|var| irrefutable_facts.assignment.get_int(*var).unwrap())
+            .clone()
+            .into_iter()
+            .map(|var| irrefutable_facts.assignment.get_int(var).unwrap())
             .collect();
         self.shape.instantiate(data)
     }
