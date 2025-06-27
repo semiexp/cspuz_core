@@ -163,10 +163,7 @@ impl Operand for bool {
     type Value = CSPBoolExpr;
 
     fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
-        NdArray {
-            shape: (),
-            data: Item(CSPBoolExpr::Const(*self)),
-        }
+        NdArray::<(), _>::from_raw(CSPBoolExpr::Const(*self))
     }
 }
 
@@ -175,10 +172,7 @@ impl Operand for i32 {
     type Value = CSPIntExpr;
 
     fn as_ndarray(&self) -> NdArray<Self::Shape, Self::Value> {
-        NdArray {
-            shape: (),
-            data: Item(CSPIntExpr::Const(*self)),
-        }
+        NdArray::<(), _>::from_raw(CSPIntExpr::Const(*self))
     }
 }
 

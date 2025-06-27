@@ -27,10 +27,7 @@ where
         std::iter::Map<<S::ContainerType as IntoIterator>::IntoIter, fn(T) -> Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.data.into_iter().map(|v| NdArray {
-            shape: (),
-            data: Item(v),
-        })
+        self.data.into_iter().map(|v| NdArray::<(), _>::from_raw(v))
     }
 }
 
@@ -43,10 +40,10 @@ where
         std::iter::Map<<S::ContainerType as IntoIterator>::IntoIter, fn(T) -> Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.data.clone().into_iter().map(|v| NdArray {
-            shape: (),
-            data: Item(v),
-        })
+        self.data
+            .clone()
+            .into_iter()
+            .map(|v| NdArray::<(), _>::from_raw(v))
     }
 }
 
@@ -142,6 +139,15 @@ impl_operand!(CSPIntVar, CSPIntExpr);
 // Builders
 // ==========
 
+impl<T: Clone> NdArray<(), T> {
+    pub(crate) const fn from_raw(data: T) -> NdArray<(), T> {
+        NdArray {
+            shape: (),
+            data: Item(data),
+        }
+    }
+}
+
 impl<T: Clone> NdArray<(usize,), T> {
     pub fn new<I>(data: I) -> NdArray<(usize,), T>
     where
@@ -184,10 +190,7 @@ impl<T: Clone> NdArray<(usize,), T> {
     }
 
     pub fn at(&self, idx: usize) -> NdArray<(), T> {
-        NdArray {
-            shape: (),
-            data: Item(self.data[idx].clone()),
-        }
+        NdArray::<(), _>::from_raw(self.data[idx].clone())
     }
 
     pub fn reverse(&self) -> NdArray<(usize,), T> {
@@ -271,10 +274,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
 
 impl<T: Clone> NdArray<(usize, usize), T> {
     pub fn at(&self, idx: (usize, usize)) -> NdArray<(), T> {
-        NdArray {
-            shape: (),
-            data: Item(self.at_raw(idx).clone()),
-        }
+        NdArray::<(), _>::from_raw(self.at_raw(idx).clone())
     }
 
     pub fn at_offset<D, E: Clone>(

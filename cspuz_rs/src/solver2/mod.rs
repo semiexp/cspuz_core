@@ -72,10 +72,7 @@ impl<'a> Solver<'a> {
     /// let x = solver.bool_var();
     /// ```
     pub fn bool_var(&mut self) -> BoolVar {
-        NdArray {
-            shape: (),
-            data: traits::Item(self.solver.new_bool_var()),
-        }
+        NdArray::<(), _>::from_raw(self.solver.new_bool_var())
     }
 
     pub fn add_prenormalize_var(&mut self, var: BoolVar) {
@@ -124,10 +121,7 @@ impl<'a> Solver<'a> {
     /// let x = solver.int_var(0, 10);
     /// ```
     pub fn int_var(&mut self, low: i32, high: i32) -> IntVar {
-        NdArray {
-            shape: (),
-            data: traits::Item(self.solver.new_int_var(Domain::range(low, high))),
-        }
+        NdArray::<(), _>::from_raw(self.solver.new_int_var(Domain::range(low, high)))
     }
 
     /// Creates and returns a new integer variable with the specified domain.
@@ -141,10 +135,7 @@ impl<'a> Solver<'a> {
     /// let x = solver.int_var_from_domain(vec![0, 1, 3, 5]);
     /// ```
     pub fn int_var_from_domain(&mut self, domain: Vec<i32>) -> IntVar {
-        NdArray {
-            shape: (),
-            data: traits::Item(self.solver.new_int_var_from_list(domain)),
-        }
+        NdArray::<(), _>::from_raw(self.solver.new_int_var_from_list(domain))
     }
 
     /// Creates and returns a new 1D array of integer variables of the specified length with the domain `[low, high]` (inclusive).
