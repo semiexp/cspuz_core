@@ -9,7 +9,6 @@ use cspuz_core::csp::BoolVar as CSPBoolVar;
 use cspuz_core::csp::IntExpr as CSPIntExpr;
 use cspuz_core::csp::IntVar as CSPIntVar;
 
-// TODO: we may want to avoid Vec<T> for 0-dimensional arrays
 #[derive(Debug, Clone)]
 pub struct NdArray<S, T: Clone>
 where
