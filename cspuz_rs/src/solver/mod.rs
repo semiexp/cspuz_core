@@ -19,7 +19,7 @@ pub use cspuz_core::propagators::graph_division::GraphDivisionOptions;
 
 use ndarray::NdArray;
 
-use crate::solver2::traits::{BoolArrayLike, IntArrayLike};
+use traits::{BoolArrayLike, IntArrayLike};
 
 pub type BoolVar = NdArray<(), CSPBoolVar>;
 pub type BoolExpr = NdArray<(), CSPBoolExpr>;

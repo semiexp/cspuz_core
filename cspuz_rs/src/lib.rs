@@ -5,9 +5,7 @@ pub mod graph;
 pub mod hex;
 pub mod items;
 pub mod serializer;
-// pub mod solver;
-pub mod solver2;
-pub use solver2 as solver;
+pub mod solver;
 
 #[cfg(feature = "generator")]
 pub mod generator;

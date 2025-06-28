@@ -1,7 +1,7 @@
 use super::traits::{ArrayShape, Item, Operand, PropagateBinary, PropagateTernary};
 use crate::items::Arrow;
-use crate::solver2::traits::BoolArrayLike;
-use crate::solver2::traits::IntArrayLike;
+use crate::solver::traits::BoolArrayLike;
+use crate::solver::traits::IntArrayLike;
 use std::ops::{Bound, Not, RangeBounds};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
