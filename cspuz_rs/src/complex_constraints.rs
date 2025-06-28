@@ -17,10 +17,7 @@ pub fn sum_all_different<T: IntArrayLike>(
     condition: Option<BoolExpr>,
 ) -> bool {
     let values = values.to_vec();
-    let terms = &NdArray {
-        shape: (values.len(),),
-        data: values,
-    };
+    let terms = &NdArray::<(usize,), _>::from_raw(values);
 
     if let Some(condition) = &condition {
         for i in 0..terms.len() {

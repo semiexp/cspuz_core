@@ -14,8 +14,8 @@ pub struct NdArray<S, T: Clone>
 where
     S: ArrayShape<T>,
 {
-    pub(crate) shape: S,
-    pub(crate) data: S::ContainerType,
+    pub(super) shape: S,
+    pub(super) data: S::ContainerType,
 }
 
 impl<S, T: Clone> IntoIterator for NdArray<S, T>
