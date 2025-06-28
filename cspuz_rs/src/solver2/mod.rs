@@ -603,3 +603,114 @@ where
         self.shape.instantiate(data)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_binary_operators_bool() {
+        let mut solver = Solver::new();
+        let b0d = &solver.bool_var();
+        let b1d = &solver.bool_var_1d(7);
+        let b2d = &solver.bool_var_2d((3, 5));
+
+        let _ = b0d ^ ((b0d | b0d) & b0d);
+        let _ = b1d ^ ((b0d | b1d) & b0d);
+        let _ = b1d ^ ((b1d | b0d) & b0d);
+        let _ = b1d | b1d;
+        let _ = b2d ^ ((b0d | b2d) & b0d);
+        let _ = b2d ^ ((b2d | b0d) & b0d);
+        let _ = b2d | b2d;
+
+        let _ = !b0d;
+        let _ = !(b0d ^ b0d);
+        let _ = !b1d;
+        let _ = !(b1d ^ b1d);
+        let _ = !b2d;
+        let _ = !(b2d ^ b2d);
+    }
+
+    #[test]
+    fn test_ite() {
+        let mut solver = Solver::new();
+
+        let b0d = &solver.bool_var();
+        let b1d = &solver.bool_var_1d(7);
+        let b2d = &solver.bool_var_2d((3, 5));
+        let i0d = &solver.int_var(0, 2);
+        let i1d = &solver.int_var_1d(7, 0, 2);
+        let i2d = &solver.int_var_2d((3, 5), 0, 2);
+
+        let _ = b0d.ite(i0d, i0d);
+        let _ = b0d.ite(i0d, i1d);
+        let _ = b0d.ite(i0d, i2d);
+        let _ = b0d.ite(i1d, i0d);
+        let _ = b0d.ite(i1d, i1d);
+        let _ = b0d.ite(i2d, i0d);
+        let _ = b0d.ite(i2d, i2d);
+        let _ = b1d.ite(i0d, i0d);
+        let _ = b1d.ite(i0d, i1d);
+        let _ = b1d.ite(i1d, i1d);
+        let _ = b1d.ite(i1d, i1d);
+        let _ = b2d.ite(i0d, i0d);
+        let _ = b2d.ite(i0d, i2d);
+        let _ = b2d.ite(i2d, i2d);
+        let _ = b2d.ite(i2d, i2d);
+    }
+
+    #[test]
+    fn test_count_true() {
+        let mut solver = Solver::new();
+        let b0d = &solver.bool_var();
+        let b1d = &solver.bool_var_1d(5);
+        let b2d = &solver.bool_var_2d((3, 7));
+
+        let _ = count_true(b0d);
+        let _ = count_true([b0d, b0d]);
+        let _ = count_true(&[b0d, b0d]);
+        let _ = count_true(vec![b0d, b0d]);
+        let _ = count_true(&vec![b0d, b0d]);
+        let _ = count_true(b1d);
+        let _ = count_true(b2d);
+        let _ = b0d.count_true();
+        let _ = b1d.count_true();
+        let _ = b2d.count_true();
+    }
+
+    #[test]
+    fn test_solver_interface() {
+        let mut solver = Solver::new();
+        let b0d = &solver.bool_var();
+        let b1d = &solver.bool_var_1d(5);
+        let b2d = &solver.bool_var_2d((3, 7));
+
+        solver.add_expr(b0d);
+        solver.add_expr([b0d, b0d]);
+        solver.add_expr(&[b0d, b0d]);
+        solver.add_expr(vec![b0d, b0d]);
+        solver.add_expr(&vec![b0d, b0d]);
+        solver.add_expr([b0d | b0d, b0d & b0d]);
+        solver.add_expr(b1d);
+        solver.add_expr(b1d | b1d);
+        solver.add_expr(b2d);
+        solver.add_expr(b2d | b2d);
+
+        solver.add_answer_key_bool(b0d);
+        solver.add_answer_key_bool([b0d]);
+    }
+
+    #[test]
+    fn test_solver_iterator() {
+        let mut solver = Solver::new();
+        let array = &solver.bool_var_1d(5);
+        solver.add_answer_key_bool(array);
+        solver.add_expr(array.at(0) | array.at(1));
+
+        let mut n_ans = 0;
+        for _ in solver.answer_iter() {
+            n_ans += 1;
+        }
+        assert_eq!(n_ans, 24);
+    }
+}
