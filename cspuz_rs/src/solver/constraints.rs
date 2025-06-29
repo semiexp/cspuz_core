@@ -1,29 +1,29 @@
-use super::ndarray::NdArray;
 use super::traits::{BoolArrayLike, IntArrayLike};
+use super::{BoolExpr, IntExpr};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 use cspuz_core::csp::IntExpr as CSPIntExpr;
 
-pub fn any<T: BoolArrayLike>(values: T) -> NdArray<(), CSPBoolExpr> {
+pub fn any<T: BoolArrayLike>(values: T) -> BoolExpr {
     let terms = values.to_vec().into_iter().map(Box::new).collect();
-    NdArray::<(), _>::from_raw(CSPBoolExpr::Or(terms))
+    BoolExpr::from_raw(CSPBoolExpr::Or(terms))
 }
 
-pub fn all<T: BoolArrayLike>(values: T) -> NdArray<(), CSPBoolExpr> {
+pub fn all<T: BoolArrayLike>(values: T) -> BoolExpr {
     let terms = values.to_vec().into_iter().map(Box::new).collect();
-    NdArray::<(), _>::from_raw(CSPBoolExpr::And(terms))
+    BoolExpr::from_raw(CSPBoolExpr::And(terms))
 }
 
-pub fn sum<T: IntArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
+pub fn sum<T: IntArrayLike>(values: T) -> IntExpr {
     let terms = values
         .to_vec()
         .into_iter()
         .map(|x| (Box::new(x), 1))
         .collect();
-    NdArray::<(), _>::from_raw(CSPIntExpr::Linear(terms))
+    IntExpr::from_raw(CSPIntExpr::Linear(terms))
 }
 
-pub fn count_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
+pub fn count_true<T: BoolArrayLike>(values: T) -> IntExpr {
     let terms = values
         .to_vec()
         .into_iter()
@@ -34,10 +34,10 @@ pub fn count_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
             )
         })
         .collect();
-    NdArray::<(), _>::from_raw(CSPIntExpr::Linear(terms))
+    IntExpr::from_raw(CSPIntExpr::Linear(terms))
 }
 
-pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIntExpr> {
+pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> IntExpr {
     let terms = values.to_vec();
 
     let mut ret = CSPIntExpr::Const(0);
@@ -45,16 +45,16 @@ pub fn consecutive_prefix_true<T: BoolArrayLike>(values: T) -> NdArray<(), CSPIn
         ret = t.ite(ret + CSPIntExpr::Const(1), CSPIntExpr::Const(0));
     }
 
-    NdArray::<(), _>::from_raw(ret)
+    IntExpr::from_raw(ret)
 }
 
-pub fn bool_constant(b: bool) -> NdArray<(), CSPBoolExpr> {
-    NdArray::<(), _>::from_raw(CSPBoolExpr::Const(b))
+pub fn bool_constant(b: bool) -> BoolExpr {
+    BoolExpr::from_raw(CSPBoolExpr::Const(b))
 }
 
-pub fn int_constant(n: i32) -> NdArray<(), CSPIntExpr> {
-    NdArray::<(), _>::from_raw(CSPIntExpr::Const(n))
+pub fn int_constant(n: i32) -> IntExpr {
+    IntExpr::from_raw(CSPIntExpr::Const(n))
 }
 
-pub const TRUE: NdArray<(), CSPBoolExpr> = NdArray::<(), _>::from_raw(CSPBoolExpr::Const(true));
-pub const FALSE: NdArray<(), CSPBoolExpr> = NdArray::<(), _>::from_raw(CSPBoolExpr::Const(false));
+pub const TRUE: BoolExpr = BoolExpr::from_raw(CSPBoolExpr::Const(true));
+pub const FALSE: BoolExpr = BoolExpr::from_raw(CSPBoolExpr::Const(false));

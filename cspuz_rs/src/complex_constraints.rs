@@ -1,4 +1,4 @@
-use crate::solver::{all, any, ndarray::NdArray, traits::IntArrayLike, BoolExpr, Solver};
+use crate::solver::{all, any, traits::IntArrayLike, BoolExpr, IntExprArray1D, Solver};
 
 /// Adds a constraint that, if `condition` is true (or not present),
 /// - given values are all different,
@@ -17,7 +17,7 @@ pub fn sum_all_different<T: IntArrayLike>(
     condition: Option<BoolExpr>,
 ) -> bool {
     let values = values.to_vec();
-    let terms = &NdArray::<(usize,), _>::from_raw(values);
+    let terms = &IntExprArray1D::from_raw(values);
 
     if let Some(condition) = &condition {
         for i in 0..terms.len() {

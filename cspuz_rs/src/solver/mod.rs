@@ -1,14 +1,14 @@
-pub mod constraints;
-pub mod ndarray;
-pub mod traits;
+mod constraints;
+mod ndarray;
+pub(crate) mod traits;
 
 use std::borrow::Borrow;
 
 pub use cspuz_core::config::{Config, GraphDivisionMode};
-pub use cspuz_core::csp::BoolExpr as CSPBoolExpr;
-pub use cspuz_core::csp::BoolVar as CSPBoolVar;
-pub use cspuz_core::csp::IntExpr as CSPIntExpr;
-pub use cspuz_core::csp::IntVar as CSPIntVar;
+use cspuz_core::csp::BoolExpr as CSPBoolExpr;
+use cspuz_core::csp::BoolVar as CSPBoolVar;
+use cspuz_core::csp::IntExpr as CSPIntExpr;
+use cspuz_core::csp::IntVar as CSPIntVar;
 use cspuz_core::csp::{Assignment, Stmt};
 use cspuz_core::custom_constraints::PropagatorGenerator;
 use cspuz_core::domain::Domain;

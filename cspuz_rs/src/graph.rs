@@ -1,10 +1,12 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, ndarray::NdArray, traits::BoolArrayLike, traits::Operand, BoolVar, BoolVarArray1D,
-    BoolVarArray2D, CSPBoolExpr, CSPIntExpr, FromModel, FromOwnedPartialModel,
-    GraphDivisionOptions, Model, OwnedPartialModel, Solver,
+    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolVar, BoolVarArray1D,
+    BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
+    OwnedPartialModel, Solver,
 };
+use cspuz_core::csp::BoolExpr as CSPBoolExpr;
+use cspuz_core::csp::IntExpr as CSPIntExpr;
 
 /// A struct for representing an undirected graph.
 pub struct Graph {
@@ -573,8 +575,8 @@ pub fn active_vertices_connected_via_active_edges<T1: BoolArrayLike, T2: BoolArr
     is_active_edge: T2,
     graph: &Graph,
 ) {
-    let is_active_vertex = NdArray::<(usize,), _>::from_raw(is_active_vertex.to_vec());
-    let is_active_edge = NdArray::<(usize,), _>::from_raw(is_active_edge.to_vec());
+    let is_active_vertex = BoolExprArray1D::from_raw(is_active_vertex.to_vec());
+    let is_active_edge = BoolExprArray1D::from_raw(is_active_edge.to_vec());
     assert_eq!(is_active_vertex.len(), graph.n_vertices());
     assert_eq!(is_active_edge.len(), graph.n_edges());
 
@@ -687,7 +689,7 @@ pub fn active_edges_single_cycle<T: BoolArrayLike>(
     is_active_edge: T,
     graph: &Graph,
 ) -> BoolVarArray1D {
-    let is_active_edge = NdArray::<(usize,), _>::from_raw(is_active_edge.to_vec());
+    let is_active_edge = BoolExprArray1D::from_raw(is_active_edge.to_vec());
     assert_eq!(is_active_edge.len(), graph.n_edges());
 
     let mut adj: Vec<Vec<(usize, usize)>> = vec![]; // (edge id, adjacent vertex)
