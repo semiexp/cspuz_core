@@ -7,7 +7,7 @@ use cspuz_rs::solver::{count_true, int_constant, Solver};
 
 pub fn solve_ncells(
     clues: &[Vec<Option<i32>>],
-    n : i32,
+    n: i32,
 ) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
 
@@ -98,7 +98,6 @@ pub fn solve_fivecells(
     solve_ncells(clues, 5)
 }
 
-
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
@@ -155,7 +154,6 @@ mod tests {
         ]
     }
 
-
     #[test]
     fn test_fivecells_problem() {
         let problem = problem_for_tests_fivecells();
@@ -183,7 +181,6 @@ mod tests {
         assert_eq!(ans, expected);
     }
 
-    
     #[test]
     fn test_fourcells_problem() {
         let problem = problem_for_tests_fourcells();
@@ -213,13 +210,23 @@ mod tests {
     fn test_fourcells_serializer() {
         let problem = problem_for_tests_fourcells();
         let url = "https://puzz.link/p?fourcells/5/5/7a1e2c2c3e3b";
-        util::tests::serializer_test(problem, url, serialize_fourcells_problem, deserialize_fourcells_problem);
+        util::tests::serializer_test(
+            problem,
+            url,
+            serialize_fourcells_problem,
+            deserialize_fourcells_problem,
+        );
     }
 
     #[test]
     fn test_fivecells_serializer() {
         let problem = problem_for_tests_fivecells();
         let url = "https://puzz.link/p?fivecells/6/6/72f21b31c1b3e3i";
-        util::tests::serializer_test(problem, url, serialize_fivecells_problem, deserialize_fourcells_problem);
+        util::tests::serializer_test(
+            problem,
+            url,
+            serialize_fivecells_problem,
+            deserialize_fivecells_problem,
+        );
     }
 }
