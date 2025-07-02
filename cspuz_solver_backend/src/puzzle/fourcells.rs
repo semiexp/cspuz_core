@@ -3,8 +3,8 @@ use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::n_cells;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = n_cells::deserialize_fivecells_problem(url).ok_or("invalid url")?;
-    let border = n_cells::solve_fivecells(&problem).ok_or("no answer")?;
+    let problem = n_cells::deserialize_fourcells_problem(url).ok_or("invalid url")?;
+    let border = n_cells::solve_fourcells(&problem).ok_or("no answer")?;
 
     let height = problem.len();
     let width = problem[0].len();

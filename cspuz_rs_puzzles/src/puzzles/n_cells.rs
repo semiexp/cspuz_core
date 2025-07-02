@@ -5,8 +5,9 @@ use cspuz_rs::serializer::{
 };
 use cspuz_rs::solver::{count_true, int_constant, Solver};
 
-pub fn solve_fivecells(
+pub fn solve_ncells(
     clues: &[Vec<Option<i32>>],
+    n: i32,
 ) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
 
@@ -48,7 +49,7 @@ pub fn solve_fivecells(
             }
         }
     }
-    solver.add_graph_division(&vec![Some(int_constant(5)); id_last], &edges, &edge_vars);
+    solver.add_graph_division(&vec![Some(int_constant(n)); id_last], &edges, &edge_vars);
 
     for y in 0..h {
         for x in 0..w {
@@ -85,6 +86,18 @@ pub fn solve_fivecells(
     solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
 
+pub fn solve_fourcells(
+    clues: &[Vec<Option<i32>>],
+) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
+    solve_ncells(clues, 4)
+}
+
+pub fn solve_fivecells(
+    clues: &[Vec<Option<i32>>],
+) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
+    solve_ncells(clues, 5)
+}
+
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
@@ -100,19 +113,27 @@ fn combinator() -> impl Combinator<Problem> {
     ]))
 }
 
-pub fn serialize_problem(problem: &Problem) -> Option<String> {
+pub fn serialize_fivecells_problem(problem: &Problem) -> Option<String> {
     problem_to_url(combinator(), "fivecells", problem.clone())
 }
 
-pub fn deserialize_problem(url: &str) -> Option<Problem> {
+pub fn deserialize_fivecells_problem(url: &str) -> Option<Problem> {
     url_to_problem(combinator(), &["fivecells"], url)
+}
+
+pub fn serialize_fourcells_problem(problem: &Problem) -> Option<String> {
+    problem_to_url(combinator(), "fourcells", problem.clone())
+}
+
+pub fn deserialize_fourcells_problem(url: &str) -> Option<Problem> {
+    url_to_problem(combinator(), &["fourcells"], url)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests_fivecells() -> Problem {
         vec![
             vec![Some(-2), Some(2), None, None, None, None],
             vec![None, None, Some(2), Some(1), None, None],
@@ -123,9 +144,19 @@ mod tests {
         ]
     }
 
+    fn problem_for_tests_fourcells() -> Problem {
+        vec![
+            vec![Some(-2), None, Some(1), None, None],
+            vec![None, None, None, Some(2), None],
+            vec![None, None, Some(2), None, None],
+            vec![None, Some(3), None, None, None],
+            vec![None, None, Some(3), None, None],
+        ]
+    }
+
     #[test]
     fn test_fivecells_problem() {
-        let problem = problem_for_tests();
+        let problem = problem_for_tests_fivecells();
         let ans = solve_fivecells(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -151,9 +182,51 @@ mod tests {
     }
 
     #[test]
+    fn test_fourcells_problem() {
+        let problem = problem_for_tests_fourcells();
+        let ans = solve_fourcells(&problem);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+        #[rustfmt::skip]
+        let expected = graph::BoolInnerGridEdgesIrrefutableFacts {
+            horizontal: crate::util::tests::to_option_bool_2d([
+                [1, 1, 0, 1, 0],
+                [0, 1, 1, 0, 1],
+                [0, 1, 0, 1, 0],
+                [1, 0, 1, 1, 0],
+            ]),
+            vertical: crate::util::tests::to_option_bool_2d([
+                [1, 0, 0, 1],
+                [0, 1, 1, 0],
+                [1, 0, 1, 1],
+                [1, 1, 0, 1],
+                [0, 0, 1, 0],
+            ]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_fourcells_serializer() {
+        let problem = problem_for_tests_fourcells();
+        let url = "https://puzz.link/p?fourcells/5/5/7a1e2c2c3e3b";
+        util::tests::serializer_test(
+            problem,
+            url,
+            serialize_fourcells_problem,
+            deserialize_fourcells_problem,
+        );
+    }
+
+    #[test]
     fn test_fivecells_serializer() {
-        let problem = problem_for_tests();
+        let problem = problem_for_tests_fivecells();
         let url = "https://puzz.link/p?fivecells/6/6/72f21b31c1b3e3i";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        util::tests::serializer_test(
+            problem,
+            url,
+            serialize_fivecells_problem,
+            deserialize_fivecells_problem,
+        );
     }
 }
