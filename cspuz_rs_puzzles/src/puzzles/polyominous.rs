@@ -296,7 +296,7 @@ pub fn deserialize_pentominous_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_pento_tests() -> Problem {
+    fn problem_for_tests_pentominous() -> Problem {
         // V: 7, L: 2
         (
             vec![
@@ -310,13 +310,13 @@ mod tests {
         )
     }
 
-    fn problem_for_tetro_tests() -> Problem {
+    fn problem_for_tests_tetrominous() -> Problem {
         // S: 4
         (
             vec![
                 vec![None, None, None, None],
                 vec![None, None, None, None],
-                vec![Some(4), None, None, None],
+                vec![Some(3), None, None, None],
                 vec![None, None, None, None],
             ],
             None,
@@ -325,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_pentominous_problem() {
-        let (clues, borders) = problem_for_pento_tests();
+        let (clues, borders) = problem_for_tests_pentominous();
         let ans = solve_pentominous(&clues, &borders);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -349,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_pentominous_serializer() {
-        let problem = problem_for_pento_tests();
+        let problem = problem_for_tests_pentominous();
         let url = "https://puzz.link/p?pentominous/5/5/72zi";
         util::tests::serializer_test(
             problem,
@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_tetrominous_problem() {
-        let (clues, borders) = problem_for_tetro_tests();
+        let (clues, borders) = problem_for_tests_tetrominous();
         let ans = solve_tetrominous(&clues, &borders);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_tetrominous_serializer() {
-        let problem = problem_for_tetro_tests();
+        let problem = problem_for_tests_tetrominous();
         let url = "https://puzz.link/p?tetrominous/4/4/n3m";
         util::tests::serializer_test(
             problem,
