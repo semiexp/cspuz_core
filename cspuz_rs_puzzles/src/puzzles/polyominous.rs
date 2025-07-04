@@ -112,7 +112,13 @@ fn solve_polyominous(
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| if x == Some(-1) { (-1, -1) } else { (0, size_of_set as i32 - 1) })
+                .map(|&x| {
+                    if x == Some(-1) {
+                        (-1, -1)
+                    } else {
+                        (0, size_of_set as i32 - 1)
+                    }
+                })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -154,7 +160,13 @@ fn solve_polyominous(
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| if x == Some(-1) { (1, 1) } else { (size_of_piece as i32, size_of_piece as i32) })
+                .map(|&x| {
+                    if x == Some(-1) {
+                        (1, 1)
+                    } else {
+                        (size_of_piece as i32, size_of_piece as i32)
+                    }
+                })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -298,7 +310,7 @@ mod tests {
         )
     }
 
-        fn problem_for_tetro_tests() -> Problem {
+    fn problem_for_tetro_tests() -> Problem {
         // S: 4
         (
             vec![
