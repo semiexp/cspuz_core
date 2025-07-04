@@ -11,33 +11,37 @@ enum PieceSet {
     Pentomino,
 }
 
-const PENTOMINOES: [(char, Vec<(usize, usize)>); 12] = [
-    ('F', vec![(0, 0), (1, 0), (1, 1), (1, 2), (2, 1)]),
-    ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]),
-    ('L', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 0)]),
-    ('N', vec![(0, 1), (0, 2), (0, 3), (1, 0), (1, 1)]),
-    ('P', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 1)]),
-    ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1), (2, 1)]),
-    ('U', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 2)]),
-    ('V', vec![(0, 0), (0, 1), (0, 2), (1, 0), (2, 0)]),
-    ('W', vec![(0, 0), (1, 0), (1, 1), (2, 1), (2, 2)]),
-    ('X', vec![(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]),
-    ('Y', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 1)]),
-    ('Z', vec![(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)]),
-];
+fn pentominoes() -> Vec<(char, Vec<(usize, usize)>)> {
+    Vec::from([
+        ('F', vec![(0, 0), (1, 0), (1, 1), (1, 2), (2, 1)]),
+        ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]),
+        ('L', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 0)]),
+        ('N', vec![(0, 1), (0, 2), (0, 3), (1, 0), (1, 1)]),
+        ('P', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 1)]),
+        ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1), (2, 1)]),
+        ('U', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 2)]),
+        ('V', vec![(0, 0), (0, 1), (0, 2), (1, 0), (2, 0)]),
+        ('W', vec![(0, 0), (1, 0), (1, 1), (2, 1), (2, 2)]),
+        ('X', vec![(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]),
+        ('Y', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 1)]),
+        ('Z', vec![(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)]),
+    ])
+}
 
-const TETROMINOES: [(char, Vec<(usize, usize)>); 5] = [
-    ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3)]),
-    ('L', vec![(0, 0), (1, 0), (2, 0), (0, 1)]),
-    ('O', vec![(0, 0), (0, 1), (1, 0), (1, 1)]),
-    ('S', vec![(0, 0), (0, 1), (1, 1), (1, 2)]),
-    ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1)]),
-];
+fn tetrominoes() -> Vec<(char, Vec<(usize, usize)>)> {
+    Vec::from([
+        ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3)]),
+        ('L', vec![(0, 0), (1, 0), (2, 0), (0, 1)]),
+        ('O', vec![(0, 0), (0, 1), (1, 0), (1, 1)]),
+        ('S', vec![(0, 0), (0, 1), (1, 1), (1, 2)]),
+        ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1)]),
+    ])
+}
 
-fn get_pieces(piece_set: PieceSet) -> &'static [(char, Vec<(usize, usize)>)] {
+fn get_pieces(piece_set: PieceSet) -> Vec<(char, Vec<(usize, usize)>)> {
     match piece_set {
-        PieceSet::Tetromino => &TETROMINOES,
-        PieceSet::Pentomino => &PENTOMINOES,
+        PieceSet::Tetromino => tetrominoes(),
+        PieceSet::Pentomino => pentominoes(),
     }
 }
 
@@ -92,7 +96,7 @@ fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize,
     (horizontal, vertical)
 }
 
-pub fn solve_polyominous(
+fn solve_polyominous(
     clues: &[Vec<Option<i32>>],
     default_borders: &Option<graph::InnerGridEdges<Vec<Vec<bool>>>>,
     piece_set: PieceSet,
@@ -108,7 +112,7 @@ pub fn solve_polyominous(
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| if x == Some(-1) { (-1, -1) } else { (0, size_of_set - 1) })
+                .map(|&x| if x == Some(-1) { (-1, -1) } else { (0, size_of_set as i32 - 1) })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -150,7 +154,7 @@ pub fn solve_polyominous(
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| if x == Some(-1) { (1, 1) } else { (size_of_piece, size_of_piece) })
+                .map(|&x| if x == Some(-1) { (1, 1) } else { (size_of_piece as i32, size_of_piece as i32) })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -186,7 +190,7 @@ pub fn solve_polyominous(
             for i in 0..size_of_set {
                 for j in 0..poly_variants[i].len() {
                     let (ph, pw) = bbox(&poly_variants[i][j]);
-                    for k in 0..size_of_set {
+                    for k in 0..size_of_piece {
                         if y < poly_variants[i][j][k].0 || x < poly_variants[i][j][k].1 {
                             continue;
                         }
