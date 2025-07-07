@@ -1,11 +1,7 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::is_unique;
 use cspuz_rs::graph::InnerGridEdges;
-<<<<<<< HEAD
 use cspuz_rs_puzzles::puzzles::tetrominous;
-=======
-use cspuz_rs_puzzles::puzzles::polyominous;
->>>>>>> 3cebfd8f48555bd7c0a9a2ceb8ddf87e86820e63
 
 const TETROMINO_NAMES: [&'static str; 5] =
     ["I", "L", "O", "S", "T"];
@@ -13,13 +9,8 @@ const TETROMINO_NAMES: [&'static str; 5] =
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues, default_borders) =
-<<<<<<< HEAD
         tetrominous::deserialize_tetrominous_problem(url).ok_or("invalid url")?;
     let border = tetrominous::solve_tetrominous(&clues, &default_borders).ok_or("no answer")?;
-=======
-        polyominous::deserialize_tetrominous_problem(url).ok_or("invalid url")?;
-    let border = polyominous::solve_tetrominous(&clues, &default_borders).ok_or("no answer")?;
->>>>>>> 3cebfd8f48555bd7c0a9a2ceb8ddf87e86820e63
 
     let height = clues.len();
     let width = clues[0].len();

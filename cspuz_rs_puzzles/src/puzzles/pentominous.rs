@@ -6,13 +6,8 @@ use cspuz_rs::serializer::{
 };
 use cspuz_rs::solver::{all, any, Solver};
 
-enum PieceSet {
-    Tetromino,
-    Pentomino,
-}
-
-fn pentominoes() -> Vec<(char, Vec<(usize, usize)>)> {
-    Vec::from([
+fn pentominoes() -> [(char, Vec<(usize, usize)>); 12] {
+    [
         ('F', vec![(0, 0), (1, 0), (1, 1), (1, 2), (2, 1)]),
         ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]),
         ('L', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 0)]),
@@ -25,24 +20,7 @@ fn pentominoes() -> Vec<(char, Vec<(usize, usize)>)> {
         ('X', vec![(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]),
         ('Y', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 1)]),
         ('Z', vec![(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)]),
-    ])
-}
-
-fn tetrominoes() -> Vec<(char, Vec<(usize, usize)>)> {
-    Vec::from([
-        ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3)]),
-        ('L', vec![(0, 0), (1, 0), (2, 0), (0, 1)]),
-        ('O', vec![(0, 0), (0, 1), (1, 0), (1, 1)]),
-        ('S', vec![(0, 0), (0, 1), (1, 1), (1, 2)]),
-        ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1)]),
-    ])
-}
-
-fn get_pieces(piece_set: PieceSet) -> Vec<(char, Vec<(usize, usize)>)> {
-    match piece_set {
-        PieceSet::Tetromino => tetrominoes(),
-        PieceSet::Pentomino => pentominoes(),
-    }
+    ]
 }
 
 
@@ -97,29 +75,18 @@ fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize,
     (horizontal, vertical)
 }
 
-fn solve_polyominous(
+pub fn solve_pentominous(
     clues: &[Vec<Option<i32>>],
     default_borders: &Option<graph::InnerGridEdges<Vec<Vec<bool>>>>,
-    piece_set: PieceSet,
 ) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
-
-    let polyset = get_pieces(piece_set);
-    let size_of_set = polyset.len();
-    let size_of_piece = polyset[0].1.len();
 
     let mut solver = Solver::new();
     let kind_ranges = clues
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| {
-                    if x == Some(-1) {
-                        (-1, -1)
-                    } else {
-                        (0, size_of_set as i32 - 1)
-                    }
-                })
+                .map(|&x| if x == Some(-1) { (-1, -1) } else { (0, 11) })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -161,18 +128,14 @@ fn solve_polyominous(
         .iter()
         .map(|row| {
             row.iter()
-                .map(|&x| {
-                    if x == Some(-1) {
-                        (1, 1)
-                    } else {
-                        (size_of_piece as i32, size_of_piece as i32)
-                    }
-                })
+                .map(|&x| if x == Some(-1) { (1, 1) } else { (5, 5) })
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
     let sizes = &solver.int_var_2d_from_ranges((h, w), &sizes);
     graph::graph_division_2d(&mut solver, sizes, &is_border);
+
+    let pento = pentominoes();
 
     for y in 0..h {
         for x in 0..w {
@@ -182,11 +145,11 @@ fn solve_polyominous(
         }
     }
 
-    let poly_variants = polyset
+    let pento_variants = pento
         .iter()
         .map(|(_, pat)| enumerate_variants(pat))
         .collect::<Vec<_>>();
-    let poly_adjacent_edges = poly_variants
+    let pento_adjacent_edges = pento_variants
         .iter()
         .map(|pats| {
             pats.iter()
@@ -200,24 +163,24 @@ fn solve_polyominous(
                 continue;
             }
             let mut conds = vec![];
-            for i in 0..size_of_set {
-                for j in 0..poly_variants[i].len() {
-                    let (ph, pw) = bbox(&poly_variants[i][j]);
-                    for k in 0..size_of_piece {
-                        if y < poly_variants[i][j][k].0 || x < poly_variants[i][j][k].1 {
+            for i in 0..12 {
+                for j in 0..pento_variants[i].len() {
+                    let (ph, pw) = bbox(&pento_variants[i][j]);
+                    for k in 0..5 {
+                        if y < pento_variants[i][j][k].0 || x < pento_variants[i][j][k].1 {
                             continue;
                         }
-                        let ty = y - poly_variants[i][j][k].0;
-                        let tx = x - poly_variants[i][j][k].1;
+                        let ty = y - pento_variants[i][j][k].0;
+                        let tx = x - pento_variants[i][j][k].1;
                         if ty + ph > h || tx + pw > w {
                             continue;
                         }
 
                         let mut c = vec![kind.at((y, x)).eq(i as i32)];
-                        for &(dy, dx) in &poly_adjacent_edges[i][j].0 {
+                        for &(dy, dx) in &pento_adjacent_edges[i][j].0 {
                             c.push(!is_border.horizontal.at((ty + dy, tx + dx)));
                         }
-                        for &(dy, dx) in &poly_adjacent_edges[i][j].1 {
+                        for &(dy, dx) in &pento_adjacent_edges[i][j].1 {
                             c.push(!is_border.vertical.at((ty + dy, tx + dx)));
                         }
                         conds.push(all(c));
@@ -232,22 +195,6 @@ fn solve_polyominous(
     solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
 
-<<<<<<< HEAD:cspuz_rs_puzzles/src/puzzles/pentominous.rs
-=======
-pub fn solve_pentominous(
-    clues: &[Vec<Option<i32>>],
-    default_borders: &Option<graph::InnerGridEdges<Vec<Vec<bool>>>>,
-) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
-    solve_polyominous(clues, default_borders, PieceSet::Pentomino)
-}
-
-pub fn solve_tetrominous(
-    clues: &[Vec<Option<i32>>],
-    default_borders: &Option<graph::InnerGridEdges<Vec<Vec<bool>>>>,
-) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
-    solve_polyominous(clues, default_borders, PieceSet::Tetromino)
-}
->>>>>>> 3cebfd8f48555bd7c0a9a2ceb8ddf87e86820e63:cspuz_rs_puzzles/src/puzzles/polyominous.rs
 
 type Problem = (
     Vec<Vec<Option<i32>>>,
@@ -266,20 +213,6 @@ fn combinator() -> impl Combinator<Problem> {
             Box::new(Dict::new(None, "")),
         ]),
     ))
-}
-
-pub fn serialize_tetrominous_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem.0);
-    problem_to_url_with_context(
-        combinator(),
-        "tetrominous",
-        problem.clone(),
-        &Context::sized(h, w),
-    )
-}
-
-pub fn deserialize_tetrominous_problem(url: &str) -> Option<Problem> {
-    url_to_problem(combinator(), &["tetrominous"], url)
 }
 
 pub fn serialize_pentominous_problem(problem: &Problem) -> Option<String> {
@@ -301,7 +234,7 @@ pub fn deserialize_pentominous_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests_pentominous() -> Problem {
+    fn problem_for_tests() -> Problem {
         // V: 7, L: 2
         (
             vec![
@@ -315,22 +248,9 @@ mod tests {
         )
     }
 
-    fn problem_for_tests_tetrominous() -> Problem {
-        // S: 3
-        (
-            vec![
-                vec![None, None, None, None],
-                vec![None, None, None, None],
-                vec![Some(3), None, None, None],
-                vec![None, None, None, None],
-            ],
-            None,
-        )
-    }
-
     #[test]
     fn test_pentominous_problem() {
-        let (clues, borders) = problem_for_tests_pentominous();
+        let (clues, borders) = problem_for_tests();
         let ans = solve_pentominous(&clues, &borders);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -354,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_pentominous_serializer() {
-        let problem = problem_for_tests_pentominous();
+        let problem = problem_for_tests();
         let url = "https://puzz.link/p?pentominous/5/5/72zi";
         util::tests::serializer_test(
             problem,
@@ -364,40 +284,4 @@ mod tests {
         );
     }
 
-<<<<<<< HEAD:cspuz_rs_puzzles/src/puzzles/pentominous.rs
-=======
-    #[test]
-    fn test_tetrominous_problem() {
-        let (clues, borders) = problem_for_tests_tetrominous();
-        let ans = solve_tetrominous(&clues, &borders);
-        assert!(ans.is_some());
-        let ans = ans.unwrap();
-        let expected = graph::BoolInnerGridEdgesIrrefutableFacts {
-            horizontal: crate::util::tests::to_option_bool_2d([
-                [0, 1, 1, 0],
-                [1, 0, 1, 0],
-                [1, 1, 0, 0],
-            ]),
-            vertical: crate::util::tests::to_option_bool_2d([
-                [0, 0, 1],
-                [1, 0, 1],
-                [0, 1, 1],
-                [0, 0, 1],
-            ]),
-        };
-        assert_eq!(ans, expected);
-    }
-
-    #[test]
-    fn test_tetrominous_serializer() {
-        let problem = problem_for_tests_tetrominous();
-        let url = "https://puzz.link/p?tetrominous/4/4/n3m";
-        util::tests::serializer_test(
-            problem,
-            url,
-            serialize_tetrominous_problem,
-            deserialize_tetrominous_problem,
-        );
-    }
->>>>>>> 3cebfd8f48555bd7c0a9a2ceb8ddf87e86820e63:cspuz_rs_puzzles/src/puzzles/polyominous.rs
 }
