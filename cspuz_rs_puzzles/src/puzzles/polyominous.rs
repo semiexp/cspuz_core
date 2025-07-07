@@ -311,7 +311,7 @@ mod tests {
     }
 
     fn problem_for_tests_tetrominous() -> Problem {
-        // S: 4
+        // S: 3
         (
             vec![
                 vec![None, None, None, None],
