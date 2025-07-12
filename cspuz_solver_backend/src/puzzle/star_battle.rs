@@ -19,7 +19,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "green",
-                    if b { ItemKind::Star } else { ItemKind::Dot },
+                    if b { ItemKind::FilledCircle } else { ItemKind::Dot },
                 ));
             }
         }

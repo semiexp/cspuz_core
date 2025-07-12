@@ -41,44 +41,10 @@ pub fn solve_star_battle(
     solver.irrefutable_facts().map(|f| f.get(&has_star))
 }
 
-struct StarAmountCombinator;
-
-impl Combinator<i32> for StarAmountCombinator {
-    fn serialize(&self, _ctx: &Context, input: &[i32]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
-            return None;
-        }
-
-        let mut ret = vec![];
-        let mut v = input[0];
-        if v == 0 {
-            ret.push('0' as u8);
-        } else {
-            while v > 0 {
-                ret.push((v % 10) as u8 + '0' as u8);
-                v /= 10;
-            }
-            ret.reverse();
-        }
-        ret.push('/' as u8);
-        Some((1, ret))
-    }
-
-    fn deserialize(&self, ctx: &Context, input: &[u8]) -> Option<(usize, Vec<i32>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let star_amount = sequencer.deserialize(ctx, DecInt)?;
-        assert_eq!(star_amount.len(), 1);
-        sequencer.deserialize(ctx, Dict::new(0, "/"))?;
-
-        Some((sequencer.n_read(), star_amount))
-    }
-}
-
 pub type Problem = (i32, graph::InnerGridEdges<Vec<Vec<bool>>>);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(StarAmountCombinator, Rooms))
+    Size::new(Tuple2::new(PrefixAndSuffix::new("/", DecInt, ""), Rooms))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
