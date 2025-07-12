@@ -44,7 +44,7 @@ pub fn solve_star_battle(
 pub type Problem = (i32, graph::InnerGridEdges<Vec<Vec<bool>>>);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(PrefixAndSuffix::new("/", DecInt, ""), Rooms))
+    Size::new(Tuple2::new(PrefixAndSuffix::new("", DecInt, "/"), Rooms))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
