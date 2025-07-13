@@ -1,6 +1,4 @@
-use crate::solver::{
-    all, any, Array0DImpl, Array1DImpl, CSPBoolExpr, CSPIntExpr, Operand, Solver, Value,
-};
+use crate::solver::{all, any, traits::IntArrayLike, BoolExpr, IntExprArray1D, Solver};
 
 /// Adds a constraint that, if `condition` is true (or not present),
 /// - given values are all different,
@@ -10,23 +8,16 @@ use crate::solver::{
 /// Returns true if there is at least one possible assignment that satisfies the constraints, otherwise false.
 /// Note that this function returns true if `condition` is present, because the constraint is satisfied
 /// if `condition` is false.
-pub fn sum_all_different<T>(
+pub fn sum_all_different<T: IntArrayLike>(
     solver: &mut Solver,
     values: T,
     sum: i32,
     value_low: i32,
     value_high: i32,
-    condition: Option<Value<Array0DImpl<CSPBoolExpr>>>,
-) -> bool
-where
-    T: IntoIterator,
-    T::Item: Operand<Output = Array0DImpl<CSPIntExpr>>,
-{
-    let terms: Vec<Value<Array0DImpl<CSPIntExpr>>> = values
-        .into_iter()
-        .map(|x| Value(x.as_expr_array()))
-        .collect();
-    let terms = &Value::<Array1DImpl<_>>::new(terms);
+    condition: Option<BoolExpr>,
+) -> bool {
+    let values = values.to_vec();
+    let terms = &IntExprArray1D::from_raw(values);
 
     if let Some(condition) = &condition {
         for i in 0..terms.len() {
