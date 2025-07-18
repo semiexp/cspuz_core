@@ -315,3 +315,144 @@ where
         self.into_iter().map(|x| x.as_ndarray().data.0).collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_array_shape_unit() {
+        let shape = ();
+        let data = vec![42];
+        let result = shape.instantiate(data);
+        assert_eq!(result, 42);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion `left == right` failed")]
+    fn test_array_shape_unit_wrong_size() {
+        let shape = ();
+        let data = vec![42, 43];
+        shape.instantiate(data);
+    }
+
+    #[test]
+    fn test_array_shape_1d() {
+        let shape = (3,);
+        let data = vec![1, 2, 3];
+        let result = shape.instantiate(data);
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion `left == right` failed")]
+    fn test_array_shape_1d_wrong_size() {
+        let shape = (3,);
+        let data = vec![1, 2];
+        shape.instantiate(data);
+    }
+
+    #[test]
+    fn test_array_shape_2d() {
+        let shape = (2, 3);
+        let data = vec![1, 2, 3, 4, 5, 6];
+        let result = shape.instantiate(data);
+        assert_eq!(result, vec![vec![1, 2, 3], vec![4, 5, 6]]);
+    }
+
+    #[test]
+    fn test_array_shape_2d_single_row() {
+        let shape = (1, 3);
+        let data = vec![1, 2, 3];
+        let result = shape.instantiate(data);
+        assert_eq!(result, vec![vec![1, 2, 3]]);
+    }
+
+    #[test]
+    fn test_array_shape_2d_single_column() {
+        let shape = (3, 1);
+        let data = vec![1, 2, 3];
+        let result = shape.instantiate(data);
+        assert_eq!(result, vec![vec![1], vec![2], vec![3]]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_array_shape_2d_wrong_size() {
+        let shape = (2, 3);
+        let data = vec![1, 2, 3, 4, 5];
+        shape.instantiate(data);
+    }
+
+    #[test]
+    fn test_broadcast_shape_same_type() {
+        let shape1 = (5,);
+        let shape2 = (5,);
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (5,));
+    }
+
+    #[test]
+    #[should_panic(expected = "Shapes do not match")]
+    fn test_broadcast_shape_different_same_type() {
+        let shape1 = (5,);
+        let shape2 = (3,);
+        shape1.broadcast_with(&shape2);
+    }
+
+    #[test]
+    fn test_broadcast_shape_unit_with_1d() {
+        let shape1 = ();
+        let shape2 = (5,);
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (5,));
+    }
+
+    #[test]
+    fn test_broadcast_shape_1d_with_unit() {
+        let shape1 = (5,);
+        let shape2 = ();
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (5,));
+    }
+
+    #[test]
+    fn test_broadcast_shape_unit_with_2d() {
+        let shape1 = ();
+        let shape2 = (3, 4);
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (3, 4));
+    }
+
+    #[test]
+    fn test_broadcast_shape_2d_with_unit() {
+        let shape1 = (3, 4);
+        let shape2 = ();
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (3, 4));
+    }
+
+    #[test]
+    fn test_broadcast_shape_2d_same() {
+        let shape1 = (3, 4);
+        let shape2 = (3, 4);
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (3, 4));
+    }
+
+    #[test]
+    #[should_panic(expected = "Shapes do not match")]
+    fn test_broadcast_shape_2d_different() {
+        let shape1 = (3, 4);
+        let shape2 = (2, 4);
+        shape1.broadcast_with(&shape2);
+    }
+
+    #[test]
+    fn test_propagated_len() {
+        assert_eq!(propagated_len(1, 5), 5);
+        assert_eq!(propagated_len(5, 1), 5);
+        assert_eq!(propagated_len(3, 3), 3);
+        assert_eq!(propagated_len(7, 2), 7);
+    }
+}
