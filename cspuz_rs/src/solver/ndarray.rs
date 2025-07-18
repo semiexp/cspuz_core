@@ -721,4 +721,160 @@ mod tests {
         let b = &solver.int_var_2d((4, 6), 0, 2);
         let _ = a + b; // This should panic due to shape mismatch
     }
+
+    #[test]
+    fn test_ndarray_sub_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a - b;
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr() - b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_bitand_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_1d(5);
+        let b = &solver.bool_var_1d(5);
+        let c = a & b;
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr() & b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_bitor_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_1d(5);
+        let b = &solver.bool_var_1d(5);
+        let c = a | b;
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr() | b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_bitxor_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_1d(5);
+        let b = &solver.bool_var_1d(5);
+        let c = a ^ b;
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr() ^ b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_eq_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.eq(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().eq(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_ne_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.ne(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().ne(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_ge_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.ge(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().ge(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_gt_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.gt(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().gt(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_le_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.le(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().le(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_lt_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a.lt(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().lt(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_imp_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_1d(5);
+        let b = &solver.bool_var_1d(5);
+        let c = a.imp(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().imp(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_iff_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_1d(5);
+        let b = &solver.bool_var_1d(5);
+        let c = a.iff(b);
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr().iff(b.data[i].expr())), &c.data[i]);
+        }
+    }
 }
