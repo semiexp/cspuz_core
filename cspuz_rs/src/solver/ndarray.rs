@@ -619,3 +619,106 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::Solver;
+    use super::*;
+
+    #[test]
+    fn test_ndarray_add_0d_0d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var(0, 2);
+        let b = &solver.int_var(0, 2);
+        let c = a + b;
+
+        assert_eq!(&(a.data.0.expr() + b.data.0.expr()), &c.data.0);
+    }
+
+    #[test]
+    fn test_ndarray_add_0d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var(0, 2);
+        let b = &solver.int_var_1d(3, 0, 2);
+        let c = a + b;
+
+        assert_eq!(c.len(), 3);
+        for i in 0..3 {
+            assert_eq!(&(a.data.0.expr() + b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_add_0d_2d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var(0, 2);
+        let b = &solver.int_var_2d((2, 3), 0, 2);
+        let c = a + b;
+
+        assert_eq!(c.shape(), (2, 3));
+        for i in 0..6 {
+            assert_eq!(&(a.data.0.expr() + b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_add_1d_0d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(3, 0, 2);
+        let b = &solver.int_var(0, 2);
+        let c = a + b;
+
+        assert_eq!(c.len(), 3);
+        for i in 0..3 {
+            assert_eq!(&(a.data[i].expr() + b.data.0.expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_add_1d_1d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(5, 0, 2);
+        let b = &solver.int_var_1d(5, 0, 2);
+        let c = a + b;
+
+        assert_eq!(c.len(), 5);
+        for i in 0..5 {
+            assert_eq!(&(a.data[i].expr() + b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_add_2d_0d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_2d((2, 3), 0, 2);
+        let b = &solver.int_var(0, 2);
+        let c = a + b;
+
+        assert_eq!(c.shape(), (2, 3));
+        for i in 0..6 {
+            assert_eq!(&(a.data[i].expr() + b.data.0.expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_add_2d_2d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_2d((2, 3), 0, 2);
+        let b = &solver.int_var_2d((2, 3), 0, 2);
+        let c = a + b;
+
+        assert_eq!(c.shape(), (2, 3));
+        for i in 0..6 {
+            assert_eq!(&(a.data[i].expr() + b.data[i].expr()), &c.data[i]);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ndarray_add_2d_2d_shape_mismatch() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_2d((3, 8), 0, 2);
+        let b = &solver.int_var_2d((4, 6), 0, 2);
+        let _ = a + b; // This should panic due to shape mismatch
+    }
+}
