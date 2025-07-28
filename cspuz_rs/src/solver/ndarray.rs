@@ -623,7 +623,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::super::Solver;
-    use super::*;
 
     #[test]
     fn test_ndarray_add_0d_0d() {
