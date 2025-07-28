@@ -416,7 +416,6 @@ mod tests {
         assert_eq!(result, (0,));
     }
 
-
     #[test]
     fn test_broadcast_shape_1d_with_unit() {
         let shape1 = (5,);
