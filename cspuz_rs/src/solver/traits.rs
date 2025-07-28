@@ -409,11 +409,28 @@ mod tests {
     }
 
     #[test]
+    fn test_broadcast_shape_unit_with_1d_zero() {
+        let shape1 = ();
+        let shape2 = (0,);
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (0,));
+    }
+
+
+    #[test]
     fn test_broadcast_shape_1d_with_unit() {
         let shape1 = (5,);
         let shape2 = ();
         let result = shape1.broadcast_with(&shape2);
         assert_eq!(result, (5,));
+    }
+
+    #[test]
+    fn test_broadcast_shape_1d_zero_with_unit() {
+        let shape1 = (0,);
+        let shape2 = ();
+        let result = shape1.broadcast_with(&shape2);
+        assert_eq!(result, (0,));
     }
 
     #[test]
@@ -454,5 +471,7 @@ mod tests {
         assert_eq!(propagated_len(5, 1), 5);
         assert_eq!(propagated_len(3, 3), 3);
         assert_eq!(propagated_len(7, 2), 7);
+        assert_eq!(propagated_len(1, 0), 0);
+        assert_eq!(propagated_len(0, 1), 0);
     }
 }

@@ -648,6 +648,16 @@ mod tests {
     }
 
     #[test]
+    fn test_ndarray_add_0d_1d_zero() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var(0, 2);
+        let b = &solver.int_var_1d(0, 0, 2);
+        let c = a + b;
+
+        assert_eq!(c.len(), 0);
+    }
+
+    #[test]
     fn test_ndarray_add_0d_2d() {
         let mut solver = Solver::new();
         let a = &solver.int_var(0, 2);
@@ -671,6 +681,16 @@ mod tests {
         for i in 0..3 {
             assert_eq!(&(a.data[i].expr() + b.data.0.expr()), &c.data[i]);
         }
+    }
+
+    #[test]
+    fn test_ndarray_add_1d_zero_0d() {
+        let mut solver = Solver::new();
+        let a = &solver.int_var_1d(0, 0, 2);
+        let b = &solver.int_var(0, 2);
+        let c = a + b;
+
+        assert_eq!(c.len(), 0);
     }
 
     #[test]
