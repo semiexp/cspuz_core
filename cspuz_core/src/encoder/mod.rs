@@ -1563,4 +1563,17 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_encoding_domain_threshold_configurable() {
+        let mut config = Config::default();
+        assert_eq!(config.encoding_domain_threshold, 500); // default value
+        
+        config.encoding_domain_threshold = 1000;
+        assert_eq!(config.encoding_domain_threshold, 1000); // changed value
+        
+        // Test that the field exists and can be modified
+        config.encoding_domain_threshold = 100;
+        assert_eq!(config.encoding_domain_threshold, 100);
+    }
 }
