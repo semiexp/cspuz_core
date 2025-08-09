@@ -597,8 +597,7 @@ fn decide_encode_schemes(
         for &var in new_vars {
             let repr = norm_vars.int_var(var);
             if let IntVarRepresentation::Domain(domain) = repr {
-                if domain.num_candidates() > 500 && complex_constraints_vars.contains(&var) {
-                    // TODO: make this configurable
+                if domain.num_candidates() > config.encoding_domain_threshold && complex_constraints_vars.contains(&var) {
                     scheme.insert(var, EncodeScheme::Log);
                 }
             }
@@ -688,7 +687,7 @@ fn decide_encode_schemes(
         for &var in &direct_encoding_vars {
             let repr = norm_vars.int_var(var);
             let use_direct_encoding = match repr {
-                IntVarRepresentation::Domain(domain) => domain.num_candidates() <= 500,
+                IntVarRepresentation::Domain(domain) => domain.num_candidates() <= config.encoding_domain_threshold,
                 _ => true,
             };
             if use_direct_encoding {
