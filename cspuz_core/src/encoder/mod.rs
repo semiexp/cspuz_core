@@ -597,7 +597,7 @@ fn decide_encode_schemes(
         for &var in new_vars {
             let repr = norm_vars.int_var(var);
             if let IntVarRepresentation::Domain(domain) = repr {
-                if domain.num_candidates() > config.encoding_domain_threshold && complex_constraints_vars.contains(&var) {
+                if domain.num_candidates() > config.log_encoding_domain_threshold && complex_constraints_vars.contains(&var) {
                     scheme.insert(var, EncodeScheme::Log);
                 }
             }
@@ -687,7 +687,7 @@ fn decide_encode_schemes(
         for &var in &direct_encoding_vars {
             let repr = norm_vars.int_var(var);
             let use_direct_encoding = match repr {
-                IntVarRepresentation::Domain(domain) => domain.num_candidates() <= config.encoding_domain_threshold,
+                IntVarRepresentation::Domain(domain) => domain.num_candidates() <= 500,
                 _ => true,
             };
             if use_direct_encoding {
@@ -1565,15 +1565,15 @@ mod tests {
     }
 
     #[test]
-    fn test_encoding_domain_threshold_configurable() {
+    fn test_log_encoding_domain_threshold_configurable() {
         let mut config = Config::default();
-        assert_eq!(config.encoding_domain_threshold, 500); // default value
+        assert_eq!(config.log_encoding_domain_threshold, 500); // default value
         
-        config.encoding_domain_threshold = 1000;
-        assert_eq!(config.encoding_domain_threshold, 1000); // changed value
+        config.log_encoding_domain_threshold = 1000;
+        assert_eq!(config.log_encoding_domain_threshold, 1000); // changed value
         
         // Test that the field exists and can be modified
-        config.encoding_domain_threshold = 100;
-        assert_eq!(config.encoding_domain_threshold, 100);
+        config.log_encoding_domain_threshold = 100;
+        assert_eq!(config.log_encoding_domain_threshold, 100);
     }
 }
