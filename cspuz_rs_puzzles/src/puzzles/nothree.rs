@@ -164,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn test_firefly_serializer() {
+    fn test_nothree_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?nothree/6/5/ger26eneq22eleq";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);

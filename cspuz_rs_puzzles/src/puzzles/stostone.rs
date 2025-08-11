@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cocktail_problem() {
+    fn test_stostone_problem() {
         let (borders, clues) = problem_for_tests();
         let ans = solve_stostone(&borders, &clues);
         assert!(ans.is_some());
@@ -148,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn test_moonsun_serializer() {
+    fn test_stostone_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?stostone/6/6/222ac4vg1ve831h3g23";
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
