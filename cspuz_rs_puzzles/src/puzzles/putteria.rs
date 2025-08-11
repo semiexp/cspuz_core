@@ -13,20 +13,20 @@ pub fn solve_putteria(
 
     let rooms = graph::borders_to_rooms(borders);
     let mut ranges = vec![vec![1; w]; h];
-    let max_number = 0;
+    let mut max_number = 0;
 
     for room in &rooms {
         // Make sure rooms can only content one type of number
         for &(y, x) in room {
-            ranges[y][x] = (room.len() as i32);
+            ranges[y][x] = room.len() as i32;
             if max_number < room.len() as i32 {
-                max_number = room.len();
+                max_number = room.len() as i32;
             }
         }
     }
 
     let mut solver = Solver::new();
-    let num = &solver.int_var_2d_from_ranges((h, w), (-1, max_number));
+    let num = &solver.int_var_2d((h, w), -1, max_number);
     solver.add_answer_key_int(num);
 
     // Check no duplicates in rows
@@ -43,14 +43,15 @@ pub fn solve_putteria(
     }
 
     // Check no adjacent
-    solver.add_expr(!(num.slice((..(height - 1), ..)).ne(0) & num.slice((1.., ..)).ne(0)));
-    solver.add_expr(!(num.slice((.., ..(height - 1))).ne(0) & num.slice((.., 1..)).ne(0)));
+    solver.add_expr(!(num.slice((..(h - 1), ..)).ne(0) & num.slice((1.., ..)).ne(0)));
+    solver.add_expr(!(num.slice((.., ..(w - 1))).ne(0) & num.slice((.., 1..)).ne(0)));
 
     // Check no duplicate in rooms
     for room in &rooms {
         let room_nums = num.select(room);
         solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number
-        solver.add_expr(room_nums.eq(-1).count_true().eq(room.len() - 1)); // The rest are empty
+        solver.add_expr(room_nums.eq(-1).count_true().eq(room.len() as i32 - 1));
+        // The rest are empty
     }
 
     for y in 0..h {

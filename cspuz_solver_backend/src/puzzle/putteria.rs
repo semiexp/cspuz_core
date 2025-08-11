@@ -3,8 +3,8 @@ use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::putteria;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = ripple::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = ripple::solve_putteria(&borders, &clues).ok_or("no answer")?;
+    let (borders, clues) = putteria::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = putteria::solve_putteria(&borders, &clues).ok_or("no answer")?;
 
     let height = clues.len();
     let width = clues[0].len();
