@@ -15,7 +15,8 @@ pub fn solve_putteria(
     let mut ranges = vec![vec![1; w]; h];
     let max_number = 0;
 
-    for room in &rooms { // Make sure rooms can only content one type of number
+    for room in &rooms {
+        // Make sure rooms can only content one type of number
         for &(y, x) in room {
             ranges[y][x] = (room.len() as i32);
             if max_number < room.len() as i32 {
@@ -28,11 +29,10 @@ pub fn solve_putteria(
     let num = &solver.int_var_2d_from_ranges((h, w), (-1, max_number));
     solver.add_answer_key_int(num);
 
-
     // Check no duplicates in rows
     for i in 0..h {
-        for j in 1..max_number {  
-        solver.add_expr(num.slice_fixed_x((.., i)).eq(j).count_true().le(1) );
+        for j in 1..max_number {
+            solver.add_expr(num.slice_fixed_x((.., i)).eq(j).count_true().le(1));
         }
     }
 
@@ -41,17 +41,16 @@ pub fn solve_putteria(
             solver.add_expr(num.slice_fixed_y((i, ..)).eq(j).count_true().le(1));
         }
     }
-    
+
     // Check no adjacent
     solver.add_expr(!(num.slice((..(height - 1), ..)).ne(0) & num.slice((1.., ..)).ne(0)));
     solver.add_expr(!(num.slice((.., ..(height - 1))).ne(0) & num.slice((.., 1..)).ne(0)));
 
     // Check no duplicate in rooms
-   for room in &rooms {
+    for room in &rooms {
         let room_nums = num.select(room);
-        solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number 
+        solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number
         solver.add_expr(room_nums.eq(-1).count_true().eq(room.len() - 1)); // The rest are empty
-        
     }
 
     for y in 0..h {
@@ -61,8 +60,6 @@ pub fn solve_putteria(
             }
         }
     }
-
-    
 
     solver.irrefutable_facts().map(|f| f.get(num))
 }
