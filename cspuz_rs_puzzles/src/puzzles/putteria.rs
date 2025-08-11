@@ -118,7 +118,7 @@ mod tests {
         let clues = vec![
             vec![None, None, None, Some(-1), None, None],
             vec![None, None, None, None, None, None],
-            vec![Some(1), None, None, None, None, None],
+            vec![None, None, None, None, None, None],
             vec![None, None, None, None, None, None],
             vec![None, None, None, None, None, Some(-1)],
             vec![None, None, None, None, None, None],
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_putteria_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/pp?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
+        let url = "https://puzz.link/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
