@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn test_putteria_problem() {
         let (borders, clues) = problem_for_tests();
-        let ans = solve_ripple(&borders, &clues);
+        let ans = solve_putteria(&borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
