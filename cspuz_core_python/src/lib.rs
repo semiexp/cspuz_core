@@ -160,6 +160,17 @@ impl PyConfig {
     }
 
     #[getter]
+    fn get_dump_analysis_info(&self) -> PyResult<bool> {
+        Ok(self.config.dump_analysis_info)
+    }
+
+    #[setter]
+    fn set_dump_analysis_info(&mut self, value: bool) -> PyResult<()> {
+        self.config.dump_analysis_info = value;
+        Ok(())
+    }
+
+    #[getter]
     fn get_backend(&self) -> PyResult<String> {
         let mode = match self.config.backend {
             Backend::Glucose => "glucose",
