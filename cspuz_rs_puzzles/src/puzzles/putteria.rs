@@ -25,7 +25,7 @@ pub fn solve_putteria(
     }
 
     let mut solver = Solver::new();
-    let num = &solver.int_var_2d_from_ranges((h, w), (0, max_number));
+    let num = &solver.int_var_2d_from_ranges((h, w), (-1, max_number));
     solver.add_answer_key_int(num);
 
 
@@ -50,7 +50,7 @@ pub fn solve_putteria(
    for room in &rooms {
         let room_nums = num.select(room);
         solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number 
-        solver.add_expr(room_nums.eq(0).count_true().eq(room.len() - 1)); // The rest are empty
+        solver.add_expr(room_nums.eq(-1).count_true().eq(room.len() - 1)); // The rest are empty
         
     }
 
@@ -101,48 +101,56 @@ mod tests {
     fn problem_for_tests() -> Problem {
         let borders = graph::InnerGridEdges {
             horizontal: crate::util::tests::to_bool_2d([
-                [0, 0, 0, 1, 0],
-                [1, 1, 1, 0, 0],
-                [1, 1, 1, 1, 0],
+                [0, 1, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1, 1],
             ]),
             vertical: crate::util::tests::to_bool_2d([
-                [1, 0, 1, 0],
-                [1, 0, 1, 1],
-                [0, 1, 0, 1],
-                [0, 0, 0, 1],
+                [1, 0, 1, 1, 0],
+                [1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 0],
+                [1, 1, 1, 1, 0],
+                [1, 1, 1, 0, 0],
             ]),
         };
 
         let clues = vec![
-            vec![None, Some(4), None, Some(3), None],
-            vec![None, None, None, None, None],
-            vec![None, None, None, None, None],
-            vec![None, None, None, None, Some(1)],
+            vec![None, None, None, Some(-1), None, None],
+            vec![None, None, None, None, None, None],
+            vec![Some(1), None, None, None, None, None],
+            vec![None, None, None, None, None, None],
+            vec![None, None, None, None, None, Some(-1)],
+            vec![None, None, None, None, None, None],
         ];
 
         (borders, clues)
     }
 
     #[test]
-    fn test_ripple_problem() {
+    fn test_putteria_problem() {
         let (borders, clues) = problem_for_tests();
         let ans = solve_ripple(&borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
-            [1, 4, 2, 3, 5],
-            [2, 3, 1, 2, 4],
-            [1, 2, 3, 1, 2],
-            [3, 1, 2, 4, 1],
+            [2, -1, -1, -1, -1, 4],
+            [-1, 2, -1, 3, -1, -1],
+            [1, -1, 4, -1, -1, 2],
+            [-1, 3, -1, 1, -1, -1],
+            [-1, -1, 3, -1, 4, -1],
+            [3, -1, -1, 4, -1, -1],
         ]);
         assert_eq!(ans, expected);
     }
 
     #[test]
-    fn test_ripple_serializer() {
+    fn test_putteria_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/p?ripple/5/4/ld8g2sug4g3u1";
+        let url = "https://puzz.link/pp?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
