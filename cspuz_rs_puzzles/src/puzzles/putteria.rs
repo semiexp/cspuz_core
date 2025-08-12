@@ -71,9 +71,9 @@ fn combinator() -> impl Combinator<Problem> {
     Size::new(Tuple2::new(
         Rooms,
         ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Optionalize::new(HexInt)),
             Box::new(Dict::new(Some(-1), "-1")),
             Box::new(Dict::new(Some(-2), "-2")),
+            Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
         ])),
     ))
