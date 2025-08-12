@@ -26,7 +26,7 @@ pub fn solve_putteria(
     }
 
     let mut solver = Solver::new();
-    let num = &solver.int_var_2d((h, w), -1, max_number);
+    let num = &solver.int_var_2d((h, w), -2, max_number);
     solver.add_answer_key_int(num);
 
     // Check no duplicates in rows
@@ -50,7 +50,7 @@ pub fn solve_putteria(
     for room in &rooms {
         let room_nums = num.select(room);
         solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number
-        solver.add_expr(room_nums.eq(-1).count_true().eq(room.len() as i32 - 1));
+        solver.add_expr(room_nums.eq(-2).count_true().eq(room.len() as i32 - 1));
         // The rest are empty
     }
 
@@ -71,8 +71,7 @@ fn combinator() -> impl Combinator<Problem> {
     Size::new(Tuple2::new(
         Rooms,
         ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Dict::new(Some(-1), "-1")),
-            Box::new(Dict::new(Some(-2), "-2")),
+            Box::new(Dict::new(Some(-2), ".")),
             Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
         ])),
@@ -118,11 +117,11 @@ mod tests {
         };
 
         let clues = vec![
-            vec![None, None, None, Some(-1), None, None],
+            vec![None, None, None, Some(-2), None, None],
             vec![None, None, None, None, None, None],
             vec![None, None, None, None, None, None],
             vec![None, None, None, None, None, None],
-            vec![None, None, None, None, None, Some(-1)],
+            vec![None, None, None, None, None, Some(-2)],
             vec![None, None, None, None, None, None],
         ];
 
@@ -137,12 +136,12 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
-            [2, -1, -1, -1, -1, 4],
-            [-1, 2, -1, 3, -1, -1],
-            [1, -1, 4, -1, -1, 2],
-            [-1, 3, -1, 1, -1, -1],
-            [-1, -1, 3, -1, 4, -1],
-            [3, -1, -1, 4, -1, -1],
+            [2, -2, -2, -2, -2, 4],
+            [-2, 2, -2, 3, -2, -2],
+            [1, -2, 4, -2, -2, 2],
+            [-2, 3, -2, 1, -2, -2],
+            [-2, -2, 3, -2, 4, -2],
+            [3, -2, -2, 4, -2, -2],
         ]);
         assert_eq!(ans, expected);
     }
