@@ -146,6 +146,6 @@ mod tests {
     fn test_putteria_serializer() {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
