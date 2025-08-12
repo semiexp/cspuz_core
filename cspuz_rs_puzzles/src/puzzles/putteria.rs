@@ -43,8 +43,8 @@ pub fn solve_putteria(
     }
 
     // Check no adjacent
-    solver.add_expr(!(num.slice((..(h - 1), ..)).ne(0) & num.slice((1.., ..)).ne(0)));
-    solver.add_expr(!(num.slice((.., ..(w - 1))).ne(0) & num.slice((.., 1..)).ne(0)));
+    solver.add_expr(!(num.slice((..(h - 1), ..)).ge(1) & num.slice((1.., ..)).ge(1)));
+    solver.add_expr(!(num.slice((.., ..(w - 1))).ge(1) & num.slice((.., 1..)).ge(1)));
 
     // Check no duplicate in rooms
     for room in &rooms {
