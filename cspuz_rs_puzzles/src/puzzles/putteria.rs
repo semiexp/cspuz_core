@@ -31,13 +31,13 @@ pub fn solve_putteria(
 
     // Check no duplicates in rows
     for i in 0..h {
-        for j in 1..max_number {
+        for j in 1..(max_number + 1) {
             solver.add_expr(num.slice_fixed_x((.., i)).eq(j).count_true().le(1));
         }
     }
 
     for i in 0..w {
-        for j in 1..max_number {
+        for j in 1..(max_number + 1) {
             solver.add_expr(num.slice_fixed_y((i, ..)).eq(j).count_true().le(1));
         }
     }
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_putteria_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
+        let url = "https://pzprxs.vercel.app/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
