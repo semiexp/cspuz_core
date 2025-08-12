@@ -68,10 +68,7 @@ pub fn solve_putteria(
 pub type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Vec<Option<i32>>>);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        Rooms,
-        ContextBasedGrid::new(Choice::new(vec![Box::new(Optionalize::new(HexInt))])),
-    ))
+    Size::new(Tuple2::new(Rooms, HexInt))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
