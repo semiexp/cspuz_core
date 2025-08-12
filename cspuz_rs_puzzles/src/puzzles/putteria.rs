@@ -70,9 +70,7 @@ pub type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Vec<Option<i32>>>
 fn combinator() -> impl Combinator<Problem> {
     Size::new(Tuple2::new(
         Rooms,
-        ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Optionalize::new(HexInt)),
-        ])),
+        ContextBasedGrid::new(Choice::new(vec![Box::new(Optionalize::new(HexInt))])),
     ))
 }
 
@@ -148,6 +146,6 @@ mod tests {
     fn test_putteria_serializer() {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
-        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
