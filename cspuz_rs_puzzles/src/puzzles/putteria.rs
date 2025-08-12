@@ -1,7 +1,7 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
+    Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -72,6 +72,8 @@ fn combinator() -> impl Combinator<Problem> {
         Rooms,
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
+            Box::new(Dict::new(Some(-1), "-1")),
+            Box::new(Dict::new(Some(-2), "-2")),
             Box::new(Spaces::new(None, 'g')),
         ])),
     ))
@@ -148,7 +150,7 @@ mod tests {
     #[test]
     fn test_putteria_serializer() {
         let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?putteria/6/6/mvvuus8o7s83r1zi"; // Credits to botaku
+        let url = "https://pzprxs.vercel.app/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
