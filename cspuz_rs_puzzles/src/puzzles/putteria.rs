@@ -1,7 +1,7 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
+    HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -72,8 +72,6 @@ fn combinator() -> impl Combinator<Problem> {
         Rooms,
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
-            Box::new(Spaces::new(None, 'g')),
-            Box::new(Dict::new(Some(-1), "c")),
         ])),
     ))
 }
