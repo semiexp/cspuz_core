@@ -25,7 +25,7 @@ pub fn solve_country_road(
             room_id[y][x] = i;
         }
     }
-    /*
+    
     let mut room_entrance = vec![vec![]; rooms.len()];
     for y in 0..h {
         for x in 0..w {
@@ -57,7 +57,7 @@ pub fn solve_country_road(
             }
         }
     }
-
+    /*
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
             let mut cells = vec![];
@@ -66,8 +66,8 @@ pub fn solve_country_road(
             }
             solver.add_expr(count_true(cells).eq(n));
         }
-    }*/
-
+    }
+    */
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
 
