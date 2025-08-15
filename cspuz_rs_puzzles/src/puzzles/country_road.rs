@@ -30,12 +30,10 @@ pub fn solve_country_road(
     for y in 0..h {
         for x in 0..w {
             if y < h - 1 && room_id[y][x] != room_id[y + 1][x] {
-                solver.add_expr(is_line.vertical.at((y, x)));
                 room_entrance[room_id[y][x]].push(is_line.vertical.at((y, x)));
                 room_entrance[room_id[y + 1][x]].push(is_line.vertical.at((y, x)));
             }
             if x < w - 1 && room_id[y][x] != room_id[y][x + 1] {
-                solver.add_expr(is_line.horizontal.at((y, x)));
                 room_entrance[room_id[y][x]].push(is_line.horizontal.at((y, x)));
                 room_entrance[room_id[y][x + 1]].push(is_line.horizontal.at((y, x)));
             }
