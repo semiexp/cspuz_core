@@ -25,7 +25,7 @@ pub fn solve_country_road(
             room_id[y][x] = i;
         }
     }
-
+    /*
     let mut room_entrance = vec![vec![]; rooms.len()];
     for y in 0..h {
         for x in 0..w {
@@ -44,19 +44,19 @@ pub fn solve_country_road(
     for i in 0..rooms.len() {
         // Check every room is entered only once
         solver.add_expr(count_true(&room_entrance[i]).eq(2));
-    }
+    }*/
 
-    /*for y in 0..h {
+    for y in 0..h {
         for x in 0..w {
             if y < h - 1 && borders.horizontal[y][x] {
                 // Check that there aren't unused cells on both sides of a border
-                solver.add_expr((is_passed.at((y, x))) ^ is_passed.at((y + 1, x)));
+                solver.add_expr(is_passed.at((y, x)) ^ is_passed.at((y + 1, x)));
             }
             if x < w - 1 && borders.vertical[y][x] {
                 solver.add_expr(is_passed.at((y, x)) ^ is_passed.at((y, x + 1)));
             }
         }
-    }*/
+    }
 
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
