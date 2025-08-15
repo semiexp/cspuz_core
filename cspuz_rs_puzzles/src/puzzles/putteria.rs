@@ -12,7 +12,7 @@ pub fn solve_putteria(
     let (h, w) = borders.base_shape();
 
     let rooms = graph::borders_to_rooms(borders);
-    let mut ranges : Vec<i32> = Vec::new();
+    let mut ranges: Vec<i32> = Vec::new();
     let mut max_number = 0;
 
     for room in &rooms {
