@@ -12,16 +12,14 @@ pub fn solve_putteria(
     let (h, w) = borders.base_shape();
 
     let rooms = graph::borders_to_rooms(borders);
-    let mut ranges = vec![vec![1; w]; h];
+    let mut ranges : Vec<i32> = Vec::new();
     let mut max_number = 0;
 
     for room in &rooms {
-        // Make sure rooms can only content one type of number
-        for &(y, x) in room {
-            ranges[y][x] = room.len() as i32;
-            if max_number < room.len() as i32 {
-                max_number = room.len() as i32;
-            }
+        // Log all possible numbers
+        ranges.push(room.len() as i32);
+        if max_number < room.len() as i32 {
+            max_number = room.len() as i32;
         }
     }
 
@@ -31,14 +29,14 @@ pub fn solve_putteria(
 
     // Check no duplicates in rows
     for i in 0..h {
-        for j in 1..(max_number + 1) {
-            solver.add_expr(num.slice_fixed_x((.., i)).eq(j).count_true().le(1));
+        for j in &ranges {
+            solver.add_expr(num.slice_fixed_x((.., i)).eq(*j).count_true().le(1));
         }
     }
 
     for i in 0..w {
-        for j in 1..(max_number + 1) {
-            solver.add_expr(num.slice_fixed_y((i, ..)).eq(j).count_true().le(1));
+        for j in &ranges {
+            solver.add_expr(num.slice_fixed_y((i, ..)).eq(*j).count_true().le(1));
         }
     }
 
