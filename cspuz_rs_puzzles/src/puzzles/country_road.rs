@@ -44,7 +44,7 @@ pub fn solve_country_road(
         // Check every room is entered only once
         solver.add_expr(count_true(&room_entrance[i]).eq(2));
     }
-    /*
+    
     for y in 0..h {
         for x in 0..w {
             if y < h - 1 && borders.horizontal[y][x] {
@@ -55,7 +55,7 @@ pub fn solve_country_road(
                 solver.add_expr(is_passed.at((y, x)) ^ is_passed.at((y, x + 1)));
             }
         }
-    }*/
+    }
     
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {

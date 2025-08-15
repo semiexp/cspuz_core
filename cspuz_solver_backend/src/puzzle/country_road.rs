@@ -8,7 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let is_line = country_road::solve_country_road(&borders, &clues).ok_or("no answer")?;
 
     let height = borders.vertical.len();
-    let width = borders.horizontal.len();
+    let width = borders.vertical[0].len() + 1;
     let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
     board.add_borders(&borders, "black");
 
