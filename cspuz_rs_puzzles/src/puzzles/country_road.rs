@@ -44,7 +44,7 @@ pub fn solve_country_road(
     for i in 0..rooms.len() {
         // Check every room is entered only once
         solver.add_expr(count_true(&room_entrance[i]).eq(2));
-    }*/
+    }
 
     for y in 0..h {
         for x in 0..w {
@@ -66,7 +66,7 @@ pub fn solve_country_road(
             }
             solver.add_expr(count_true(cells).eq(n));
         }
-    }
+    }*/
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
