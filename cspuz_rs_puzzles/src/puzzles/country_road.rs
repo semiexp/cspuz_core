@@ -49,10 +49,10 @@ pub fn solve_country_road(
         for x in 0..w {
             if y < h - 1 && borders.horizontal[y][x] {
                 // Check that there aren't unused cells on both sides of a border
-                solver.add_expr(is_passed.at((y, x)) ^ is_passed.at((y + 1, x)));
+                solver.add_expr(is_passed.at((y, x)) | is_passed.at((y + 1, x)));
             }
             if x < w - 1 && borders.vertical[y][x] {
-                solver.add_expr(is_passed.at((y, x)) ^ is_passed.at((y, x + 1)));
+                solver.add_expr(is_passed.at((y, x)) | is_passed.at((y, x + 1)));
             }
         }
     }
