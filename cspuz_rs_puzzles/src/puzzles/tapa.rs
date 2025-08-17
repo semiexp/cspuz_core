@@ -366,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nurimisaki_serializer() {
+    fn test_tapa_serializer() {
         let problem = problem_for_tests1();
         let url = "https://puzz.link/p?tapa/7/6/2nabg9w8o0h";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
