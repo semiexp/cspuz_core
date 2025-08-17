@@ -48,8 +48,7 @@ pub fn solve_putteria(
     for room in &rooms {
         let room_nums = num.select(room);
         solver.add_expr(room_nums.eq(room.len() as i32).count_true().eq(1)); // One cell has the number
-        solver.add_expr(room_nums.eq(-2).count_true().eq(room.len() as i32 - 1));
-        // The rest are empty
+        solver.add_expr(room_nums.eq(room.len() as i32) | room_nums.eq(-2)); // The rest are empty
     }
 
     for y in 0..h {
