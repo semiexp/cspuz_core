@@ -179,7 +179,7 @@ mod tests {
     }
 
     #[test]
-    fn test_icewalk_serializer() {
+    fn test_forestwalk_serializer() {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?forestwalk/6/5/58gg1i2h3r4s";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
