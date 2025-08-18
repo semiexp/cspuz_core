@@ -65,6 +65,7 @@ pub mod nurimisaki;
 pub mod parrot_loop;
 pub mod pencils;
 pub mod polyominous;
+pub mod putteria;
 pub mod reflect;
 pub mod ringring;
 pub mod ripple;
