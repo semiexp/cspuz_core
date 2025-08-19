@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rust-format:
+  format:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -23,6 +23,8 @@ jobs:
       run: |
         rustup component add rustfmt
         cargo fmt --check
+
+        python3 tools/check_puzzles_order.py
   rust-x86-latest:
     runs-on: ubuntu-latest
     steps:
