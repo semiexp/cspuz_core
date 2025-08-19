@@ -1,6 +1,10 @@
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::serializer::{get_kudamono_url_info, kudamono_order, Context, DecInt, Sequencer};
+use cspuz_rs::serializer::{
+    get_kudamono_url_info, get_kudamono_url_info_detailed, kudamono_order,
+    parse_kudamono_dimension, Combinator, Context, DecInt, KudamonoGrid, Optionalize,
+    PrefixAndSuffix, Sequencer,
+};
 use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
 
 pub fn solve_crosswall(
@@ -161,6 +165,42 @@ pub fn solve_crosswall(
 type Problem = Vec<Vec<Option<(i32, i32)>>>;
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
+    let desc = get_kudamono_url_info_detailed(url)?;
+
+    if !desc.contains_key("L-N") {
+        return deserialize_problem_v1_v2(url);
+    }
+
+    let (width, height) = parse_kudamono_dimension(&desc.get("W")?)?;
+    let kudamono_v2 = true;
+
+    let combinator = KudamonoGrid::new(
+        Optionalize::new(PrefixAndSuffix::new("(", DecInt, ")")),
+        None,
+    );
+    let ctx = Context::sized_with_kudamono_mode(height, width, kudamono_v2);
+    let region_size_clues = combinator.deserialize(&ctx, desc.get("L-N")?.as_bytes())?.1;
+    let region_depth_clues = combinator.deserialize(&ctx, desc.get("L-S")?.as_bytes())?.1;
+
+    assert_eq!(region_size_clues.len(), 1);
+    assert_eq!(region_depth_clues.len(), 1);
+
+    let mut ret = vec![vec![None; width]; height];
+    for y in 0..height {
+        for x in 0..width {
+            ret[y][x] = match (region_size_clues[0][y][x], region_depth_clues[0][y][x]) {
+                (Some(size), Some(depth)) => Some((size, depth)),
+                (Some(size), None) => Some((size, -1)),
+                (None, Some(depth)) => Some((-1, depth)),
+                (None, None) => None,
+            };
+        }
+    }
+
+    Some(ret)
+}
+
+pub fn deserialize_problem_v1_v2(url: &str) -> Option<Problem> {
     let desc = get_kudamono_url_info(url)?;
     if desc.puzzle_kind != "crosswall" {
         return None;
@@ -279,6 +319,13 @@ mod tests {
         {
             let problem = problem_for_tests();
             let url = "https://pedros.works/paper-puzzle-player?W=5x5&L=(2)16(3)1(4)2(0)10(4)1(1)1(2)11(2)16(6)4&G=crosswall";
+            assert_eq!(deserialize_problem(url), Some(problem));
+        }
+
+        // v3
+        {
+            let problem = problem_for_tests();
+            let url = "https://pedros.works/paper-puzzle-player?W=5x5&L-N=(2)6(3)1(4)2(4)1(1)1(6)11&L-S=(0)9(2)3(2)6&G=crosswall";
             assert_eq!(deserialize_problem(url), Some(problem));
         }
     }
