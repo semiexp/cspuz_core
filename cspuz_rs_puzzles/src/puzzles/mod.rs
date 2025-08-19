@@ -36,6 +36,7 @@ pub mod hebiichigo;
 pub mod herugolf;
 pub mod heyawake;
 pub mod hidato;
+pub mod hitori;
 pub mod icewalk;
 pub mod inverse_litso;
 pub mod kakuro;
