@@ -15,7 +15,7 @@ def main() -> None:
 
     is_puzzle_list = False
     last_puzzle: str | None = None
-    for line in source.split("\n"):
+    for i, line in enumerate(source.split("\n")):
         if line.startswith("puzzle_list!("):
             is_puzzle_list = True
             last_puzzle = None
@@ -30,11 +30,16 @@ def main() -> None:
 
         m = re.match(r"^\s*\(([a-z_]+),.*", line)
         assert m is not None
+        if m is None:
+            raise ValueError(f"invalid line in puzzle list (line {i + 1})")
         puzzle_mod = m[1]
         if last_puzzle is None:
             last_puzzle = puzzle_mod
         else:
-            assert last_puzzle < puzzle_mod
+            if last_puzzle >= puzzle_mod:
+                raise ValueError(
+                    f"puzzles are not in order: {last_puzzle} >= {puzzle_mod} (line {i + 1})"
+                )
             last_puzzle = puzzle_mod
 
 
