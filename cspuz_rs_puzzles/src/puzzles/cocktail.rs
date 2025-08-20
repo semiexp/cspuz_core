@@ -135,7 +135,7 @@ mod tests {
     }
 
     #[test]
-    fn test_moonsun_serializer() {
+    fn test_cocktail_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?cocktail/6/6/4iihh4u03o0u34233";
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);

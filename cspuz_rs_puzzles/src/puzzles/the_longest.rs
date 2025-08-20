@@ -373,7 +373,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cbpl_serializer() {
+    fn test_the_longest_serializer() {
         let problem = problem_for_tests();
         let url =
             "https://pedros.works/paper-puzzle-player?W=5x4&SIE=0RRR2UU7RRR2UU15UUU&G=the-longest";
