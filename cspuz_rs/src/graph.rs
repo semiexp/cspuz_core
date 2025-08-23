@@ -25,6 +25,21 @@ impl Graph {
         }
     }
 
+    /// Adds a vertex to the graph and returns the index of the new vertex.
+    ///
+    /// # Examples
+    /// ```
+    /// # use cspuz_rs::graph::Graph;
+    /// let mut graph = Graph::new(5);
+    /// let v = graph.add_vertex();
+    /// assert_eq!(v, 5);
+    /// ```
+    pub fn add_vertex(&mut self) -> usize {
+        let new_vertex = self.n_vertices;
+        self.n_vertices += 1;
+        new_vertex
+    }
+
     /// Adds an edge between the vertices `u` and `v`.
     ///
     /// # Examples
