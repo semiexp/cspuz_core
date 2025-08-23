@@ -24,23 +24,19 @@ pub fn solve_coral(
             & is_black.slice((1.., 1..))),
     );
 
-    let mut aux_graph = graph::Graph::new(h * w + 1);
-    let mut aux_vertices = vec![];
+    let mut aux_graph = graph::infer_graph_from_2d_array((h, w));
+    let mut aux_vertices = (!is_black).into_iter().collect::<Vec<_>>();
+
+    let outer = aux_graph.add_vertex();
+    aux_vertices.push(TRUE);
+
     for y in 0..h {
         for x in 0..w {
-            aux_vertices.push(!is_black.at((y, x)));
-            if y < h - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge(y * w + x, y * w + (x + 1));
-            }
             if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, h * w);
+                aux_graph.add_edge(y * w + x, outer);
             }
         }
     }
-    aux_vertices.push(TRUE);
     graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
 
     for y in 0..(h - 1) {

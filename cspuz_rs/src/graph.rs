@@ -124,7 +124,7 @@ impl Index<usize> for Graph {
     }
 }
 
-fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
+pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
     let (h, w) = shape;
     let mut graph = Graph::new(h * w);
     for y in 0..h {
