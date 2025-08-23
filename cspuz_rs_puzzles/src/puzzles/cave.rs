@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{Solver, TRUE};
 
 pub fn solve_cave(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -15,24 +15,19 @@ pub fn solve_cave(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> 
     // white cells are connected
     graph::active_vertices_connected_2d(&mut solver, !is_black);
 
-    let mut aux_graph = graph::Graph::new(h * w + 1);
+    let mut aux_graph = graph::infer_graph_from_2d_array((h, w));
+    let mut aux_vertices = is_black.expr().into_iter().collect::<Vec<_>>();
+
+    let outer = aux_graph.add_vertex();
+    aux_vertices.push(TRUE);
+
     for y in 0..h {
         for x in 0..w {
             if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, h * w);
-            }
-            if y > 0 {
-                aux_graph.add_edge((y - 1) * w + x, y * w + x);
-            }
-            if x > 0 {
-                aux_graph.add_edge(y * w + (x - 1), y * w + x);
+                aux_graph.add_edge(y * w + x, outer);
             }
         }
     }
-    let mut aux_vertices = is_black.flatten().into_iter().collect::<Vec<_>>();
-    let t = solver.bool_var();
-    solver.add_expr(&t);
-    aux_vertices.push(t);
     graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
 
     let is_white = &!is_black;
