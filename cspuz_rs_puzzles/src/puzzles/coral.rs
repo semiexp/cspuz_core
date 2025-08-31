@@ -151,7 +151,7 @@ mod tests {
     fn problem_for_tests() -> (Vec<Option<Vec<i32>>>, Vec<Option<Vec<i32>>>) {
         let clue_vertical = vec![
             Some(vec![1]),
-            Some(vec![3, 1, 1]),
+            Some(vec![1, 1, 3]),
             Some(vec![3, 3]),
             None,
             None,
@@ -159,9 +159,9 @@ mod tests {
         ];
         let clue_horizontal = vec![
             None,
-            Some(vec![2, 1]),
-            Some(vec![2, 1]),
-            Some(vec![2, 1]),
+            Some(vec![1, 2]),
+            Some(vec![1, 2]),
+            Some(vec![1, 2]),
             Some(vec![3]),
             None,
             Some(vec![2]),

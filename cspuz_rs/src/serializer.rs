@@ -1088,7 +1088,7 @@ where
         let mut seq = vec![];
         for i in 0..w {
             let n_filled = if let Some(clue) = &clue_vertical[i] {
-                for c in clue {
+                for c in clue.iter().rev() {
                     seq.push(Some(c.clone()));
                 }
                 clue.len()
@@ -1102,7 +1102,7 @@ where
         }
         for i in 0..h {
             let n_filled = if let Some(clue) = &clue_horizontal[i] {
-                for c in clue {
+                for c in clue.iter().rev() {
                     seq.push(Some(c.clone()));
                 }
                 clue.len()
@@ -1147,10 +1147,11 @@ where
         let mut clue_vertical = vec![];
         for _ in 0..w {
             let cs = &seq[pos..(pos + (h + 1) / 2)];
-            let cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            let mut cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
             if cs.is_empty() {
                 clue_vertical.push(None);
             } else {
+                cs.reverse();
                 clue_vertical.push(Some(cs));
             }
             pos += (h + 1) / 2;
@@ -1159,10 +1160,11 @@ where
         let mut clue_horizontal = vec![];
         for _ in 0..h {
             let cs = &seq[pos..(pos + (w + 1) / 2)];
-            let cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            let mut cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
             if cs.is_empty() {
                 clue_horizontal.push(None);
             } else {
+                cs.reverse();
                 clue_horizontal.push(Some(cs));
             }
             pos += (w + 1) / 2;
