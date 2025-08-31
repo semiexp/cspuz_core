@@ -123,27 +123,26 @@ fn partitions(sum: i32, n: i32, value_low: i32, value_high: i32) -> Vec<Vec<bool
 /// Suppose `is_present` consists of N bool values (corresponding to "cells"). Then, they consist of some (possibly zero) consecutive `true` cells.
 /// The returned array consists of N integer values, where each value represents the index of the block which the corresponding cell belongs to.
 /// If `is_present[i]` is false, the i-th element of the returned array is not guaranteed.
-/// The number of contiguous block should be at most `maybe_absent.len()`.
 ///
-/// If i-th element of `maybe_absent` is true, then the i-th block may be absent (skipped).
+/// If i-th element of `star` is true, then the i-th block may be absent (skipped).
 /// Otherwise, the i-th block must be present (at least one element of the returned array equals to i).
 ///
-/// In `maybe_absent`, `true` must not appear in consecutive positions.
+/// In `star`, `true` must not appear in consecutive positions.
 pub fn japanese<T: BoolArrayLike>(
     solver: &mut Solver,
     is_present: T,
-    maybe_absent: &[bool],
+    star: &[bool],
 ) -> IntVarArray1D {
-    for i in 1..maybe_absent.len() {
-        if maybe_absent[i] && maybe_absent[i - 1] {
-            panic!("In japanese(), true must not appear in consecutive positions in maybe_absent.");
+    for i in 1..star.len() {
+        if star[i] && star[i - 1] {
+            panic!("In japanese(), true must not appear in consecutive positions in star.");
         }
     }
 
     let is_present = &BoolExprArray1D::from_raw(is_present.to_vec());
     let n = is_present.len();
 
-    let ret = solver.int_var_1d(n, -1, maybe_absent.len() as i32 - 1);
+    let ret = solver.int_var_1d(n, -1, star.len() as i32 - 1);
     for i in 0..n {
         let starts_new_block = &(if i == 0 {
             is_present.at(i).expr()
@@ -158,23 +157,23 @@ pub fn japanese<T: BoolArrayLike>(
         let cur = &ret.at(i);
 
         solver.add_expr((!starts_new_block).imp(cur.eq(last)));
-        solver.add_expr(starts_new_block.imp(last.ne(maybe_absent.len() as i32 - 1)));
-        for j in 0..(maybe_absent.len() as i32) {
-            if maybe_absent[j as usize] && j != maybe_absent.len() as i32 - 1 {
-                solver
-                    .add_expr(starts_new_block.imp(last.eq(j - 1).imp(cur.eq(j) | cur.eq(j + 1))));
-            } else {
-                solver.add_expr(starts_new_block.imp(last.eq(j - 1).imp(cur.eq(j))));
+        for j in 0..(star.len() as i32 + 1) {
+            let mut cands = vec![cur.eq(j)];
+            if j < star.len() as i32 && star[j as usize] {
+                cands.push(cur.eq(j + 1));
             }
+            if j > 0 && star[(j - 1) as usize] {
+                cands.push(cur.eq(j - 1));
+            }
+            solver.add_expr(starts_new_block.imp(last.eq(j - 1).imp(any(cands))));
         }
     }
-    if maybe_absent[maybe_absent.len() - 1] {
+    if star[star.len() - 1] {
         solver.add_expr(
-            ret.at(n - 1).eq(maybe_absent.len() as i32 - 1)
-                | ret.at(n - 1).eq(maybe_absent.len() as i32 - 2),
+            ret.at(n - 1).eq(star.len() as i32 - 1) | ret.at(n - 1).eq(star.len() as i32 - 2),
         );
     } else {
-        solver.add_expr(ret.at(n - 1).eq(maybe_absent.len() as i32 - 1));
+        solver.add_expr(ret.at(n - 1).eq(star.len() as i32 - 1));
     }
 
     ret
@@ -295,25 +294,25 @@ mod tests {
         let n = 9;
         let n_groups = 4;
         for mask in 0..(1 << n_groups) {
-            let mut maybe_absent = vec![];
+            let mut star = vec![];
             for i in 0..n_groups {
-                maybe_absent.push((mask & (1 << i)) != 0);
+                star.push((mask & (1 << i)) != 0);
             }
 
-            let mut consecutive_absent = false;
+            let mut consecutive_star = false;
             for i in 1..n_groups {
-                if maybe_absent[i] && maybe_absent[i - 1] {
-                    consecutive_absent = true;
+                if star[i] && star[i - 1] {
+                    consecutive_star = true;
                     break;
                 }
             }
-            if consecutive_absent {
+            if consecutive_star {
                 continue;
             }
 
             let mut solver = Solver::new();
             let is_present = &solver.bool_var_1d(n);
-            let group_id = &japanese(&mut solver, is_present, &maybe_absent);
+            let group_id = &japanese(&mut solver, is_present, &star);
 
             let mut n_patterns_actual = 0;
             while let Some(model) = solver.solve() {
@@ -331,7 +330,7 @@ mod tests {
                     }
                 }
                 for i in 0..n_groups {
-                    if !maybe_absent[i] {
+                    if !star[i] {
                         assert!(used[i]);
                     }
                 }
@@ -347,7 +346,8 @@ mod tests {
                 solver.add_expr(!all(refutation));
             }
 
-            let n_present_groups = n_groups - maybe_absent.iter().filter(|&&b| b).count();
+            let n_star = star.iter().filter(|&&b| b).count();
+            let n_fixed = n_groups - n_star;
             let mut n_patterns_expected = 0;
             for p in 0..(1 << n) {
                 let mut g = 0;
@@ -358,12 +358,18 @@ mod tests {
                         }
                     }
                 }
-                if n_present_groups <= g && g <= n_groups {
-                    n_patterns_expected += binom(n_groups - n_present_groups, n_groups - g);
+                if n_fixed <= g {
+                    if n_star == 0 {
+                        if g == n_fixed {
+                            n_patterns_expected += 1;
+                        }
+                        continue;
+                    }
+                    n_patterns_expected += binom(g - n_fixed + n_star - 1, n_star - 1);
                 }
             }
 
-            assert_eq!(n_patterns_actual, n_patterns_expected);
+            assert_eq!(n_patterns_actual, n_patterns_expected, "{} {}", n, mask);
         }
     }
 }
