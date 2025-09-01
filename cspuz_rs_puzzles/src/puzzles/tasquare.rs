@@ -53,19 +53,19 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             }
         }
     }
-/*
+
     let num_up = &solver.int_var_2d((h, w), 0, h as i32);
     solver.add_expr(num_up.slice_fixed_y((0, ..)).eq(0));
     solver.add_expr(
         num_up
             .slice((1.., ..))
-            .eq(is_black.ite(num_up.slice((..h, ..)) + 1, 0)),
+            .eq(is_black.ite(num_up.slice((..(h - 1), ..)) + 1, 0)),
     );
     let num_down = &solver.int_var_2d((h, w), 0, h as i32);
-    solver.add_expr(num_down.slice_fixed_y((h, ..)).eq(0));
+    solver.add_expr(num_down.slice_fixed_y((h - 1, ..)).eq(0));
     solver.add_expr(
         num_down
-            .slice((..h, ..))
+            .slice((..(h - 1), ..))
             .eq(is_black.ite(num_down.slice((1.., ..)) + 1, 0)),
     );
     let num_left = &solver.int_var_2d((h, w), 0, w as i32);
@@ -73,13 +73,13 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
     solver.add_expr(
         num_left
             .slice((.., 1..))
-            .eq(is_black.ite(num_left.slice((.., ..w)) + 1, 0)),
+            .eq(is_black.ite(num_left.slice((.., ..(w - 1))) + 1, 0)),
     );
     let num_right = &solver.int_var_2d((h, w), 0, w as i32);
-    solver.add_expr(num_right.slice_fixed_x((.., w)).eq(0));
+    solver.add_expr(num_right.slice_fixed_x((.., w - 1)).eq(0));
     solver.add_expr(
         num_right
-            .slice((.., ..w))
+            .slice((.., ..(w - 1)))
             .eq(is_black.ite(num_right.slice((.., 1..)) + 1, 0)),
     );
 
@@ -93,7 +93,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             );
         }
     }
-*/
+
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
