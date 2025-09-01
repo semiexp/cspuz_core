@@ -61,7 +61,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             .eq(is_black.ite(num_up.slice((..h, ..)) + 1, 0)),
     );
     let num_down = &solver.int_var_2d((h, w), 0, h as i32);
-    solver.add_expr(num_down.slice_fixed_y((h - 1, ..)).eq(0));
+    solver.add_expr(num_down.slice_fixed_y((h, ..)).eq(0));
     solver.add_expr(
         num_down
             .slice((..h, ..))
