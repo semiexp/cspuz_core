@@ -263,6 +263,39 @@ impl<T> Combinator<T> for Choice<T> {
     }
 }
 
+pub struct Choice2<C1, C2> {
+    choice1: C1,
+    choice2: C2,
+}
+
+impl<C1, C2> Choice2<C1, C2> {
+    pub fn new(choice1: C1, choice2: C2) -> Choice2<C1, C2> {
+        Choice2 { choice1, choice2 }
+    }
+}
+
+impl<T, C1, C2> Combinator<T> for Choice2<C1, C2>
+where
+    C1: Combinator<T>,
+    C2: Combinator<T>,
+{
+    fn serialize(&self, ctx: &Context, input: &[T]) -> Option<(usize, Vec<u8>)> {
+        if let Some(res) = self.choice1.serialize(ctx, input) {
+            Some(res)
+        } else {
+            self.choice2.serialize(ctx, input)
+        }
+    }
+
+    fn deserialize(&self, ctx: &Context, input: &[u8]) -> Option<(usize, Vec<T>)> {
+        if let Some(res) = self.choice1.deserialize(ctx, input) {
+            Some(res)
+        } else {
+            self.choice2.deserialize(ctx, input)
+        }
+    }
+}
+
 pub struct Dict<T> {
     before: T,
     after: Vec<u8>,
@@ -1026,6 +1059,120 @@ where
         .collect()
 }
 
+pub struct OutsideSequences<C> {
+    base_serializer: C,
+}
+
+impl<C> OutsideSequences<C> {
+    pub fn new(base_serializer: C) -> OutsideSequences<C> {
+        OutsideSequences { base_serializer }
+    }
+}
+
+impl<T, C> Combinator<(Vec<Option<Vec<T>>>, Vec<Option<Vec<T>>>)> for OutsideSequences<C>
+where
+    T: Clone + PartialEq,
+    C: Combinator<T>,
+{
+    fn serialize(
+        &self,
+        ctx: &Context,
+        input: &[(Vec<Option<Vec<T>>>, Vec<Option<Vec<T>>>)],
+    ) -> Option<(usize, Vec<u8>)> {
+        if input.len() == 0 {
+            return None;
+        }
+        let (clue_vertical, clue_horizontal) = &input[0];
+        let h: usize = ctx.height?;
+        let w = ctx.width?;
+        let mut seq = vec![];
+        for i in 0..w {
+            let n_filled = if let Some(clue) = &clue_vertical[i] {
+                for c in clue.iter().rev() {
+                    seq.push(Some(c.clone()));
+                }
+                clue.len()
+            } else {
+                0
+            };
+            let n_pad = (h + 1) / 2 - n_filled;
+            for _ in 0..n_pad {
+                seq.push(None);
+            }
+        }
+        for i in 0..h {
+            let n_filled = if let Some(clue) = &clue_horizontal[i] {
+                for c in clue.iter().rev() {
+                    seq.push(Some(c.clone()));
+                }
+                clue.len()
+            } else {
+                0
+            };
+            let n_pad = (w + 1) / 2 - n_filled;
+            for _ in 0..n_pad {
+                seq.push(None);
+            }
+        }
+        let sub = Seq::new(
+            Choice2::new(
+                Optionalize::new(&self.base_serializer),
+                Spaces::new(None, 'g'),
+            ),
+            seq.len(),
+        );
+        sub.serialize(ctx, &[seq])
+    }
+
+    fn deserialize(
+        &self,
+        ctx: &Context,
+        input: &[u8],
+    ) -> Option<(usize, Vec<(Vec<Option<Vec<T>>>, Vec<Option<Vec<T>>>)>)> {
+        let h = ctx.height?;
+        let w = ctx.width?;
+        let base_seq_len = ((h + 1) / 2) * w + ((w + 1) / 2) * h;
+        let sub = Seq::new(
+            Choice2::new(
+                Optionalize::new(&self.base_serializer),
+                Spaces::new(None, 'g'),
+            ),
+            base_seq_len,
+        );
+        let (n_read, seq) = sub.deserialize(ctx, input)?;
+        assert_eq!(seq.len(), 1);
+        let seq = &seq[0];
+        let mut pos = 0;
+
+        let mut clue_vertical = vec![];
+        for _ in 0..w {
+            let cs = &seq[pos..(pos + (h + 1) / 2)];
+            let mut cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            if cs.is_empty() {
+                clue_vertical.push(None);
+            } else {
+                cs.reverse();
+                clue_vertical.push(Some(cs));
+            }
+            pos += (h + 1) / 2;
+        }
+
+        let mut clue_horizontal = vec![];
+        for _ in 0..h {
+            let cs = &seq[pos..(pos + (w + 1) / 2)];
+            let mut cs = cs.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            if cs.is_empty() {
+                clue_horizontal.push(None);
+            } else {
+                cs.reverse();
+                clue_horizontal.push(Some(cs));
+            }
+            pos += (w + 1) / 2;
+        }
+
+        Some((n_read, vec![(clue_vertical, clue_horizontal)]))
+    }
+}
 pub struct Rooms;
 
 impl Combinator<InnerGridEdges<Vec<Vec<bool>>>> for Rooms {
