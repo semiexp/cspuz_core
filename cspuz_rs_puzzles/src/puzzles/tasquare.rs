@@ -11,6 +11,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
     let mut solver = Solver::new();
     let is_black = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(is_black);
+    graph::active_vertices_connected_2d(&mut solver, !is_black);
 
     for y in 0..h {
         for x in 0..w {
@@ -52,7 +53,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             }
         }
     }
-
+/*
     let num_up = &solver.int_var_2d((h, w), 0, h as i32);
     solver.add_expr(num_up.slice_fixed_y((0, ..)).eq(0));
     solver.add_expr(
@@ -92,9 +93,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             );
         }
     }
-
-    graph::active_vertices_connected_2d(&mut solver, !is_black);
-
+*/
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
