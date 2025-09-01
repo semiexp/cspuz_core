@@ -83,7 +83,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             .eq(is_black.ite(num_right.slice((.., 1..)) + 1, 0)),
     );
 
-    for x in 0..h {
+   /* for x in 0..h {
         for y in 0..w {
             solver.add_expr(
                 is_black.at((y, x)).imp(
@@ -93,7 +93,7 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             );
         }
     }
-
+    */
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
