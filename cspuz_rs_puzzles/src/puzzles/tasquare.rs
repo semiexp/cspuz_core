@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -12,17 +12,11 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
     let is_black = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(is_black);
 
-    let widths = &solver.int_var_2d((h, w), 1, w as i32);
-    let heights = &solver.int_var_2d((h, w), 1, h as i32);
-
-    solver.add_answer_key_int(heights);
-    solver.add_answer_key_int(widths);
-
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                solver.add_expr(!is_black.at((y,x))); // Clue is not shaded
-                solver.add_expr(is_black.four_neighbors((y, x)).count_true().ge(1)); 
+                solver.add_expr(!is_black.at((y, x))); // Clue is not shaded
+                solver.add_expr(is_black.four_neighbors((y, x)).count_true().ge(1));
                 if n >= 1 {
                     let connected = &solver.bool_var_2d((h, w));
                     for y2 in 0..h {
@@ -53,53 +47,49 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
                                 .slice((.., 1..))
                                 .iff(connected.slice((.., ..(w - 1)))),
                         ),
-                    );              
+                    );
                 }
-            }
-        }
-    }
-    
-    for i in 0..w {
-        let slice = is_black.slice_fixed_x((.., i));
-        let mut pos = vec![];
-        let mut count = 0;
-        for j in 0..h {
-            if slice.at(j) {
-                pos.push(j);
-                count += 1;
-            }
-            else {
-                for k in pos {
-                    solver.add_expr(heights.at((i,k)).eq(count));
-                }
-                pos = vec![];
-                count = 0;
             }
         }
     }
 
-    for i in 0..h {
-        let slice = is_black.slice_fixed_y((i, ..));
-        let mut pos = vec![];
-        let mut count = 0;
-        for j in 0..w {
-            if slice.at(j) == Some(true) {
-                pos.push(j);
-                count += 1;
-            }
-            else {
-                for k in pos {
-                    solver.add_expr(widths.at((i,k)).eq(count));
-                }
-                pos = vec![];
-                count = 0;
-            }
-        }
-    }
+    let num_up = &solver.int_var_2d((h, w), 0, h as i32);
+    solver.add_expr(num_up.slice_fixed_y((0, ..)).eq(0));
+    solver.add_expr(
+        num_up
+            .slice((1.., ..))
+            .eq(is_black.ite(num_up.slice((..h, ..)) + 1, 0)),
+    );
+    let num_down = &solver.int_var_2d((h, w), 0, h as i32);
+    solver.add_expr(num_down.slice_fixed_y((h - 1, ..)).eq(0));
+    solver.add_expr(
+        num_down
+            .slice((..h, ..))
+            .eq(is_black.ite(num_down.slice((1.., ..)) + 1, 0)),
+    );
+    let num_left = &solver.int_var_2d((h, w), 0, w as i32);
+    solver.add_expr(num_left.slice_fixed_x((.., 0)).eq(0));
+    solver.add_expr(
+        num_left
+            .slice((.., 1..))
+            .eq(is_black.ite(num_left.slice((.., ..w)) + 1, 0)),
+    );
+    let num_right = &solver.int_var_2d((h, w), 0, w as i32);
+    solver.add_expr(num_right.slice_fixed_x((.., w)).eq(0));
+    solver.add_expr(
+        num_right
+            .slice((.., ..w))
+            .eq(is_black.ite(num_right.slice((.., 1..)) + 1, 0)),
+    );
 
-    for i in 0..h {
-        for j in 0..w {
-            solver.add_expr(is_black.at((i,j)).imp(widths.at((i,j)).eq(heights.at((i,j)))));
+    for x in 0..h {
+        for y in 0..w {
+            solver.add_expr(
+                is_black.at((y, x)).imp(
+                    (num_up.at((y, x)) + num_down.at((y, x)))
+                        .eq(num_left.at((y, x)) + num_right.at((y, x))),
+                ),
+            );
         }
     }
 
