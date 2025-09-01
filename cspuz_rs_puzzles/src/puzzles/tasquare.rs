@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn test_tasquare_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/p?tasquare/6/6/.h4n.i5h3i.n2h./";
+        let url = "https://puzz.link/p?tasquare/6/6/.h4n.i5h3i.n2h.";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
