@@ -60,6 +60,7 @@ pub mod multiplication_link;
 pub mod n_cells;
 pub mod nagenawa;
 pub mod nikoji;
+pub mod nonogram;
 pub mod norinori;
 pub mod nothree;
 pub mod nurikabe;
