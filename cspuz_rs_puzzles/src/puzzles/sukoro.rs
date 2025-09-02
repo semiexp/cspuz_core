@@ -64,7 +64,7 @@ type Problem = Vec<Vec<Option<i32>>>;
 fn combinator() -> impl Combinator<Problem> {
     ContextBasedGrid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'g')),
-        Box::new(Optionalize::new(HexInt)),
+        Box::new(Optionalize::new(DecInt)),
     ]))
 }
 
@@ -100,7 +100,7 @@ mod tests {
 
         let expected = crate::util::tests::to_option_2d([
             [1, 3, 2, -2],
-            [-2, 2, -4, 1],
+            [-2, 2, 4, 1],
             [-2, -2, 2, -2],
             [1, 2, 3, 1],
         ]);
