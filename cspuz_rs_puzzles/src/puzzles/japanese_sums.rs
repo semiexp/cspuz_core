@@ -12,9 +12,6 @@ pub fn solve_japanese_sums(
 ) -> Option<Vec<Vec<Option<i32>>>> {
     let h = clue_horizontal.len();
     let w = clue_vertical.len();
-    if h != w {
-        return None;
-    }
 
     let mut solver = Solver::new();
     let num = &solver.int_var_2d((h, w), 0, k);
@@ -22,9 +19,9 @@ pub fn solve_japanese_sums(
 
     let mut add_constraint = |target: IntVarArray1D, clue: &Option<Vec<i32>>| {
         for i in 1..=k {
-            solver.add_expr(target.eq(i).count_true().eq(1));
+            solver.add_expr(target.eq(i).count_true().le(1));
         }
-        solver.add_expr(target.eq(0).count_true().eq(h as i32 - k));
+        solver.add_expr(target.eq(0).count_true().ge(target.len() as i32 - k));
 
         if let Some(clue) = clue {
             let is_present = target.ne(0);
@@ -83,20 +80,21 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         let clue_vertical = vec![
+            Some(vec![-1, -1, -1]),
+            Some(vec![10]),
+            Some(vec![-1, 5]),
             None,
-            Some(vec![-1, -1]),
-            Some(vec![2, 4]),
-            None,
-            Some(vec![3, 3]),
+            Some(vec![1, -1]),
+            Some(vec![4, -1]),
         ];
         let clue_horizontal = vec![
-            Some(vec![-1, -1, -1]),
-            Some(vec![1, -1]),
-            Some(vec![6]),
-            Some(vec![2, 4]),
+            Some(vec![2, 5, 3]),
+            Some(vec![-1, 4, -1]),
+            Some(vec![-1, 4]),
             None,
+            Some(vec![8, -1]),
         ];
-        (3, (clue_vertical, clue_horizontal))
+        (4, (clue_vertical, clue_horizontal))
     }
 
     #[test]
@@ -107,11 +105,11 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
-            [3, 0, 2, 0, 1],
-            [0, 1, 0, 3, 2],
-            [0, 3, 1, 2, 0],
-            [2, 0, 3, 1, 0],
-            [1, 2, 0, 0, 3],
+            [2, 0, 4, 1, 0, 3],
+            [0, 3, 0, 4, 0, 1],
+            [4, 2, 0, 3, 1, 0],
+            [0, 1, 2, 0, 0, 4],
+            [1, 4, 3, 0, 2, 0],
         ]);
         assert_eq!(ans, expected);
     }
@@ -119,7 +117,7 @@ mod tests {
     #[test]
     fn test_cross_the_streams_serializer() {
         let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?japanesesums/5/5/3/i..g42j33g....1g6h42j";
+        let url = "https://pzprxs.vercel.app/p?japanesesums/6/5/4/...ah5.j.1g.4g352.4.4.j.8g";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
