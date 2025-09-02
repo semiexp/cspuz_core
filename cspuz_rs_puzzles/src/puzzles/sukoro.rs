@@ -53,7 +53,7 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
-    ContextBasedGridGrid::new(Choice::new(vec![
+    ContextBasedGrid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'g')),
         Box::new(Optionalize::new(HexInt)),
     ]))
