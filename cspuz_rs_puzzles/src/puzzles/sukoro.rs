@@ -14,10 +14,12 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
 
     let is_num = &solver.bool_var_2d((h, w));
 
+    solver.add_expr(num.ne(0));
+    solver.add_expr(num.ne(-1));
+    solver.add_expr(num.ge(1).iff(is_num));
+
     for y in 0..h {
         for x in 0..w {
-            solver.add_expr(num.at((y, x)).ne(0));
-            solver.add_expr(num.at((y, x)).ne(-1));
             if let Some(c) = clues[y][x] {
                 if c == -1 {
                     solver.add_expr(num.at((y, x)).ne(-2));
@@ -25,8 +27,6 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
                     solver.add_expr(num.at((y, x)).eq(c));
                 }
             }
-
-            solver.add_expr(num.at((y, x)).ge(1).iff(is_num.at((y, x))));
 
             if x < w - 1 {
                 solver.add_expr(
