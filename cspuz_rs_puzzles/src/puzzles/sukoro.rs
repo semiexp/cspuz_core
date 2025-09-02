@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, ContextBasedGridGrid, HexInt, Optionalize,
+    problem_to_url, url_to_problem, Choice, Combinator, ContextBasedGrid, HexInt, Optionalize,
     Spaces,
 };
 use cspuz_rs::solver::Solver;
@@ -36,7 +36,7 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
                 );
             }
 
-            if y < h - 1{
+            if y < h - 1 {
                 solver.add_expr(
                     (is_num.at((y, x)) & is_num.at((y + 1, x)))
                         .imp(num.at((y, x)).ne(num.at((y + 1, x)))),
