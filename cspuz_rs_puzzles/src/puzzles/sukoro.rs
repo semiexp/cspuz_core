@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, ContextBasedGrid, DecInt, Optionalize,
+    problem_to_url, url_to_problem, Choice, Combinator, Grid, DecInt, Optionalize,
     Spaces,
 };
 use cspuz_rs::solver::Solver;
@@ -62,7 +62,7 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
-    ContextBasedGrid::new(Choice::new(vec![
+    Grid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'a')),
         Box::new(Optionalize::new(DecInt)),
     ]))
