@@ -1,8 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Grid, DecInt, Optionalize,
-    Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, DecInt, Grid, Optionalize, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
