@@ -19,12 +19,6 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
         for x in 0..w {
             solver.add_expr(num.at((y, x)).ne(0));
             solver.add_expr(num.at((y, x)).ne(-1));
-           /* solver.add_expr(
-                is_num
-                    .four_neighbors((y, x))
-                    .count_true()
-                    .eq(num.at((y, x))),
-            );*/
             if let Some(c) = clues[y][x] {
                 if c == -1 {
                     solver.add_expr(num.at((y, x)).ne(-2));
@@ -48,6 +42,15 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
                         .imp(num.at((y, x)).ne(num.at((y + 1, x)))),
                 );
             }
+
+            solver.add_expr(
+                is_num.at((y, x)).imp(
+                    is_num
+                        .four_neighbors((y, x))
+                        .count_true()
+                        .eq(num.at((y, x))),
+                ),
+            );
         }
     }
 
