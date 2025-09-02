@@ -1,7 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Grid, HexInt, Optionalize, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, ContextBasedGridGrid, HexInt, Optionalize,
+    Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -28,14 +29,14 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
 
             solver.add_expr(num.at((y, x)).ge(1).iff(is_num.at((y, x))));
 
-            if x < w {
+            if x < w - 1 {
                 solver.add_expr(
                     (is_num.at((y, x)) & is_num.at((y, x + 1)))
                         .imp(num.at((y, x)).ne(num.at((y, x + 1)))),
                 );
             }
 
-            if y < h {
+            if y < h - 1{
                 solver.add_expr(
                     (is_num.at((y, x)) & is_num.at((y + 1, x)))
                         .imp(num.at((y, x)).ne(num.at((y + 1, x)))),
@@ -52,7 +53,7 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
-    Grid::new(Choice::new(vec![
+    ContextBasedGridGrid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'g')),
         Box::new(Optionalize::new(HexInt)),
     ]))
@@ -78,7 +79,7 @@ mod tests {
             vec![None, Some(2), None, None],
         ];
 
-        (clues)
+        clues
     }
 
     #[test]
