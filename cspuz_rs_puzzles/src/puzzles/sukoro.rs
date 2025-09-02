@@ -77,14 +77,12 @@ mod tests {
             vec![None, None, None, None],
             vec![None, Some(2), None, None],
         ];
-
-        (borders, clues)
     }
 
     #[test]
     fn test_sukoro_problem() {
-        let (borders, clues) = problem_for_tests();
-        let ans = solve_sukoro(&borders, &clues);
+        let (clues) = problem_for_tests();
+        let ans = solve_sukoro(&clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
