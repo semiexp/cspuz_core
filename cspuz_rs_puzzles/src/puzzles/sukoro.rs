@@ -77,6 +77,8 @@ mod tests {
             vec![None, None, None, None],
             vec![None, Some(2), None, None],
         ];
+
+        (clues)
     }
 
     #[test]
