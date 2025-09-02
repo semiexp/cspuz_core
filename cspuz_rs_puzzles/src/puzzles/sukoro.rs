@@ -63,7 +63,7 @@ type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
     ContextBasedGrid::new(Choice::new(vec![
-        Box::new(Spaces::new(None, 'g')),
+        Box::new(Spaces::new(None, 'a')),
         Box::new(Optionalize::new(DecInt)),
     ]))
 }
