@@ -280,6 +280,8 @@ impl EncodeMap {
     ) {
         assert!(self.int_map[var].is_none());
         self.int_map[var] = Some(Encoding::log_encoding(log::encode_var_log(
+            self,
+            norm_vars,
             sat,
             norm_vars.int_var(var),
         )));
@@ -342,7 +344,7 @@ impl EncodeMap {
                         ret |= 1 << i;
                     }
                 }
-                Some(CheckedInt::new(ret))
+                Some(CheckedInt::new(ret) + encoding.offset)
             }
 
             #[cfg(not(feature = "csp-extra-constraints"))]
@@ -1215,6 +1217,28 @@ mod tests {
                 .norm_csp
                 .vars
                 .new_int_var(IntVarRepresentation::Domain(domain));
+            self.int_vars.push(v);
+
+            self.map
+                .convert_int_var_log_encoding(&self.norm_csp.vars, &mut self.sat, v);
+
+            v
+        }
+
+        pub fn add_int_var_log_encoding_binary(
+            &mut self,
+            cond: BoolLit,
+            v_false: CheckedInt,
+            v_true: CheckedInt,
+        ) -> IntVar {
+            let v = self
+                .norm_csp
+                .vars
+                .new_int_var(IntVarRepresentation::Binary {
+                    cond,
+                    v_false,
+                    v_true,
+                });
             self.int_vars.push(v);
 
             self.map
