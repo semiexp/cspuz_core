@@ -89,6 +89,7 @@ fn combinator() -> impl Combinator<Problem> {
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
         ])),
     ))
 }
