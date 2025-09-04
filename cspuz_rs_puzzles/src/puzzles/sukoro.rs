@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, DecInt, Grid, Optionalize, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, DecInt, Dict, Grid, Optionalize, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -9,20 +9,18 @@ pub fn solve_sukoro(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>>
     let (h, w) = util::infer_shape(clues);
 
     let mut solver = Solver::new();
-    let num = &solver.int_var_2d((h, w), -2, 4);
+    let num = &solver.int_var_2d((h, w), 0, 4);
     solver.add_answer_key_int(num);
 
     let is_num = &solver.bool_var_2d((h, w));
 
-    solver.add_expr(num.ne(0));
-    solver.add_expr(num.ne(-1));
     solver.add_expr(num.ge(1).iff(is_num));
 
     for y in 0..h {
         for x in 0..w {
             if let Some(c) = clues[y][x] {
                 if c == -1 {
-                    solver.add_expr(num.at((y, x)).ne(-2));
+                    solver.add_expr(num.at((y, x)).ne(0));
                 } else {
                     solver.add_expr(num.at((y, x)).eq(c));
                 }
@@ -64,6 +62,7 @@ fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'a')),
         Box::new(Optionalize::new(DecInt)),
+        Box::new(Dict::new(Some(-1), ".")),
     ]))
 }
 
@@ -98,9 +97,9 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
-            [1, 3, 2, -2],
-            [-2, 2, 4, 1],
-            [-2, -2, 2, -2],
+            [1, 3, 2, 0],
+            [0, 2, 4, 1],
+            [0, 0, 2, 0],
             [1, 2, 3, 1],
         ]);
         assert_eq!(ans, expected);
