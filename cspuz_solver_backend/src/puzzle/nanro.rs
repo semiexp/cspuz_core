@@ -14,13 +14,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
-            if let Some(n) = clues[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "black",
-                    if n == -1 { ItemKind::Num("?")} else { ItemKind::Num(n)},
-                ));
+            if let Some(clue) = clues[y][x] {
+                if clue > 0 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                } else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+            }
             } else if let Some(n) = ans[y][x] {
                 board.push(Item::cell(
                     y,
