@@ -1,7 +1,7 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
+    Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
