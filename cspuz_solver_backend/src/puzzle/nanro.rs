@@ -26,7 +26,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "green",
-                    if n == -2 { ItemKind::Dot } else { ItemKind::Num(n)},
+                    if n == 0 { ItemKind::Dot } else { ItemKind::Num(n)},
                 ));     
             }
         }

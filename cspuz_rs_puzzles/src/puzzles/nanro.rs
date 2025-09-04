@@ -23,15 +23,13 @@ pub fn solve_nanro(
 
     for room in &rooms {
         for &(y, x) in room {
-            ranges[y][x] = (-2, room.len() as i32);
+            ranges[y][x] = (0, room.len() as i32);
         }
     }
 
     let num = &solver.int_var_2d_from_ranges((h, w), &ranges);
     solver.add_answer_key_int(num);
 
-    solver.add_expr(num.ne(-1));
-    solver.add_expr(num.ne(0));
     solver.add_expr(num.ge(1).iff(is_num));
 
     for i in 0..rooms.len() {
@@ -55,7 +53,7 @@ pub fn solve_nanro(
         for x in 0..w {
             if let Some(c) = clues[y][x] {
                 if c == -1 {
-                    solver.add_expr(num.at((y, x)).ne(-2));
+                    solver.add_expr(num.at((y, x)).ne(0));
                 } else {
                     solver.add_expr(num.at((y, x)).eq(c));
                 }
@@ -138,10 +136,10 @@ mod tests {
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
-            [-2, 2, 2, 1],
-            [3, 1, -2, -2],
-            [3, -2, -2, -2],
-            [3, 1, -2, -2],
+            [0, 2, 2, 1],
+            [3, 1, 0, 0],
+            [3, 0, 0, 0],
+            [3, 1, 0, 0],
         ]);
         assert_eq!(ans, expected);
     }
