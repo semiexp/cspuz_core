@@ -19,7 +19,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "black",
-                    if n == -2 { ItemKind::Dot } else { ItemKind::Num(n)},
+                    if n == -1 { ItemKind::num(?)} else { ItemKind::Num(n)},
                 ));
             } else if let Some(n) = ans[y][x] {
                 board.push(Item::cell(
