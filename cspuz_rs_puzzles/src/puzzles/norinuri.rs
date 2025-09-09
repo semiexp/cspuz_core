@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn test_norinuri_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/p?norinuri/6/6/g4i.i2v.i.i.g";
+        let url = "https://puzz.link/p?norinuri/6/6/g4i.i2v.i.i.g"; // Credits to xetto
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
