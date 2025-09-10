@@ -93,6 +93,7 @@ pub mod star_battle;
 pub mod statue_park;
 pub mod stostone;
 pub mod sudoku;
+pub mod sukoro;
 pub mod tapa;
 pub mod tasquare;
 pub mod the_longest;
