@@ -59,6 +59,7 @@ pub mod moonsun;
 pub mod multiplication_link;
 pub mod n_cells;
 pub mod nagenawa;
+pub mod nanro;
 pub mod nikoji;
 pub mod nonogram;
 pub mod norinori;
