@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -61,8 +61,11 @@ type Problem = Vec<Vec<Option<i32>>>;
 fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'a')),
-        Box::new(Optionalize::new(HexInt)),
         Box::new(Dict::new(Some(-1), ".")),
+        Box::new(Dict::new(Some(1), "1")),
+        Box::new(Dict::new(Some(2), "2")),
+        Box::new(Dict::new(Some(3), "3")),
+        Box::new(Dict::new(Some(4), "4")),
     ]))
 }
 
