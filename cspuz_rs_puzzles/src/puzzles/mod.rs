@@ -63,6 +63,7 @@ pub mod nanro;
 pub mod nikoji;
 pub mod nonogram;
 pub mod norinori;
+pub mod nothing;
 pub mod nothree;
 pub mod nurikabe;
 pub mod nurimaze;
