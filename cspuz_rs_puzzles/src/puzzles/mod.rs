@@ -104,3 +104,4 @@ pub mod tricklayer;
 pub mod yajikazu;
 pub mod yajilin;
 pub mod yajilin_regions;
+pub mod yinyang;
