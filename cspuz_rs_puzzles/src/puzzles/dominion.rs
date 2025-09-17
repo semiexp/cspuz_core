@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn test_dominion_serializer() {
         let problem = problem_for_tests();
-        let url = "https://puzz.link/p?dominion/5/5/1h2p3h3h1h.g"; // Credits to xetto
+        let url = "https://puzz.link/p?dominion/5/5/1h2p3h3h1h.g";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
