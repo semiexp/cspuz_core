@@ -23,6 +23,19 @@ pub fn solve_yinyang(clues: &[Vec<YinYangClue>]) -> Option<Vec<Vec<Option<bool>>
     graph::active_vertices_connected_2d(&mut solver, !is_black);
     solver.add_expr(!(!is_black).conv2d_and((2, 2)));
 
+    solver.add_expr(
+        !(is_black.slice((..(h - 1), ..(h - 1)))
+            & is_black.slice((1.., 1..))
+            & !is_black.slice((..(h - 1), 1..))
+            & !is_black.slice((1.., ..(h - 1)))),
+    );
+    solver.add_expr(
+        !(!is_black.slice((..(h - 1), ..(h - 1)))
+            & !is_black.slice((1.., 1..))
+            & is_black.slice((..(h - 1), 1..))
+            & is_black.slice((1.., ..(h - 1)))),
+    );
+
     for y in 0..h {
         for x in 0..w {
             let p = (y, x);
