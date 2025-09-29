@@ -168,6 +168,7 @@ puzzle_list!(puzz_link,
     (yajikazu, ["yajikazu"], "Yajisan-Kazusan", "やじさんかずさん"),
     (yajilin, ["yajilin", "yajirin"], "Yajilin", "ヤジリン"),
     (yajilin_regions, ["yajilin-regions"], "Yajilin (Regions)", "ヘヤジリン"),
+    (yinyang, ["yinyang"], "Yin-Yang", "しろまるくろまる"),
 );
 
 #[rustfmt::skip]
