@@ -407,6 +407,22 @@ impl<T: Clone> NdArray<(usize, usize), T> {
 // Operators
 // ==========
 
+impl<S, A> NdArray<S, A>
+where
+    S: ArrayShape<A>,
+    A: Clone,
+    NdArray<S, A>: Operand<Value = CSPIntExpr>,
+    <Self as Operand>::Shape: ArrayShape<<Self as Operand>::Value>,
+{
+    pub fn abs(&self) -> NdArray<<Self as Operand>::Shape, <Self as Operand>::Value> {
+        let e = self.as_ndarray();
+        NdArray {
+            shape: e.shape,
+            data: e.data.into_iter().map(|v| v.abs()).collect(),
+        }
+    }
+}
+
 impl<S, A> Not for NdArray<S, A>
 where
     S: ArrayShape<A>,
@@ -894,6 +910,32 @@ mod tests {
         assert_eq!(c.len(), 5);
         for i in 0..5 {
             assert_eq!(&(a.data[i].expr().iff(b.data[i].expr())), &c.data[i]);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_abs() {
+        {
+            let mut solver = Solver::new();
+            let a = &solver.int_var_1d(5, -2, 2);
+            let b = a.abs();
+
+            assert_eq!(b.len(), 5);
+            for i in 0..5 {
+                assert_eq!(&a.data[i].expr().abs(), &b.data[i]);
+            }
+        }
+        {
+            let mut solver = Solver::new();
+            let a = &solver.int_var(-2, 1);
+            let b = &solver.int_var(-3, 2);
+            solver.add_expr((a.abs() + b.abs()).eq(5));
+
+            let model = solver.solve();
+            assert!(model.is_some());
+            let model = model.unwrap();
+            assert_eq!(model.get(a), -2);
+            assert_eq!(model.get(b), -3);
         }
     }
 }
