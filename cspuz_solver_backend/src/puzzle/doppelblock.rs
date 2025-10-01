@@ -32,34 +32,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for y in 0..=height {
-        for x in 0..width {
-            board.push(Item {
-                y: y * 2 + 2,
-                x: x * 2 + 3,
-                color: "black",
-                kind: if y == 0 || y == height {
-                    ItemKind::BoldWall
-                } else {
-                    ItemKind::Wall
-                },
-            })
-        }
-    }
-    for y in 0..height {
-        for x in 0..=width {
-            board.push(Item {
-                y: y * 2 + 3,
-                x: x * 2 + 2,
-                color: "black",
-                kind: if x == 0 || x == width {
-                    ItemKind::BoldWall
-                } else {
-                    ItemKind::Wall
-                },
-            })
-        }
-    }
+    board.add_grid(1, 1, height, width);
 
     for y in 0..height {
         for x in 0..width {
