@@ -3,8 +3,8 @@ use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::japanese_sums;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (k, (vertical, horizontal)) = japanese_sums::deserialize_problem(url).ok_or("invalid url")?;
-    let num = japanese_sums::solve_japanese_sums(k, &vertical, &horizontal).ok_or("no answer")?;
+    let (k, (vertical, horizontal), given_numbers) = japanese_sums::deserialize_problem(url).ok_or("invalid url")?;
+    let num = japanese_sums::solve_japanese_sums(k, &vertical, &horizontal, &given_numbers).ok_or("no answer")?;
 
     let height = num.len();
     let width = num[0].len();
@@ -12,6 +12,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
+            if let Some(given_numbers) = &given_numbers {
+                if let Some(n) = given_numbers[y][x] {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                    continue;
+                }
+            }
             if let Some(n) = num[y][x] {
                 board.push(Item::cell(
                     y,
