@@ -46,9 +46,16 @@ pub struct Solver<'a> {
 
 impl<'a> Solver<'a> {
     /// Creates a new `Solver` instance.
+    ///
+    /// Note that log encoding is disabled by default. If you want to use log encoding,
+    /// please use `Solver::with_config` method.
     pub fn new() -> Solver<'a> {
+        let config = Config {
+            use_log_encoding: false,
+            ..Config::default()
+        };
         Solver {
-            solver: IntegratedSolver::new(),
+            solver: IntegratedSolver::with_config(config),
             answer_key_bool: vec![],
             answer_key_int: vec![],
         }
