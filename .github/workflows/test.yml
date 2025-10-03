@@ -60,6 +60,8 @@ jobs:
         node-version: '22.x'
     - name: Setup environment
       run: |
+        rustup install 1.89.0
+        rustup default 1.89.0
         rustup target add wasm32-unknown-emscripten
         cd ${{ runner.temp }}
         git clone https://github.com/emscripten-core/emsdk.git
