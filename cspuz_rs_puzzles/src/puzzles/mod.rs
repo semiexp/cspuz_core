@@ -8,6 +8,7 @@ pub mod araf;
 pub mod archipelago;
 pub mod ayeheya;
 pub mod barns;
+pub mod bosanowa;
 pub mod castle_wall;
 pub mod cave;
 pub mod chainedb;
