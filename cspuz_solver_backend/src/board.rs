@@ -250,6 +250,37 @@ impl Board {
         self.data.extend(items);
     }
 
+    pub fn add_grid(&mut self, y: usize, x: usize, height: usize, width: usize) {
+        for i in 0..=height {
+            for j in 0..width {
+                self.push(Item {
+                    y: (i + y) * 2,
+                    x: (j + x) * 2 + 1,
+                    color: "black",
+                    kind: if i == 0 || i == height {
+                        ItemKind::BoldWall
+                    } else {
+                        ItemKind::Wall
+                    },
+                })
+            }
+        }
+        for i in 0..height {
+            for j in 0..=width {
+                self.push(Item {
+                    y: (i + y) * 2 + 1,
+                    x: (j + x) * 2,
+                    color: "black",
+                    kind: if j == 0 || j == width {
+                        ItemKind::BoldWall
+                    } else {
+                        ItemKind::Wall
+                    },
+                })
+            }
+        }
+    }
+
     pub fn add_borders(&mut self, borders: &graph::BoolInnerGridEdgesModel, color: &'static str) {
         let height = self.height;
         let width = self.width;
