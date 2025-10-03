@@ -54,6 +54,7 @@ impl<'a> Solver<'a> {
         }
     }
 
+
     /// Creates a new `Solver` instance with a custom configuration.
     pub fn with_config(config: Config) -> Solver<'a> {
         Solver {
