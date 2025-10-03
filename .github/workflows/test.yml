@@ -60,6 +60,7 @@ jobs:
         node-version: '22.x'
     - name: Setup environment
       run: |
+        # TODO: remove this (https://github.com/semiexp/cspuz_core/issues/113)
         rustup install 1.89.0
         rustup default 1.89.0
         rustup target add wasm32-unknown-emscripten
