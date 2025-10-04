@@ -18,7 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 }
             } else {
                 if is_black[y][x] == Some(true) {
-                    board.push(Item::cell(y, x, "green", ItemKind::Fill));
+                    board.push(Item::cell(y, x, "green", ItemKind::Block));
                 } else if is_pillow[y][x] == Some(true) {
                     board.push(Item::cell(y, x, "green", ItemKind::Square));
                 } else if is_black[y][x] == Some(false) {
