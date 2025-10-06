@@ -76,6 +76,7 @@ pub fn solve_bosanowa(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y * w + x] {
+                    solver.add_expr(is_num.at((y, x)));
                 if n == -1 {
                     solver.add_expr(num.at((y, x)).ge(1));
                 } else {
@@ -107,7 +108,9 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
             if let Some(n) = clues[y * w + x] {
                 let mut cells = VecDeque::new();
                 let mut visited = circles.to_vec();
+                let mut depth = vec![vec![0; w]; h];
                 visited[y][x] = false;
+                depth[y][x] = 2;
                 range[y][x].1 = n;
 
                 cells.push_back((y, x));
@@ -129,12 +132,14 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
                         neighbors.push((p, q + 1));
                     }
                     for (r, s) in neighbors {
-                        // A number is surrouned at most by a number twice itself. By propagation, we can determine an upper bound on the numbers
+                        // A number is surrouned at most by a number twice itself. By propagation, a number x at a distance d from number y is at most y * (fib(d + 1)). This is because while twice is the limit,
+                        // The max number is limited by the difference with the previous number. (1-2-4 doesn't work since 2 would have a sum of difference of 3, therefore the max is 2+(2-1). This becomes the fib sequence)
                         if visited[r][s] {
                             visited[r][s] = false;
-                            if range[r][s].1 == -1 || range[r][s].1 > 2 * range[p][q].1 {
+                            if range[r][s].1 == -1 || range[r][s].1 > fibonacci(depth[p][q] + 1) * n {
                                 // Upper bound
-                                range[r][s].1 = 2 * range[p][q].1;
+                                depth[r][s] = depth[p][q] + 1;
+                                range[r][s].1 = fibonacci(depth[r][s]) * n;
                                 cells.push_back((r, s));
                             }
                         }
@@ -145,6 +150,20 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
     }
 
     range
+}
+
+
+fn fibonacci(term: i32) -> i32 {
+    if term == 0 {
+        return 0;  
+    }
+    let (mut a, mut b) = (0, 1);
+    for _ in 1..term {
+        let temp = b;
+        b = a + b;
+        a = temp;
+    }
+    b
 }
 
 type Problem = (Vec<Vec<bool>>, Vec<Option<i32>>);
