@@ -80,6 +80,7 @@ pub mod reflect;
 pub mod ringring;
 pub mod ripple;
 pub mod sasahigane;
+pub mod school_trip;
 pub mod scrabble;
 pub mod seiza;
 pub mod shakashaka;
