@@ -10,5 +10,9 @@
 				"GitHub.copilot-chat"
 			]
 		}
-	}
+	},
+	"mounts": [
+		"source=${localWorkspaceFolderBasename}-build-target,target=${containerWorkspaceFolder}/target,type=volume"
+	],
+	"postCreateCommand": "sudo chown -R vscode:vscode ${containerWorkspaceFolder}/target"
 }
