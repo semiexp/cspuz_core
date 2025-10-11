@@ -4,7 +4,7 @@ use cspuz_rs_puzzles::puzzles::bosanowa;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (circles, clues) = bosanowa::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = bosanowa::solve_bosanowa(&circles, &clues).ok_or("no answer")?;
+    let ans = bosanowa::solve_bosanowa(&circles, &clues)?.ok_or("no answer")?;
 
     let height = circles.len();
     let width = circles[0].len();

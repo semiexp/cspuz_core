@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use std::vec;
 
 use crate::util;
+use cspuz_core::arithmetic::CheckedInt;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2, UnlimitedSeq,
@@ -12,7 +13,7 @@ use cspuz_rs::solver::{sum, Solver};
 pub fn solve_bosanowa(
     circles: &[Vec<bool>],
     clues: &Vec<Option<i32>>,
-) -> Option<Vec<Vec<Option<i32>>>> {
+) -> Result<Option<Vec<Vec<Option<i32>>>>, &'static str> {
     let (h, w) = util::infer_shape(circles);
 
     let mut solver = Solver::new();
@@ -83,6 +84,9 @@ pub fn solve_bosanowa(
                     solver.add_expr(num.at((y, x)).eq(n));
                 }
             } else if circles[y][x] {
+                if range[y][x].1 == -1 {
+                    return Err("cell unreachable by given clues");
+                }
                 solver.add_expr(num.at((y, x)).ne(-1));
                 solver.add_expr(is_num.at((y, x)));
             } else {
@@ -97,7 +101,7 @@ pub fn solve_bosanowa(
         }
     }
 
-    solver.irrefutable_facts().map(|f| f.get(num))
+    Ok(solver.irrefutable_facts().map(|f| f.get(num)))
 }
 
 fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Vec<(i32, i32)>> {
@@ -136,12 +140,13 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
                         // The max number is limited by the difference with the previous number. (1-2-4 doesn't work since 2 would have a sum of difference of 3, therefore the max is 2+(2-1). This becomes the fib sequence)
                         if visited[r][s] {
                             visited[r][s] = false;
-                            if range[r][s].1 == -1 || range[r][s].1 > fibonacci(depth[p][q] + 1) * n
+                            depth[r][s] = depth[p][q] + 1;
+                            cells.push_back((r, s));
+                            if range[r][s].1 == -1
+                                || range[r][s].1 > CheckedInt::new(fibonacci(depth[r][s]) * n)
                             {
                                 // Upper bound
-                                depth[r][s] = depth[p][q] + 1;
                                 range[r][s].1 = fibonacci(depth[r][s]) * n;
-                                cells.push_back((r, s));
                             }
                         }
                     }
@@ -256,7 +261,7 @@ mod tests {
     fn test_bosanowa_problem() {
         let (circles, clues) = problem_for_tests();
         let ans = solve_bosanowa(&circles, &clues);
-        assert!(ans.is_some());
+        assert!(ans.is_ok());
         let ans = ans.unwrap();
 
         let expected = crate::util::tests::to_option_2d([
@@ -266,7 +271,7 @@ mod tests {
             [3, 3, 5, 4, 2, -1],
             [-1, 2, 3, -1, -1, -1],
         ]);
-        assert_eq!(ans, expected);
+        assert_eq!(ans, Some(expected));
     }
 
     #[test]
