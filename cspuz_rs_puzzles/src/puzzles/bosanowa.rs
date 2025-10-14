@@ -91,6 +91,7 @@ pub fn solve_bosanowa(
                 solver.add_expr(is_num.at((y, x)));
             } else {
                 solver.add_expr(num.at((y, x)).eq(-1));
+                solver.add_expr(!is_num.at((y, x)));
             }
 
             solver.add_expr(
