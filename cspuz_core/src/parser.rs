@@ -62,8 +62,8 @@ fn is_ident_char(c: char) -> bool {
     c.is_alphanumeric() || c == '[' || c == ']' || c == '_'
 }
 
-fn parse_to_tree(input: &str) -> Result<SyntaxTree, nom::error::Error<&str>> {
-    fn rec_parser(input: &str) -> IResult<&str, SyntaxTree> {
+fn parse_to_tree<'a>(input: &str) -> Result<SyntaxTree<'_>, nom::error::Error<&str>> {
+    fn rec_parser(input: &str) -> IResult<&str, SyntaxTree<'_>> {
         let ident_or_op = recognize(pair(alpha1, take_while(is_ident_char)));
         let op = alt((
             tag("&&"),

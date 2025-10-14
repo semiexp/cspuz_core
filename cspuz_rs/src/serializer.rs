@@ -1828,7 +1828,7 @@ pub fn parse_kudamono_dimension(dim: &str) -> Option<(usize, usize)> {
     Some((width, height))
 }
 
-pub fn get_kudamono_url_info(url: &str) -> Option<KudamonoURLInfo> {
+pub fn get_kudamono_url_info(url: &str) -> Option<KudamonoURLInfo<'_>> {
     let parsed = get_kudamono_url_info_detailed(url)?;
 
     let height;

@@ -549,11 +549,11 @@ impl Assignment {
         self.int_val.remove(&var)
     }
 
-    pub fn bool_iter(&self) -> btree_map::Iter<BoolVar, bool> {
+    pub fn bool_iter(&self) -> btree_map::Iter<'_, BoolVar, bool> {
         self.bool_val.iter()
     }
 
-    pub fn int_iter(&self) -> btree_map::Iter<IntVar, i32> {
+    pub fn int_iter(&self) -> btree_map::Iter<'_, IntVar, i32> {
         self.int_val.iter()
     }
 }

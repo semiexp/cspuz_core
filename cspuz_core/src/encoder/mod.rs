@@ -1133,7 +1133,7 @@ mod tests {
             }
         }
 
-        pub fn env(&mut self) -> EncoderEnv {
+        pub fn env(&mut self) -> EncoderEnv<'_, '_, '_, '_> {
             EncoderEnv {
                 norm_vars: &mut self.norm_csp.vars,
                 sat: &mut self.sat,
