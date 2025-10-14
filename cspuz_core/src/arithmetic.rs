@@ -325,7 +325,7 @@ impl<T: Ord> LinearSum<T> {
         }
     }
 
-    pub(super) fn iter(&self) -> btree_map::Iter<T, CheckedInt> {
+    pub(super) fn iter(&self) -> btree_map::Iter<'_, T, CheckedInt> {
         self.term.iter()
     }
 }
