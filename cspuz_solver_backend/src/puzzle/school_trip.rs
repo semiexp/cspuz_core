@@ -33,8 +33,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 if (is_black[y][x] == Some(false) && problem[y][x] == None) || (is_black[y + 1][x] == Some(false) && problem[y + 1][x] == None) { 
                     // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons                                                                                                                                        
                     board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
                         color: if is_connected.vertical[y][x].is_some() {
                             "green"
                         } else {
