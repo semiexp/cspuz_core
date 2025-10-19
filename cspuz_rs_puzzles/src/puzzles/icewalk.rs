@@ -2,7 +2,7 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
+    Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, BoolExpr, Solver};
 
@@ -102,7 +102,9 @@ pub fn solve_icewalk(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = num[y][x] {
-                solver.add_expr(line_size.at((y, x)).eq(n - 1));
+                if n >= 0 {
+                    solver.add_expr(line_size.at((y, x)).eq(n - 1));
+                }
             }
 
             let mut inbound = vec![];
@@ -143,6 +145,7 @@ fn combinator() -> impl Combinator<Problem> {
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
         ])),
     ))
 }

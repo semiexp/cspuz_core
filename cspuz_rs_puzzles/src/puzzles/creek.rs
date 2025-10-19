@@ -2,7 +2,7 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    NumSpaces, Size, Spaces,
+    Dict, NumSpaces, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -18,6 +18,9 @@ pub fn solve_creek(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>>
     for y in 0..=h {
         for x in 0..=w {
             if let Some(n) = clues[y][x] {
+                if n < 0 {
+                    continue;
+                }
                 solver.add_expr(
                     is_black
                         .slice((
@@ -43,6 +46,7 @@ fn combinator() -> impl Combinator<Problem> {
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(NumSpaces::new(4, 2)),
             Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
         ])),
         1,
     )
