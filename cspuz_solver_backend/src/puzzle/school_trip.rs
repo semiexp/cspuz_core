@@ -29,37 +29,47 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     }
     for y in 0..height {
         for x in 0..width {
-            if y < height - 1 {
-                board.push(Item {
-                    y: y * 2 + 2,
-                    x: x * 2 + 1,
-                    color: if is_connected.vertical[y][x].is_some() {
-                        "green"
-                    } else {
-                        "#cccccc"
-                    },
-                    kind: match is_connected.vertical[y][x] {
-                        Some(true) => ItemKind::Cross,
-                        Some(false) => ItemKind::BoldWall,
-                        None => ItemKind::Wall,
-                    },
-                });
+            if y < height - 1 { 
+                if (is_black[y][x] == Some(false) && problem[y][x] == None) || (is_black[y + 1][x] == Some(false) && problem[y + 1][x] == None) { 
+                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons                                                                                                                                        
+                    board.push(Item {
+                        y: y * 2 + 2,
+                        x: x * 2 + 1,
+                        color: if is_connected.vertical[y][x].is_some() {
+                            "green"
+                        } else {
+                            "#cccccc"
+                        },
+                        kind: 
+                            match is_connected.vertical[y][x] {
+                            Some(true) => ItemKind::Cross,
+                            Some(false) => ItemKind::BoldWall,
+                            None => ItemKind::Wall,
+                            }
+                        },
+                    )
+                };
             }
             if x < width - 1 {
-                board.push(Item {
-                    y: y * 2 + 1,
-                    x: x * 2 + 2,
-                    color: if is_connected.horizontal[y][x].is_some() {
-                        "green"
-                    } else {
-                        "#cccccc"
-                    },
-                    kind: match is_connected.horizontal[y][x] {
-                        Some(true) => ItemKind::Cross,
-                        Some(false) => ItemKind::BoldWall,
-                        None => ItemKind::Wall,
-                    },
-                });
+                if (is_black[y][x] == Some(false) && problem[y][x] == None) || (is_black[y][x + 1] == Some(false) && problem[y][x + 1] == None) { 
+                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons                                                                                                                                        
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
+                        color: if is_connected.horizontal[y][x].is_some() {
+                            "green"
+                        } else {
+                            "#cccccc"
+                        },
+                        kind: 
+                            match is_connected.horizontal[y][x] {
+                            Some(true) => ItemKind::Cross,
+                            Some(false) => ItemKind::BoldWall,
+                            None => ItemKind::Wall,
+                            }
+                        },
+                    )
+                };
             }
         }
     }
