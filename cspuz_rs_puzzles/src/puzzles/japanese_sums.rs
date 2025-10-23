@@ -144,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cross_the_streams_serializer() {
+    fn test_japanese_sums_serializer() {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?japanesesums/6/5/4/...ah5.j.1g.4g352...4.j.8go4z";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
