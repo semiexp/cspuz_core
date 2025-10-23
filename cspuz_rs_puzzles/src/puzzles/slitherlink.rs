@@ -79,30 +79,32 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    #[test]
-    #[rustfmt::skip]
-    fn test_slitherlink_problem() {
-        // original example: http://pzv.jp/p.html?slither/4/4/dgdh2c7b
-        let problem = vec![
+    fn problem_for_tests() -> Problem {
+        vec![
             vec![Some(3), None, None, None],
             vec![Some(3), None, None, None],
             vec![None, Some(2), Some(2), None],
             vec![None, Some(2), None, Some(1)],
-        ];
-        assert_eq!(serialize_problem(&problem), Some(String::from("https://puzz.link/p?slither/4/4/dgdh2c71")));
-        assert_eq!(problem, deserialize_problem("https://puzz.link/p?slither/4/4/dgdh2c71").unwrap());
+        ]
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_slitherlink_problem() {
+        let problem = problem_for_tests();
         let ans = solve_slitherlink(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
+
         let expected = graph::BoolGridEdgesIrrefutableFacts {
-            horizontal: crate::util::tests::to_option_bool_2d([
+            horizontal: util::tests::to_option_bool_2d([
                 [1, 1, 1, 1],
                 [1, 0, 1, 0],
                 [1, 0, 0, 0],
                 [0, 1, 0, 1],
                 [1, 0, 0, 0],
             ]),
-            vertical: crate::util::tests::to_option_bool_2d([
+            vertical: util::tests::to_option_bool_2d([
                 [1, 0, 0, 0, 1],
                 [0, 1, 1, 1, 1],
                 [1, 0, 1, 1, 1],
@@ -110,5 +112,12 @@ mod tests {
             ]),
         };
         assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_slitherlink_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?slither/4/4/dgdh2c71";
+        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

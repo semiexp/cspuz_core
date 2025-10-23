@@ -121,16 +121,43 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
+    fn problem_for_tests() -> Problem {
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([
+                [1, 1, 0, 0, 1, 1],
+                [1, 1, 1, 1, 0, 0],
+                [0, 0, 0, 0, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0],
+            ]),
+            vertical: crate::util::tests::to_bool_2d([
+                [0, 1, 0, 1, 0],
+                [0, 1, 0, 1, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 1, 1, 0],
+                [0, 1, 0, 1, 0],
+                [0, 1, 0, 1, 0],
+            ]),
+        };
+        let clues = vec![
+            None,
+            Some(2),
+            None,
+            None,
+            None,
+            Some(3),
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        (borders, clues)
+    }
+
     #[test]
     fn test_heyawake_problem() {
-        // https://puzz.link/p?heyawake/6/6/aa66aapv0fu0g2i3k
-        let url = "https://puzz.link/p?heyawake/6/6/aa66aapv0fu0g2i3k";
-        let problem = deserialize_problem(url);
-        assert!(problem.is_some());
-        let problem = problem.unwrap();
-        assert_eq!(serialize_problem(&problem), Some(String::from(url)));
-        let (borders, clues) = problem;
-
+        let (borders, clues) = problem_for_tests();
         let ans = solve_heyawake(&borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -144,5 +171,12 @@ mod tests {
             [0, 1, 0, 0, 0, 0],
         ]);
         assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_heyawake_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?heyawake/6/6/aa66aapv0fu0g2i3k";
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

@@ -102,58 +102,40 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
+    fn problem_for_tests() -> Problem {
+        vec![
+            vec![None, None, None, None, None, None],
+            vec![None, Some(8), None, None, None, None],
+            vec![None, None, None, None, Some(8), None],
+            vec![None, None, Some(9), None, None, None],
+            vec![None, None, None, None, None, None],
+            vec![None, None, None, None, None, None],
+        ]
+    }
+
     #[test]
+    #[rustfmt::skip]
     fn test_nurikabe_problem() {
-        // https://puzz.link/p?nurikabe/6/6/m8n8i9u
-        let problem_base = [
-            [0, 0, 0, 0, 0, 0],
-            [0, 8, 0, 0, 0, 0],
-            [0, 0, 0, 0, 8, 0],
-            [0, 0, 9, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-        ];
-        let problem = problem_base
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|&n| if n == 0 { None } else { Some(n) })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(
-            serialize_problem(&problem),
-            Some(String::from("https://puzz.link/p?nurikabe/6/6/m8n8i9u"))
-        );
-        assert_eq!(
-            deserialize_problem("https://puzz.link/p?nurikabe/6/6/m8n8i9u"),
-            Some(problem.clone())
-        );
+        let problem = problem_for_tests();
         let ans = solve_nurikabe(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected_base = [
-            [2, 2, 0, 2, 2, 0],
-            [0, 2, 0, 0, 0, 0],
-            [0, 1, 1, 1, 2, 2],
-            [2, 0, 2, 1, 0, 0],
-            [2, 0, 2, 0, 2, 2],
-            [2, 0, 2, 0, 2, 2],
+        let expected = vec![
+            vec![Some(false), Some(false), None, Some(false), Some(false), None],
+            vec![None, Some(false), None, None, None, None],
+            vec![None, Some(true), Some(true), Some(true), Some(false), Some(false)],
+            vec![Some(false), None, Some(false), Some(true), None, None],
+            vec![Some(false), None, Some(false), None, Some(false), Some(false)],
+            vec![Some(false), None, Some(false), None, Some(false), Some(false)],
         ];
-        let expected = expected_base.map(|row| {
-            row.iter()
-                .map(|&n| {
-                    if n == 0 {
-                        None
-                    } else if n == 1 {
-                        Some(true)
-                    } else {
-                        Some(false)
-                    }
-                })
-                .collect::<Vec<_>>()
-        });
         assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_nurikabe_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?nurikabe/6/6/m8n8i9u";
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

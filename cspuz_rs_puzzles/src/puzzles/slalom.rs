@@ -325,9 +325,8 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_slalom_problem() {
-        // https://puzsq.jp/main/puzzle_play.php?pid=9522
+    fn problem_for_tests() -> Problem {
+        let origin = (5, 1);
         let is_black = crate::util::tests::to_bool_2d([
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
@@ -368,14 +367,27 @@ mod tests {
             },
         ];
 
-        let ans = solve_slalom((5, 1), &is_black, &gates);
+        (is_black, gates, origin)
+    }
+
+    #[test]
+    fn test_slalom_problem() {
+        // https://puzsq.jp/main/puzzle_play.php?pid=9522
+        let (is_black, gates, origin) = problem_for_tests();
+        let ans = solve_slalom(origin, &is_black, &gates);
         assert!(ans.is_some());
 
+        // TODO: add expected answer
+    }
+
+    #[test]
+    fn test_slalom_serializer() {
+        let problem = problem_for_tests();
         let deserialized = deserialize_problem_as_primitive(
             "https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj11314333h42g/51",
         );
         assert!(deserialized.is_some());
         let deserialized = parse_primitive_problem(&deserialized.unwrap());
-        assert_eq!((is_black, gates, (5, 1)), deserialized);
+        assert_eq!(problem, deserialized);
     }
 }
