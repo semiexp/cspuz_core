@@ -68,9 +68,7 @@ mod tests {
     use super::*;
     use cspuz_rs::items::Arrow;
 
-    #[test]
-    fn test_yajilin_problem() {
-        // https://puzsq.jp/main/puzzle_play.php?pid=8218
+    fn problem_for_tests() -> Problem {
         let mut problem = vec![vec![None; 10]; 10];
         problem[2][3] = Some((Arrow::Left, 2));
         problem[2][5] = Some((Arrow::Right, 1));
@@ -84,24 +82,18 @@ mod tests {
         problem[8][7] = Some((Arrow::Down, 0));
         problem[9][2] = Some((Arrow::Left, 0));
 
-        assert_eq!(
-            serialize_problem(&problem),
-            Some(String::from(
-                "https://puzz.link/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g"
-            ))
-        );
-        assert_eq!(
-            deserialize_problem(
-                "https://puzz.link/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g"
-            ),
-            Some(problem.clone())
-        );
+        problem
+    }
 
+    #[test]
+    fn test_yajilin_problem() {
+        // https://puzsq.logicpuzzle.app/puzzle/8218
+        let problem = problem_for_tests();
         let ans = solve_yajilin(&problem);
         assert!(ans.is_some());
         let (_, is_black) = ans.unwrap();
 
-        let expected = crate::util::tests::to_option_bool_2d([
+        let expected = util::tests::to_option_bool_2d([
             [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
             [1, 0, 1, 0, 0, 0, 0, 1, 0, 0],
@@ -114,5 +106,12 @@ mod tests {
             [0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
         ]);
         assert_eq!(is_black, expected);
+    }
+
+    #[test]
+    fn test_yajilin_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g";
+        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }

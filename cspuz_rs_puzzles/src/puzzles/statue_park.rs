@@ -506,7 +506,7 @@ mod tests {
     }
 
     #[test]
-    fn test_statue_pack_problem1() {
+    fn test_statue_park_problem1() {
         let (board, pieces) = problem_for_tests1();
         let ans = solve_statue_park(&board, &pieces);
         assert!(ans.is_some());
@@ -524,7 +524,7 @@ mod tests {
     }
 
     #[test]
-    fn test_statue_pack_problem2() {
+    fn test_statue_park_problem2() {
         let (board, pieces) = problem_for_tests2();
         let ans = solve_statue_park(&board, &pieces);
         assert!(ans.is_some());

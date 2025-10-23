@@ -68,15 +68,31 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
+    fn problem_for_tests() -> Problem {
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([
+                [0, 0, 0, 0, 1, 1],
+                [1, 1, 0, 1, 0, 0],
+                [0, 0, 0, 1, 1, 0],
+                [1, 1, 0, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0],
+            ]),
+            vertical: crate::util::tests::to_bool_2d([
+                [0, 1, 0, 0, 0],
+                [0, 1, 0, 1, 0],
+                [0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1],
+                [0, 1, 1, 0, 1],
+                [0, 1, 1, 0, 1],
+            ]),
+        };
+        let clues = vec![Some(0), None, Some(3), Some(0), Some(0), None];
+        (borders, clues)
+    }
+
     #[test]
     fn test_aqre_problem() {
-        let url = "https://puzz.link/p?aqre/6/6/8a41dd1t0re00g300g";
-        let problem = deserialize_problem(url);
-        assert!(problem.is_some());
-        let problem = problem.unwrap();
-        assert_eq!(serialize_problem(&problem), Some(String::from(url)));
-        let (borders, clues) = problem;
-
+        let (borders, clues) = problem_for_tests();
         let ans = solve_aqre(&borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -90,5 +106,12 @@ mod tests {
             [0, 0, 1, 0, 0, 0],
         ]);
         assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_aqre_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?aqre/6/6/8a41dd1t0re00g300g";
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
