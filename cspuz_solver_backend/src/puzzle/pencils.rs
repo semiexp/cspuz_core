@@ -18,6 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for y in 0..height {
         for x in 0..width {
             match &problem[y][x] {
+                &PencilsClue::Num(-1) => board.push(Item::cell(y, x, "black", ItemKind::Text("?"))),
                 &PencilsClue::Num(n) => board.push(Item::cell(y, x, "black", ItemKind::Num(n))),
                 &PencilsClue::Left => board.push(Item::cell(y, x, "black", ItemKind::PencilLeft)),
                 &PencilsClue::Right => board.push(Item::cell(y, x, "black", ItemKind::PencilRight)),
