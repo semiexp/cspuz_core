@@ -24,6 +24,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     "black",
                     if n >= 0 {
                         ItemKind::Text(PENTOMINO_NAMES[n as usize])
+                    } else if n == -1 {
+                        ItemKind::Text("?")
                     } else {
                         ItemKind::Fill
                     },
@@ -38,7 +40,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     });
     for y in 0..height {
         for x in 0..width {
-            if y < height - 1 && clues[y][x] != Some(-1) && clues[y + 1][x] != Some(-1) {
+            if y < height - 1 && clues[y][x] != Some(-2) && clues[y + 1][x] != Some(-2) {
                 let mut need_default_edge = true;
                 if default_borders.horizontal[y][x] {
                     board.push(Item {
@@ -72,7 +74,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     });
                 }
             }
-            if x < width - 1 && clues[y][x] != Some(-1) && clues[y][x + 1] != Some(-1) {
+            if x < width - 1 && clues[y][x] != Some(-2) && clues[y][x + 1] != Some(-2) {
                 let mut need_default_edge = true;
                 if default_borders.vertical[y][x] {
                     board.push(Item {

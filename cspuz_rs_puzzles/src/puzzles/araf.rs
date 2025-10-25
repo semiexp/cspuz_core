@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Grid, HexInt, Optionalize, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
 use cspuz_rs::solver::{any, count_true, Solver};
 
@@ -9,12 +9,18 @@ pub fn solve_araf(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolInnerGridEdge
     let (h, w) = util::infer_shape(clues);
 
     let mut clue_pos = vec![];
-    let mut clue_max = 0;
+    let mut clue_max = 2;
+    let mut clue_min = (h * w) as i32;
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 clue_pos.push((y, x, n));
+                if n == -1 {
+                    clue_max = (h * w) as i32;
+                    clue_min = 0;
+                }
                 clue_max = clue_max.max(n);
+                clue_min = clue_min.min(n);
             }
         }
     }
@@ -27,23 +33,35 @@ pub fn solve_araf(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolInnerGridEdge
         solver.add_expr(block.at((y, x)));
         blocks.push(block);
     }
+
+    if clue_min + 1 > clue_max - 1 {
+        clue_min = clue_max - 2;
+    }
+
     for i in 0..blocks.len() {
-        let size = &solver.int_var(1, clue_max - 1);
+        let size = &solver.int_var(clue_min + 1, clue_max - 1);
         solver.add_expr(blocks[i].count_true().eq(size));
         for j in (i + 1)..blocks.len() {
             let (yi, xi, ni) = clue_pos[i];
             let (yj, xj, nj) = clue_pos[j];
 
-            if (ni - nj).abs() <= 1 {
+            if (ni - nj).abs() <= 1 && ni != -1 && nj != -1 {
                 solver.add_expr(!(blocks[i].at((yj, xj))));
                 solver.add_expr(!(blocks[j].at((yi, xi))));
             } else {
                 let lo = ni.min(nj);
                 let hi = ni.max(nj);
-                solver.add_expr(
-                    (blocks[i].at((yj, xj)) | blocks[j].at((yi, xi)))
-                        .imp(blocks[i].iff(&blocks[j]) & size.gt(lo) & size.lt(hi)),
-                );
+                if lo == -1 {
+                    solver.add_expr(
+                        (blocks[i].at((yj, xj)) | blocks[j].at((yi, xi)))
+                            .imp(blocks[i].iff(&blocks[j]) & size.ne(hi)),
+                    );
+                } else {
+                    solver.add_expr(
+                        (blocks[i].at((yj, xj)) | blocks[j].at((yi, xi)))
+                            .imp(blocks[i].iff(&blocks[j]) & size.gt(lo) & size.lt(hi)),
+                    );
+                }
             }
         }
     }
@@ -89,6 +107,7 @@ fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
         Box::new(Optionalize::new(HexInt)),
         Box::new(Spaces::new(None, 'g')),
+        Box::new(Dict::new(Some(-1), ".")),
     ]))
 }
 

@@ -1,7 +1,7 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
-    RoomsWithValues, Size, Spaces,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
+    Optionalize, RoomsWithValues, Size, Spaces,
 };
 use cspuz_rs::solver::{count_true, Solver};
 
@@ -33,7 +33,9 @@ pub fn solve_aqre(
             for &pt in &rooms[i] {
                 cells.push(is_black.at(pt));
             }
-            solver.add_expr(count_true(cells).eq(n));
+            if n >= 0 {
+                solver.add_expr(count_true(cells).eq(n));
+            }
         }
     }
 
@@ -46,6 +48,7 @@ fn combinator() -> impl Combinator<Problem> {
     Size::new(RoomsWithValues::new(Choice::new(vec![
         Box::new(Optionalize::new(HexInt)),
         Box::new(Spaces::new(None, 'g')),
+        Box::new(Dict::new(Some(-1), ".")),
     ])))
 }
 

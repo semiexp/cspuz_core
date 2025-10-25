@@ -56,12 +56,14 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     color: "black",
                     kind: ItemKind::Circle,
                 });
-                board.push(Item {
+                if n >= 0 {
+                    board.push(Item {
                     y: y * 2,
                     x: x * 2,
                     color: "black",
                     kind: ItemKind::Num(n),
                 });
+                }
             }
         }
     }

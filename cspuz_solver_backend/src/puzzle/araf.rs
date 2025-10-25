@@ -13,7 +13,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
                 board.push(Item::cell(y, x, "black", ItemKind::Circle));
-                board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                if clue == -1 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+                }
+                else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                }  
             }
         }
     }

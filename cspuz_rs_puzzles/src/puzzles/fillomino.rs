@@ -22,7 +22,11 @@ pub fn solve_fillomino(
         let mut row = vec![];
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                row.push((n, n));
+                if n < 0 {
+                    row.push((1, (h * w) as i32));
+                } else {
+                    row.push((n, n));
+                }
             } else {
                 row.push((1, (h * w) as i32));
             }
@@ -51,7 +55,9 @@ pub fn solve_fillomino(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                solver.add_expr(num.at((y, x)).eq(n));
+                if n >= 0 {
+                    solver.add_expr(num.at((y, x)).eq(n));
+                }
             }
         }
     }

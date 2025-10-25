@@ -20,8 +20,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     if b { ItemKind::Block } else { ItemKind::Dot },
                 ));
             }
-            if let Some(n) = clues[y][x] {
-                board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+            if let Some(clue) = clues[y][x] {
+                if clue > 0 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                } else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+                }
             }
         }
     }

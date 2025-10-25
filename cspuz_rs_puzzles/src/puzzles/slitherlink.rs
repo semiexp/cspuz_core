@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Grid, NumSpaces, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -52,6 +52,9 @@ fn add_constraints(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
+                if n < 0 {
+                    continue;
+                }
                 solver.add_expr(is_line.cell_neighbors((y, x)).count_true().eq(n));
             }
         }
@@ -64,6 +67,7 @@ pub(crate) fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
         Box::new(NumSpaces::new(4, 2)),
         Box::new(Spaces::new(None, 'g')),
+        Box::new(Dict::new(Some(-1), ".")),
     ]))
 }
 
