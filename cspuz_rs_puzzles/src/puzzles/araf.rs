@@ -10,13 +10,13 @@ pub fn solve_araf(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolInnerGridEdge
 
     let mut clue_pos = vec![];
     let mut clue_max = 2;
-    let mut clue_min = (h * w) as i32;
+    let mut clue_min = (h * w) as i32 + 1;
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 clue_pos.push((y, x, n));
                 if n == -1 {
-                    clue_max = (h * w) as i32;
+                    clue_max = (h * w) as i32 + 1;
                     clue_min = 0;
                 }
                 clue_max = clue_max.max(n);
