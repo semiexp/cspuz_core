@@ -13,6 +13,7 @@ pub struct Config {
     pub force_use_log_encoding: bool,
     pub use_native_extension_supports: bool,
     pub direct_encoding_for_binary_vars: bool,
+    pub log_encoding_domain_threshold: usize,
     pub merge_equivalent_variables: bool,
     pub alldifferent_bijection_constraints: bool,
     pub glucose_random_seed: Option<f64>,
@@ -53,6 +54,7 @@ impl Config {
             force_use_log_encoding: false,
             use_native_extension_supports: false,
             direct_encoding_for_binary_vars: false,
+            log_encoding_domain_threshold: 500,
             merge_equivalent_variables: false,
             alldifferent_bijection_constraints: false,
             glucose_random_seed: None,
@@ -156,6 +158,7 @@ impl Config {
         opts.optopt("", "domain-product-threshold", "Specify the threshold of domain product for introducing an auxiliary variable by Tseitin transformation.", "THRESHOLD");
         opts.optopt("", "native-linear-encoding-terms", "Specify the maximum number of terms in a linear sum which is encoded by the native linear constraint (0 for disabling this).", "TERMS");
         opts.optopt("", "native-linear-encoding-domain-product", "Specify the minimum domain product of linear sums which are encoded by the native linear constraint.", "DOMAIN_PRODUCT");
+        opts.optopt("", "log-encoding-domain-threshold", "Specify the domain size threshold for using log encoding in complex constraints.", "THRESHOLD");
 
         opts.optopt("", "backend", "Specify the SAT backend", "BACKEND");
         opts.optopt(
@@ -235,6 +238,19 @@ impl Config {
                 }
             };
             config.native_linear_encoding_domain_product_threshold = v;
+        }
+        if let Some(s) = matches.opt_str("log-encoding-domain-threshold") {
+            let v = match s.parse::<usize>() {
+                Ok(v) => v,
+                Err(f) => {
+                    println!(
+                        "error: parse failed for --log-encoding-domain-threshold: {}",
+                        f,
+                    );
+                    std::process::exit(1);
+                }
+            };
+            config.log_encoding_domain_threshold = v;
         }
         if let Some(s) = matches.opt_str("backend") {
             if s == "glucose" {
