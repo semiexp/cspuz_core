@@ -35,7 +35,7 @@ pub fn solve_araf(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolInnerGridEdge
     }
 
     if clue_min + 1 > clue_max - 1 {
-        return None
+        return None;
     }
 
     for i in 0..blocks.len() {
