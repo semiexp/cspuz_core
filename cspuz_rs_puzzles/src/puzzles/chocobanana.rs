@@ -24,7 +24,11 @@ pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                sizes.push(Some(int_constant(n)));
+                if n < 0 {
+                    sizes.push(None);
+                } else {
+                    sizes.push(Some(int_constant(n)));
+                }
             } else {
                 sizes.push(None);
             }

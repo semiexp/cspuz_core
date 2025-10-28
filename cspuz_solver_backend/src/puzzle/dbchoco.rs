@@ -16,7 +16,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 board.push(Item::cell(y, x, "#cccccc", ItemKind::Fill));
             }
             if let Some(n) = num[y][x] {
-                board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                if n == -1 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+                }
+                else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                }
             }
         }
     }

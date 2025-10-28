@@ -113,8 +113,8 @@ fn solve_polyominous(
         .map(|row| {
             row.iter()
                 .map(|&x| {
-                    if x == Some(-1) {
-                        (-1, -1)
+                    if x == Some(-2) {
+                        (-2, -2)
                     } else {
                         (0, size_of_set as i32 - 1)
                     }
@@ -161,7 +161,7 @@ fn solve_polyominous(
         .map(|row| {
             row.iter()
                 .map(|&x| {
-                    if x == Some(-1) {
+                    if x == Some(-2) {
                         (1, 1)
                     } else {
                         (size_of_piece as i32, size_of_piece as i32)
@@ -176,7 +176,9 @@ fn solve_polyominous(
     for y in 0..h {
         for x in 0..w {
             if let Some(id) = clues[y][x] {
-                solver.add_expr(kind.at((y, x)).eq(id));
+                if id != -1 {
+                    solver.add_expr(kind.at((y, x)).eq(id));
+                }
             }
         }
     }
@@ -195,7 +197,7 @@ fn solve_polyominous(
         .collect::<Vec<_>>();
     for y in 0..h {
         for x in 0..w {
-            if clues[y][x] == Some(-1) {
+            if clues[y][x] == Some(-2) {
                 continue;
             }
             let mut conds = vec![];
@@ -254,7 +256,8 @@ fn combinator() -> impl Combinator<Problem> {
     Size::new(Tuple2::new(
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Spaces::new(None, 'g')),
-            Box::new(Dict::new(Some(-1), "c")),
+            Box::new(Dict::new(Some(-1), ".")),
+            Box::new(Dict::new(Some(-2), "c")),
             Box::new(Optionalize::new(MultiDigit::new(12, 1))),
         ])),
         Choice::new(vec![

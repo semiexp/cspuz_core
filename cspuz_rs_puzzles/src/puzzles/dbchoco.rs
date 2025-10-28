@@ -4,7 +4,7 @@ use crate::util::{self, Grid};
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, MultiDigit, Optionalize, Size, Spaces, Tuple2,
+    Dict, HexInt, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -36,7 +36,11 @@ pub fn solve_doublechoco(
             .iter()
             .map(|row| {
                 row.iter()
-                    .map(|&n| n.map(|x| x as usize))
+                    .map(|&n| match n {
+                        Some(-1) => None,
+                        Some(n) => Some(n as usize),
+                        None => None,
+                    })
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>()),
@@ -85,6 +89,7 @@ fn combinator() -> impl Combinator<Problem> {
         ContextBasedGrid::new(MultiDigit::new(2, 5)),
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
+            Box::new(Dict::new(Some(-1), ".")),
             Box::new(Spaces::new(None, 'g')),
         ])),
     ))

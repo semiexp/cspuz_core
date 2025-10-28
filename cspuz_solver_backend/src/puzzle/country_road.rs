@@ -17,7 +17,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
             let (y, x) = rooms[i][0];
-            board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+            if n >= 0 {
+                board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+            } else {
+                board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+            }
         }
     }
     board.add_lines_irrefutable_facts(&is_line, "green", None);

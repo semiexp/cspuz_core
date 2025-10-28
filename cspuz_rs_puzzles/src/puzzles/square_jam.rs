@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Grid, HexInt, Optionalize, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -62,8 +62,10 @@ pub fn solve_square_jam(
                     .eq(num_left.at((y, x)) + num_right.at((y, x))),
             );
             if let Some(n) = clues[y][x] {
-                solver.add_expr((num_up.at((y, x)) + num_down.at((y, x))).eq(n - 1));
-                solver.add_expr((num_left.at((y, x)) + num_right.at((y, x))).eq(n - 1));
+                if n > 0 {
+                    solver.add_expr((num_up.at((y, x)) + num_down.at((y, x))).eq(n - 1));
+                    solver.add_expr((num_left.at((y, x)) + num_right.at((y, x))).eq(n - 1));
+                }
             }
         }
     }
@@ -88,6 +90,7 @@ fn combinator() -> impl Combinator<Problem> {
     Grid::new(Choice::new(vec![
         Box::new(Spaces::new(None, 'g')),
         Box::new(Optionalize::new(HexInt)),
+        Box::new(Dict::new(Some(-1), ".")),
     ]))
 }
 

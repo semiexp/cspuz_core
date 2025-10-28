@@ -280,7 +280,9 @@ pub fn solve_pencils(
                 &PencilsClue::None => (),
                 &PencilsClue::Num(n) => {
                     solver.add_expr(cell_kind.at((y, x)).le(3));
-                    solver.add_expr(pencil_size.at((y, x)).eq(n));
+                    if n != -1 {
+                        solver.add_expr(pencil_size.at((y, x)).eq(n));
+                    }
                 }
                 &PencilsClue::Up => solver.add_expr(cell_answer.at((y, x)).eq(1)),
                 &PencilsClue::Down => solver.add_expr(cell_answer.at((y, x)).eq(2)),
@@ -318,6 +320,7 @@ fn combinator() -> impl Combinator<Problem> {
             },
             |n| Some(PencilsClue::Num(n)),
         )),
+        Box::new(Dict::new(PencilsClue::Num(-1), ".")),
         Box::new(Spaces::new(PencilsClue::None, 'k')),
         Box::new(Dict::new(PencilsClue::Up, "h")),
         Box::new(Dict::new(PencilsClue::Down, "g")),

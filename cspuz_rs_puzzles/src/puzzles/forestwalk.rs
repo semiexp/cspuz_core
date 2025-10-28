@@ -2,7 +2,7 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
-    ContextBasedGrid, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
+    ContextBasedGrid, Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, BoolVar, Solver};
 
@@ -51,7 +51,9 @@ pub fn solve_forestwalk(
                 );
 
                 if let Some(n) = num[y][x] {
-                    solver.add_expr(size.at((y, x)).eq(n - 1));
+                    if n >= 0 {
+                        solver.add_expr(size.at((y, x)).eq(n - 1));
+                    }
                     solver.add_expr(is_passed.at((y, x)));
                 }
 
@@ -111,6 +113,7 @@ fn combinator() -> impl Combinator<Problem> {
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
         ])),
     ))
 }
