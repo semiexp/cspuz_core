@@ -14,7 +14,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
-                if 1 <= clue && clue <= 26 {
+                if (1..=26).contains(&clue) {
                     let p = (clue - 1) as usize;
                     board.push(Item::cell(y, x, "black", ItemKind::Text(&ALPHA[p..=p])));
                 } else {

@@ -159,26 +159,24 @@ pub fn solve_the_longest(
 
     graph::active_vertices_connected_via_active_edges(
         &mut solver,
-        &vec![TRUE; h * w + 1],
+        vec![TRUE; h * w + 1],
         &aux_edges,
         &aux_graph,
     );
 
     for y in 0..=h {
         for x in 0..w {
-            let up;
-            if y == 0 {
-                up = FALSE;
+            let up = if y == 0 {
+                FALSE
             } else {
-                up = edge_len_down.at((y - 1, x)).eq(edge_max.at((y - 1, x)));
-            }
+                edge_len_down.at((y - 1, x)).eq(edge_max.at((y - 1, x)))
+            };
 
-            let down;
-            if y == h {
-                down = FALSE;
+            let down = if y == h {
+                FALSE
             } else {
-                down = edge_len_up.at((y, x)).eq(edge_max.at((y, x)));
-            }
+                edge_len_up.at((y, x)).eq(edge_max.at((y, x)))
+            };
 
             if clues.horizontal[y][x] {
                 solver.add_expr(up | down);
@@ -190,19 +188,17 @@ pub fn solve_the_longest(
     }
     for y in 0..h {
         for x in 0..=w {
-            let left;
-            if x == 0 {
-                left = FALSE;
+            let left = if x == 0 {
+                FALSE
             } else {
-                left = edge_len_right.at((y, x - 1)).eq(edge_max.at((y, x - 1)));
-            }
+                edge_len_right.at((y, x - 1)).eq(edge_max.at((y, x - 1)))
+            };
 
-            let right;
-            if x == w {
-                right = FALSE;
+            let right = if x == w {
+                FALSE
             } else {
-                right = edge_len_left.at((y, x)).eq(edge_max.at((y, x)));
-            }
+                edge_len_left.at((y, x)).eq(edge_max.at((y, x)))
+            };
 
             if clues.vertical[y][x] {
                 solver.add_expr(left | right);
@@ -244,15 +240,12 @@ impl Combinator<graph::GridEdges<Vec<Vec<bool>>>> for KudamonoInnerBorder {
         let mut pos = 0;
 
         while idx < input.len() {
-            if '0' as u8 <= input[idx] && input[idx] <= '9' as u8 {
+            if b'0' <= input[idx] && input[idx] <= b'9' {
                 let mut num_end = idx;
                 let mut n = 0;
-                while num_end < input.len()
-                    && '0' as u8 <= input[num_end]
-                    && input[num_end] <= '9' as u8
-                {
+                while num_end < input.len() && b'0' <= input[num_end] && input[num_end] <= b'9' {
                     n *= 10;
-                    n += (input[num_end] - '0' as u8) as usize;
+                    n += (input[num_end] - b'0') as usize;
                     num_end += 1;
                 }
                 pos += n;
@@ -261,34 +254,34 @@ impl Combinator<graph::GridEdges<Vec<Vec<bool>>>> for KudamonoInnerBorder {
                 let mut y = height - pos % (height + 1);
                 let mut x = pos / (height + 1);
 
-                if input[idx] != 'R' as u8
-                    && input[idx] != 'L' as u8
-                    && input[idx] != 'U' as u8
-                    && input[idx] != 'D' as u8
+                if input[idx] != b'R'
+                    && input[idx] != b'L'
+                    && input[idx] != b'U'
+                    && input[idx] != b'D'
                 {
                     return None;
                 }
 
                 while idx < input.len() {
-                    if input[idx] == 'L' as u8 {
+                    if input[idx] == b'L' {
                         if x == 0 {
                             return None;
                         }
                         border.horizontal[y][x - 1] = true;
                         x -= 1;
-                    } else if input[idx] == 'R' as u8 {
+                    } else if input[idx] == b'R' {
                         if x >= width {
                             return None;
                         }
                         border.horizontal[y][x] = true;
                         x += 1;
-                    } else if input[idx] == 'U' as u8 {
+                    } else if input[idx] == b'U' {
                         if y == 0 {
                             return None;
                         }
                         border.vertical[y - 1][x] = true;
                         y -= 1;
-                    } else if input[idx] == 'D' as u8 {
+                    } else if input[idx] == b'D' {
                         if y >= height {
                             return None;
                         }

@@ -18,7 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..chars.len() {
         assert!('A' <= chars[y] && chars[y] <= 'Z');
-        let i = (chars[y] as u8 - 'A' as u8) as usize;
+        let i = (chars[y] as u8 - b'A') as usize;
         board.push(Item::cell(y + 1, 0, "black", ItemKind::Text(&ALPHA[i..=i])));
     }
 

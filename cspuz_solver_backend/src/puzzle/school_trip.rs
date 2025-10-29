@@ -36,8 +36,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for y in 0..height {
         for x in 0..width {
             if y < height - 1 {
-                if (is_black[y][x] == Some(false) && problem[y][x] == None)
-                    || (is_black[y + 1][x] == Some(false) && problem[y + 1][x] == None)
+                if (is_black[y][x] == Some(false) && problem[y][x].is_none())
+                    || (is_black[y + 1][x] == Some(false) && problem[y + 1][x].is_none())
                 {
                     // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
                     board.push(Item {
@@ -57,8 +57,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 };
             }
             if x < width - 1 {
-                if (is_black[y][x] == Some(false) && problem[y][x] == None)
-                    || (is_black[y][x + 1] == Some(false) && problem[y][x + 1] == None)
+                if (is_black[y][x] == Some(false) && problem[y][x].is_none())
+                    || (is_black[y][x + 1] == Some(false) && problem[y][x + 1].is_none())
                 {
                     // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
                     board.push(Item {

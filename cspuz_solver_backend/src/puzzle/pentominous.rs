@@ -3,7 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph::InnerGridEdges;
 use cspuz_rs_puzzles::puzzles::polyominous;
 
-const PENTOMINO_NAMES: [&'static str; 12] =
+const PENTOMINO_NAMES: [&str; 12] =
     ["F", "I", "L", "N", "P", "T", "U", "V", "W", "X", "Y", "Z"];
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {

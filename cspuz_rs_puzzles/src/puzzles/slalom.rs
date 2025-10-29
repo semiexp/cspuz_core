@@ -249,7 +249,7 @@ pub fn deserialize_problem_as_primitive(url: &str) -> Option<PrimitiveProblem> {
             MaybeSkip::new("/", DecInt),
         )),
     );
-    let (cell, origin) = url_to_problem(combinator, &vec!["slalom"], url)?;
+    let (cell, origin) = url_to_problem(combinator, &["slalom"], url)?;
     let width = cell[0].len();
 
     Some((cell, (origin as usize / width, origin as usize % width)))
