@@ -18,8 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             if let Some(n) = num[y][x] {
                 if n == -1 {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
-                }
-                else {
+                } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
                 }
             }

@@ -49,10 +49,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     Ok(board)
 }
 
-pub fn enumerate(
-    url: &str,
-    num_max_answers: usize,
-) -> Result<(Board, Vec<Board>), &'static str> {
+pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>), &'static str> {
     let problem = slitherlink::deserialize_problem(url).ok_or("invalid url")?;
     let answer_common = slitherlink::solve_slitherlink(&problem).ok_or("no answer")?;
     let answers = slitherlink::enumerate_answers_slitherlink(&problem, num_max_answers);

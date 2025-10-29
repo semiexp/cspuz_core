@@ -5,7 +5,7 @@ use cspuz_rs_puzzles::puzzles::star_battle;
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (star_amount, borders) = star_battle::deserialize_problem(url).ok_or("invalid url")?;
     let ans = star_battle::solve_star_battle(star_amount, &borders).ok_or("no answer")?;
-    
+
     let height = ans.len();
     let width = ans[0].len();
     let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
@@ -19,7 +19,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "green",
-                    if b { ItemKind::FilledCircle } else { ItemKind::Dot },
+                    if b {
+                        ItemKind::FilledCircle
+                    } else {
+                        ItemKind::Dot
+                    },
                 ));
             }
         }

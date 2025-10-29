@@ -4,11 +4,17 @@ use cspuz_rs_puzzles::puzzles::school_trip;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = school_trip::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_black, is_pillow, is_connected) = school_trip::solve_school_trip(&problem).ok_or("no answer")?;
+    let (is_black, is_pillow, is_connected) =
+        school_trip::solve_school_trip(&problem).ok_or("no answer")?;
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&(&is_black, &is_pillow, &is_connected)));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        is_unique(&(&is_black, &is_pillow, &is_connected)),
+    );
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
@@ -29,9 +35,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     }
     for y in 0..height {
         for x in 0..width {
-            if y < height - 1 { 
-                if (is_black[y][x] == Some(false) && problem[y][x] == None) || (is_black[y + 1][x] == Some(false) && problem[y + 1][x] == None) { 
-                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons                                                                                                                                        
+            if y < height - 1 {
+                if (is_black[y][x] == Some(false) && problem[y][x] == None)
+                    || (is_black[y + 1][x] == Some(false) && problem[y + 1][x] == None)
+                {
+                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
                     board.push(Item {
                         y: y * 2 + 2,
                         x: x * 2 + 1,
@@ -40,19 +48,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         } else {
                             "#cccccc"
                         },
-                        kind: 
-                            match is_connected.vertical[y][x] {
+                        kind: match is_connected.vertical[y][x] {
                             Some(true) => ItemKind::Cross,
                             Some(false) => ItemKind::BoldWall,
                             None => ItemKind::Wall,
-                            }
                         },
-                    )
+                    })
                 };
             }
             if x < width - 1 {
-                if (is_black[y][x] == Some(false) && problem[y][x] == None) || (is_black[y][x + 1] == Some(false) && problem[y][x + 1] == None) { 
-                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons                                                                                                                                        
+                if (is_black[y][x] == Some(false) && problem[y][x] == None)
+                    || (is_black[y][x + 1] == Some(false) && problem[y][x + 1] == None)
+                {
+                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
                     board.push(Item {
                         y: y * 2 + 1,
                         x: x * 2 + 2,
@@ -61,14 +69,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         } else {
                             "#cccccc"
                         },
-                        kind: 
-                            match is_connected.horizontal[y][x] {
+                        kind: match is_connected.horizontal[y][x] {
                             Some(true) => ItemKind::Cross,
                             Some(false) => ItemKind::BoldWall,
                             None => ItemKind::Wall,
-                            }
                         },
-                    )
+                    })
                 };
             }
         }

@@ -10,12 +10,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        is_unique(&answer),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&answer));
 
     for y in 0..height {
         for x in 0..width {
@@ -49,7 +44,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "green",
-                    if n > 0 { ItemKind::Num(n) } else { ItemKind::Dot },
+                    if n > 0 {
+                        ItemKind::Num(n)
+                    } else {
+                        ItemKind::Dot
+                    },
                 ));
             }
         }

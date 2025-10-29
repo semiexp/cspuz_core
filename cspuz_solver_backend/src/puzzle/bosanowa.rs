@@ -17,23 +17,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
-            }
+                }
             } else if let Some(n) = ans[y][x] {
                 if n > 0 {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    ItemKind::Num(n),
-                ));}     
-            }
-             else if circles[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "black",
-                    ItemKind::Circle,
-                ));     
+                    board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
+                }
+            } else if circles[y][x] {
+                board.push(Item::cell(y, x, "black", ItemKind::Circle));
             }
         }
     }

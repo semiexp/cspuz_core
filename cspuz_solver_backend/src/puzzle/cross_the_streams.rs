@@ -3,8 +3,10 @@ use crate::uniqueness::is_unique;
 use cspuz_rs_puzzles::puzzles::cross_the_streams;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (vertical, horizontal) = cross_the_streams::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = cross_the_streams::solve_cross_the_streams(&vertical, &horizontal).ok_or("no answer")?;
+    let (vertical, horizontal) =
+        cross_the_streams::deserialize_problem(url).ok_or("invalid url")?;
+    let is_black =
+        cross_the_streams::solve_cross_the_streams(&vertical, &horizontal).ok_or("no answer")?;
 
     let height = is_black.len();
     let width = is_black[0].len();

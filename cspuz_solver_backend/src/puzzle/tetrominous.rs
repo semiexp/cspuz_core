@@ -3,9 +3,7 @@ use crate::uniqueness::is_unique;
 use cspuz_rs::graph::InnerGridEdges;
 use cspuz_rs_puzzles::puzzles::polyominous;
 
-const TETROMINO_NAMES: [&'static str; 5] =
-    ["I", "L", "O", "S", "T"];
-
+const TETROMINO_NAMES: [&'static str; 5] = ["I", "L", "O", "S", "T"];
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues, default_borders) =

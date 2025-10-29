@@ -33,10 +33,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     Ok(board)
 }
 
-pub fn enumerate(
-    url: &str,
-    num_max_answers: usize,
-) -> Result<(Board, Vec<Board>), &'static str> {
+pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>), &'static str> {
     let (piece_id, borders, pieces) = curvedata::deserialize_problem(url).ok_or("invalid url")?;
     let is_line_common =
         curvedata::solve_curvedata(&piece_id, &borders, &pieces).ok_or("no answer")?;

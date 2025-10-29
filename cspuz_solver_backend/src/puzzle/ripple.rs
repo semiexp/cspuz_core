@@ -21,12 +21,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
                 }
             } else if let Some(n) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    ItemKind::Num(n),
-                ));
+                board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
             }
         }
     }

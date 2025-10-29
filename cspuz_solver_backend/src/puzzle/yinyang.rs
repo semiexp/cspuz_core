@@ -29,7 +29,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     y,
                     x,
                     "green",
-                    if b { ItemKind::FilledCircle } else { ItemKind::Circle },
+                    if b {
+                        ItemKind::FilledCircle
+                    } else {
+                        ItemKind::Circle
+                    },
                 ));
             }
         }

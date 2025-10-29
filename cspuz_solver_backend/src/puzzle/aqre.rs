@@ -30,10 +30,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
             let (y, x) = rooms[i][0];
-                if n >= 0 {
-                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
-                } else {
-                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+            if n >= 0 {
+                board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+            } else {
+                board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
             }
         }
     }
