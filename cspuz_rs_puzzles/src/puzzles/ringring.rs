@@ -104,14 +104,14 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     for &b in body {
         if b == b'.' {
             pos += 36;
-        } else if b'0' <= b && b <= b'9' {
+        } else if (b'0'..=b'9').contains(&b) {
             pos += (b - b'0') as usize;
             if pos >= height * width {
                 return None;
             }
             ret[pos / width][pos % width] = true;
             pos += 1;
-        } else if b'a' <= b && b <= b'z' {
+        } else if (b'a'..=b'z').contains(&b) {
             pos += (b - b'a') as usize + 10;
             if pos >= height * width {
                 return None;

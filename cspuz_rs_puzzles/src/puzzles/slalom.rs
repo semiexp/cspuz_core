@@ -30,7 +30,7 @@ pub fn solve_slalom(
     solver.add_answer_key_bool(&line.horizontal);
     solver.add_answer_key_bool(&line.vertical);
 
-    let passed = &graph::single_cycle_grid_edges(&mut solver, &line);
+    let passed = &graph::single_cycle_grid_edges(&mut solver, line);
     let gate_ord = &solver.int_var_2d((h, w), 0, gates.len() as i32);
 
     let mut gate_id: Vec<Vec<Option<usize>>> = vec![vec![None; w]; h];

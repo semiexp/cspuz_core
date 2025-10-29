@@ -63,7 +63,7 @@ pub fn solve_school_trip(
         let cells = is_black
             .four_neighbor_indices(a)
             .into_iter()
-            .chain(is_black.four_neighbor_indices(b).into_iter())
+            .chain(is_black.four_neighbor_indices(b))
             .filter(|&c| c != a && c != b)
             .collect::<Vec<_>>();
         solver.add_expr(cond.imp(is_black.select(cells).any()));

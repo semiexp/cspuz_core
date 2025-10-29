@@ -259,7 +259,7 @@ impl Combinator<(Option<i32>, Option<Arrow>)> for SnipingArrowClueCombinator {
         ctx: &Context,
         input: &[(Option<i32>, Option<Arrow>)],
     ) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let (n, ar) = input[0];

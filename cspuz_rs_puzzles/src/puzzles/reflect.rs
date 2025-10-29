@@ -18,11 +18,11 @@ pub enum ReflectLinkClue {
 
 impl ReflectLinkClue {
     fn to_tuple(&self) -> (i32, i32) {
-        match self {
-            &ReflectLinkClue::UpperLeft(n) => (4, n),
-            &ReflectLinkClue::UpperRight(n) => (3, n),
-            &ReflectLinkClue::LowerLeft(n) => (1, n),
-            &ReflectLinkClue::LowerRight(n) => (2, n),
+        match *self {
+            ReflectLinkClue::UpperLeft(n) => (4, n),
+            ReflectLinkClue::UpperRight(n) => (3, n),
+            ReflectLinkClue::LowerLeft(n) => (1, n),
+            ReflectLinkClue::LowerRight(n) => (2, n),
             _ => (-1, -1),
         }
     }
@@ -49,7 +49,7 @@ pub fn solve_reflect_link(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let (_, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, &is_line);
+    let (_, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, is_line);
     for y in 0..h {
         for x in 0..w {
             solver.add_expr(
@@ -58,11 +58,11 @@ pub fn solve_reflect_link(
                     .iff(clues[y][x] == ReflectLinkClue::Cross),
             );
 
-            let (to_down, to_right, n) = match &clues[y][x] {
-                &ReflectLinkClue::UpperLeft(n) => (true, true, n),
-                &ReflectLinkClue::UpperRight(n) => (true, false, n),
-                &ReflectLinkClue::LowerLeft(n) => (false, true, n),
-                &ReflectLinkClue::LowerRight(n) => (false, false, n),
+            let (to_down, to_right, n) = match clues[y][x] {
+                ReflectLinkClue::UpperLeft(n) => (true, true, n),
+                ReflectLinkClue::UpperRight(n) => (true, false, n),
+                ReflectLinkClue::LowerLeft(n) => (false, true, n),
+                ReflectLinkClue::LowerRight(n) => (false, false, n),
                 _ => continue,
             };
 
