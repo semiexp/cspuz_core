@@ -87,7 +87,6 @@ pub fn solve_akari_region(
                     for x2 in s..x {
                         horizontal_group[y][x2] = Some(v.clone());
                     }
-                    println!();
                     start = None;
                 }
             }
