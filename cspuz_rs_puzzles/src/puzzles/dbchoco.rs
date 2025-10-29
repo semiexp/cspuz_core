@@ -28,7 +28,7 @@ pub fn solve_doublechoco(
         .vertical
         .clone()
         .into_iter()
-        .chain(is_border.horizontal.clone().into_iter())
+        .chain(is_border.horizontal.clone())
         .collect::<Vec<_>>();
 
     let cell_num = Grid::from_vecs(

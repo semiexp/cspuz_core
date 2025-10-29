@@ -28,7 +28,7 @@ pub fn solve_cross_border_parity_loop(
     solver.add_answer_key_bool(&is_line.vertical);
 
     let color = &solver.bool_var_2d((h, w));
-    let is_passed = &graph::single_cycle_grid_edges(&mut solver, &is_line);
+    let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
     solver.add_expr(is_passed.any());
 
     let pass_type = &solver.int_var_2d((h, w), 0, 2);

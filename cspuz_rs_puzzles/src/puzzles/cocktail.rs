@@ -36,7 +36,7 @@ pub fn solve_cocktail(
             }
         }
     }
-    graph::active_vertices_connected(&mut solver, &is_black.flatten(), &g);
+    graph::active_vertices_connected(&mut solver, is_black.flatten(), &g);
 
     for y in 0..h {
         for x in 0..w {
@@ -52,7 +52,7 @@ pub fn solve_cocktail(
     assert_eq!(rooms.len(), clues.len());
 
     for i in 0..rooms.len() {
-        graph::active_vertices_connected_2d_region(&mut solver, &is_black, &rooms[i]);
+        graph::active_vertices_connected_2d_region(&mut solver, is_black, &rooms[i]);
         if let Some(n) = clues[i] {
             let mut cells = vec![];
             for &pt in &rooms[i] {

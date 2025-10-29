@@ -300,12 +300,11 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
         };
 
         for j in 0..(pw * ph / 2) {
-            let v;
-            if b'0' <= desc[j] && desc[j] <= b'9' {
-                v = (desc[j] - b'0') as i32;
+            let v = if b'0' <= desc[j] && desc[j] <= b'9' {
+                (desc[j] - b'0') as i32
             } else {
-                v = (desc[j] - b'a') as i32 + 10;
-            }
+                (desc[j] - b'a') as i32 + 10
+            };
             {
                 let y = j * 2 / pw;
                 let x = j * 2 % pw;

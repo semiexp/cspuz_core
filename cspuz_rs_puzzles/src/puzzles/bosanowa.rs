@@ -119,7 +119,7 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
                 range[y][x].1 = n;
 
                 cells.push_back((y, x));
-                while cells.len() > 0 {
+                while !cells.is_empty() {
                     let Some((p, q)) = cells.pop_front() else {
                         break;
                     };
@@ -166,7 +166,7 @@ fn fibonacci(term: i32) -> i32 {
     let (mut a, mut b) = (0, 1);
     for _ in 1..term {
         let temp = b;
-        b = a + b;
+        b += a;
         a = temp;
     }
     b

@@ -23,7 +23,7 @@ pub fn solve_castle_wall(
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
-    graph::single_cycle_grid_edges(&mut solver, &is_line);
+    graph::single_cycle_grid_edges(&mut solver, is_line);
 
     let cell_sides = &solver.bool_var_2d((h - 1, w - 1));
     for y in 0..h {

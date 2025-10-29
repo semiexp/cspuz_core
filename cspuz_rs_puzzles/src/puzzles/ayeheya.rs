@@ -37,7 +37,7 @@ pub fn all_room_symmetry(borders: &graph::InnerGridEdges<Vec<Vec<bool>>>) -> boo
     for room in rooms {
         let mut room = room;
         room.sort();
-        assert!(room.len() != 0);
+        assert!(!room.is_empty());
         let midpoint = (
             room[0].0 + room[room.len() - 1].0,
             room[0].1 + room[room.len() - 1].1,
