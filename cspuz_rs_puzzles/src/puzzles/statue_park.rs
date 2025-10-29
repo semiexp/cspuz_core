@@ -371,23 +371,23 @@ impl Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator {
         let data = &input[0];
 
         if data == &tetrominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 't' as u8]));
+            return Some((1, vec![b'/', b'/', b't']));
         }
         if data == &double_tetrominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 'd' as u8]));
+            return Some((1, vec![b'/', b'/', b'd']));
         }
         if data == &pentominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 'p' as u8]));
+            return Some((1, vec![b'/', b'/', b'p']));
         }
 
         let mut ret = vec![];
-        ret.push('/' as u8);
+        ret.push(b'/');
 
         let (_, app) = DecInt.serialize(ctx, &[data.len() as i32])?;
         ret.extend(app);
 
         for i in 0..data.len() {
-            ret.push('/' as u8);
+            ret.push(b'/');
 
             let (_, app) = PieceCombinator.serialize(ctx, &data[i..=i])?;
             ret.extend(app);

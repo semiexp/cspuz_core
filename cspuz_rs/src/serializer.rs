@@ -3,23 +3,23 @@ use crate::items::{Arrow, NumberedArrow};
 use std::collections::BTreeMap;
 
 pub fn is_dec(c: u8) -> bool {
-    return '0' as u8 <= c && c <= '9' as u8;
+    return b'0' <= c && c <= b'9';
 }
 
 pub fn to_base36(n: i32) -> u8 {
     assert!(0 <= n && n < 36);
     if n <= 9 {
-        n as u8 + '0' as u8
+        n as u8 + b'0'
     } else {
-        (n - 10) as u8 + 'a' as u8
+        (n - 10) as u8 + b'a'
     }
 }
 
 pub fn from_base36(c: u8) -> Option<i32> {
-    if '0' as u8 <= c && c <= '9' as u8 {
-        Some((c - '0' as u8) as i32)
-    } else if 'a' as u8 <= c && c <= 'z' as u8 {
-        Some((c - 'a' as u8) as i32 + 10)
+    if b'0' <= c && c <= b'9' {
+        Some((c - b'0') as i32)
+    } else if b'a' <= c && c <= b'z' {
+        Some((c - b'a') as i32 + 10)
     } else {
         None
     }
@@ -31,10 +31,10 @@ pub fn to_base16(n: i32) -> u8 {
 }
 
 pub fn from_base16(c: u8) -> Option<i32> {
-    if '0' as u8 <= c && c <= '9' as u8 {
-        Some((c - '0' as u8) as i32)
-    } else if 'a' as u8 <= c && c <= 'f' as u8 {
-        Some((c - 'a' as u8) as i32 + 10)
+    if b'0' <= c && c <= b'9' {
+        Some((c - b'0') as i32)
+    } else if b'a' <= c && c <= b'f' {
+        Some((c - b'a') as i32 + 10)
     } else {
         None
     }
@@ -411,7 +411,7 @@ impl<T: Clone + PartialEq> Spaces<T> {
         Spaces {
             space,
             minimum: from_base36(minimum as u8).unwrap(),
-            maximum: from_base36('z' as u8).unwrap(),
+            maximum: from_base36(b'z').unwrap(),
         }
     }
 
@@ -573,12 +573,12 @@ impl Combinator<i32> for HexInt {
         if 0 <= v && v < 16 {
             Some((1, vec![to_base16(v)]))
         } else if 16 <= v && v < 256 {
-            Some((1, vec!['-' as u8, to_base16(v >> 4), to_base16(v & 15)]))
+            Some((1, vec![b'-', to_base16(v >> 4), to_base16(v & 15)]))
         } else if 256 <= v && v < 4096 {
             Some((
                 1,
                 vec![
-                    '+' as u8,
+                    b'+',
                     to_base16(v >> 8),
                     to_base16((v >> 4) & 15),
                     to_base16(v & 15),
@@ -596,7 +596,7 @@ impl Combinator<i32> for HexInt {
         let v = input[0];
         if let Some(n) = from_base16(v) {
             Some((1, vec![n]))
-        } else if v == '-' as u8 {
+        } else if v == b'-' {
             if input.len() < 3 {
                 None
             } else {
@@ -605,7 +605,7 @@ impl Combinator<i32> for HexInt {
                     vec![(from_base16(input[1])? << 4) | from_base16(input[2])?],
                 ))
             }
-        } else if v == '+' as u8 {
+        } else if v == b'+' {
             if input.len() < 4 {
                 None
             } else {
@@ -634,10 +634,10 @@ impl Combinator<i32> for DecInt {
             let mut ret = vec![];
             let mut v = input[0];
             if v == 0 {
-                ret.push('0' as u8);
+                ret.push(b'0');
             } else {
                 while v > 0 {
-                    ret.push((v % 10) as u8 + '0' as u8);
+                    ret.push((v % 10) as u8 + b'0');
                     v /= 10;
                 }
                 ret.reverse();
@@ -650,7 +650,7 @@ impl Combinator<i32> for DecInt {
         let mut size = 0;
         let mut ret = 0;
         while size < input.len() && is_dec(input[size]) {
-            ret = ret * 10 + (input[size] - '0' as u8) as i32;
+            ret = ret * 10 + (input[size] - b'0') as i32;
             size += 1;
         }
         if size == 0 {
@@ -1015,10 +1015,10 @@ where
         let mut ret = vec![];
         let (_, app) = DecInt.serialize(ctx, &[width as i32 - self.offset])?;
         ret.extend(app);
-        ret.push('/' as u8);
+        ret.push(b'/');
         let (_, app) = DecInt.serialize(ctx, &[height as i32 - self.offset])?;
         ret.extend(app);
-        ret.push('/' as u8);
+        ret.push(b'/');
 
         let (n_read, app) = self.base_serializer.serialize(ctx, input)?;
         ret.extend(app);
@@ -1320,14 +1320,11 @@ impl Combinator<NumberedArrow> for NumberedArrowCombinator {
         };
         let n = input[0].1;
         if n == -1 {
-            Some((1, vec![dir + ('0' as u8), '.' as u8]))
+            Some((1, vec![dir + b'0', b'.']))
         } else if 0 <= n && n < 16 {
-            Some((1, vec![dir + ('0' as u8), to_base16(n)]))
+            Some((1, vec![dir + b'0', to_base16(n)]))
         } else if 16 <= n && n < 256 {
-            Some((
-                1,
-                vec![dir + ('5' as u8), to_base16(n >> 4), to_base16(n & 15)],
-            ))
+            Some((1, vec![dir + b'5', to_base16(n >> 4), to_base16(n & 15)]))
         } else {
             None
         }
@@ -1338,15 +1335,15 @@ impl Combinator<NumberedArrow> for NumberedArrowCombinator {
             return None;
         }
         let dir = input[0];
-        if !('0' as u8 <= dir && dir <= '9' as u8) {
+        if !(b'0' <= dir && dir <= b'9') {
             return None;
         }
-        let dir = dir - '0' as u8;
+        let dir = dir - b'0';
         let n;
         let n_read;
         {
             if dir < 5 {
-                if input[1] == '.' as u8 {
+                if input[1] == b'.' {
                     n = -1;
                 } else {
                     n = from_base16(input[1])?;
@@ -1583,15 +1580,12 @@ impl Combinator<InnerGridEdges<Vec<Vec<bool>>>> for KudamonoBorder {
         let mut pos = 0;
 
         while idx < input.len() {
-            if '0' as u8 <= input[idx] && input[idx] <= '9' as u8 {
+            if b'0' <= input[idx] && input[idx] <= b'9' {
                 let mut num_end = idx;
                 let mut n = 0;
-                while num_end < input.len()
-                    && '0' as u8 <= input[num_end]
-                    && input[num_end] <= '9' as u8
-                {
+                while num_end < input.len() && b'0' <= input[num_end] && input[num_end] <= b'9' {
                     n *= 10;
-                    n += (input[num_end] - '0' as u8) as usize;
+                    n += (input[num_end] - b'0') as usize;
                     num_end += 1;
                 }
                 pos += n;
@@ -1600,34 +1594,34 @@ impl Combinator<InnerGridEdges<Vec<Vec<bool>>>> for KudamonoBorder {
                 let mut y = height - pos % (height + 1);
                 let mut x = pos / (height + 1);
 
-                if input[idx] != 'R' as u8
-                    && input[idx] != 'L' as u8
-                    && input[idx] != 'U' as u8
-                    && input[idx] != 'D' as u8
+                if input[idx] != b'R'
+                    && input[idx] != b'L'
+                    && input[idx] != b'U'
+                    && input[idx] != b'D'
                 {
                     return None;
                 }
 
                 while idx < input.len() {
-                    if input[idx] == 'L' as u8 {
+                    if input[idx] == b'L' {
                         if x == 0 || y == 0 || y == height {
                             return None;
                         }
                         border.horizontal[y - 1][x - 1] = true;
                         x -= 1;
-                    } else if input[idx] == 'R' as u8 {
+                    } else if input[idx] == b'R' {
                         if x >= width || y == 0 || y == height {
                             return None;
                         }
                         border.horizontal[y - 1][x] = true;
                         x += 1;
-                    } else if input[idx] == 'U' as u8 {
+                    } else if input[idx] == b'U' {
                         if y == 0 || x == 0 || x == width {
                             return None;
                         }
                         border.vertical[y - 1][x - 1] = true;
                         y -= 1;
-                    } else if input[idx] == 'D' as u8 {
+                    } else if input[idx] == b'D' {
                         if y >= height || x == 0 || x == width {
                             return None;
                         }

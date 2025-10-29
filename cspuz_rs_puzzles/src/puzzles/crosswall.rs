@@ -225,13 +225,13 @@ pub fn deserialize_problem_v1_v2(url: &str) -> Option<Problem> {
     }
 
     while sequencer.n_read() < content.len() {
-        if sequencer.peek() != Some('(' as u8) {
+        if sequencer.peek() != Some(b'(') {
             return None;
         }
         let val = sequencer.deserialize(&ctx, DecInt)?;
         assert_eq!(val.len(), 1);
         let val = val[0];
-        if sequencer.peek() != Some(')' as u8) {
+        if sequencer.peek() != Some(b')') {
             return None;
         }
         let ofs = sequencer.deserialize(&ctx, DecInt)?;

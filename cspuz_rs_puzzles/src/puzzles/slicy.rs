@@ -239,15 +239,12 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
         let mut pos = 0;
 
         while idx < input.len() {
-            if '0' as u8 <= input[idx] && input[idx] <= '9' as u8 {
+            if b'0' <= input[idx] && input[idx] <= b'9' {
                 let mut num_end = idx;
                 let mut n = 0;
-                while num_end < input.len()
-                    && '0' as u8 <= input[num_end]
-                    && input[num_end] <= '9' as u8
-                {
+                while num_end < input.len() && b'0' <= input[num_end] && input[num_end] <= b'9' {
                     n *= 10;
-                    n += (input[num_end] - '0' as u8) as usize;
+                    n += (input[num_end] - b'0') as usize;
                     num_end += 1;
                 }
                 pos += n;

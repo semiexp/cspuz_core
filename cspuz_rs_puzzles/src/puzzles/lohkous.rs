@@ -122,14 +122,14 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
         if idx >= w * h {
             return None;
         }
-        if '0' as u8 <= body[i] && body[i] <= '9' as u8 {
+        if b'0' <= body[i] && body[i] <= b'9' {
             let mut clues = vec![];
             while i < body.len() {
-                if '0' as u8 <= body[i] && body[i] <= '9' as u8 {
-                    if body[i] == '0' as u8 {
+                if b'0' <= body[i] && body[i] <= b'9' {
+                    if body[i] == b'0' {
                         clues.push(-1);
                     } else {
-                        clues.push((body[i] - '0' as u8) as i32);
+                        clues.push((body[i] - b'0') as i32);
                     }
                 } else {
                     break;
@@ -139,7 +139,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
             ret[idx / w][idx % w] = Some(clues);
             idx += 1;
         } else {
-            let mut s = (body[i] - 'a' as u8) as usize;
+            let mut s = (body[i] - b'a') as usize;
             if i == 0 || i + 1 == body.len() {
                 s += 1;
             }

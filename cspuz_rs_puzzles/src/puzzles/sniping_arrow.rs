@@ -266,17 +266,17 @@ impl Combinator<(Option<i32>, Option<Arrow>)> for SnipingArrowClueCombinator {
 
         let mut ret = vec![];
         if let Some(n) = n {
-            ret.push('(' as u8);
+            ret.push(b'(');
             ret.extend(DecInt.serialize(ctx, &[n])?.1);
-            ret.push(')' as u8);
+            ret.push(b')');
         }
         if let Some(ar) = ar {
             match ar {
                 Arrow::Unspecified => return None,
-                Arrow::Up => ret.push('u' as u8),
-                Arrow::Down => ret.push('d' as u8),
-                Arrow::Left => ret.push('l' as u8),
-                Arrow::Right => ret.push('r' as u8),
+                Arrow::Up => ret.push(b'u'),
+                Arrow::Down => ret.push(b'd'),
+                Arrow::Left => ret.push(b'l'),
+                Arrow::Right => ret.push(b'r'),
             }
         }
 
