@@ -9,12 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let height = clues.len();
     let width = clues[0].len();
     let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
-    board.push(Item::cell(
-        ty,
-        tx,
-        "black",
-        ItemKind::Circle,
-    ));
+    board.push(Item::cell(ty, tx, "black", ItemKind::Circle));
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = clues[y][x] {
