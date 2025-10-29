@@ -34,7 +34,7 @@ pub fn solve_dominion(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
 
     for i in 1..max_number + 1 {
         if clue_range.contains(&i) {
-            graph::active_vertices_connected_2d(&mut solver, group_id.eq(i as i32));
+            graph::active_vertices_connected_2d(&mut solver, group_id.eq(i));
         } else {
             solver.add_expr(group_id.ne(i));
         }

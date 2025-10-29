@@ -88,7 +88,7 @@ impl Combinator<InnerGridEdges<Vec<Vec<KropkiClue>>>> for KropkiCombinator {
         ctx: &Context,
         input: &[InnerGridEdges<Vec<Vec<KropkiClue>>>],
     ) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let height = ctx.height.unwrap();

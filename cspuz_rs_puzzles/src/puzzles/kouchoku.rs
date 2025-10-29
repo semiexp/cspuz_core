@@ -120,7 +120,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem);
+    let (h, w) = util::infer_shape(problem);
     problem_to_url_with_context(
         combinator(),
         "kouchoku",

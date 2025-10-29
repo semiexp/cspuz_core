@@ -102,7 +102,7 @@ impl Combinator<Problem> for DoppelblockCombinator {
         ctx: &cspuz_rs::serializer::Context,
         input: &[Problem],
     ) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
 

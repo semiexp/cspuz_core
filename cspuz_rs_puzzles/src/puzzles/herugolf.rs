@@ -10,7 +10,7 @@ pub fn solve_herugolf(
     pond: &[Vec<bool>],
     clues: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
-    let (h, w) = util::infer_shape(&clues);
+    let (h, w) = util::infer_shape(clues);
 
     let mut solver = Solver::new();
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
