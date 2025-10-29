@@ -22,7 +22,7 @@ jobs:
     - name: Run rustfmt
       run: |
         rustup component add rustfmt
-        cargo fmt --check
+        ./format.sh --check
 
         python3 tools/check_puzzles_order.py
   rust-x86-latest:
