@@ -20,11 +20,7 @@ pub enum AkariRGBClue {
 
 impl AkariRGBClue {
     fn is_block(&self) -> bool {
-        match self {
-            AkariRGBClue::Block => true,
-            AkariRGBClue::Num(_) => true,
-            _ => false,
-        }
+        matches!(self, AkariRGBClue::Block | AkariRGBClue::Num(_))
     }
 }
 
