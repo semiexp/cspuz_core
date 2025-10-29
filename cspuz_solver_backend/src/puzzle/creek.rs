@@ -58,11 +58,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 });
                 if n >= 0 {
                     board.push(Item {
-                    y: y * 2,
-                    x: x * 2,
-                    color: "black",
-                    kind: ItemKind::Num(n),
-                });
+                        y: y * 2,
+                        x: x * 2,
+                        color: "black",
+                        kind: ItemKind::Num(n),
+                    });
                 }
             }
         }

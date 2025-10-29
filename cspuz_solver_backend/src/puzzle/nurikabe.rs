@@ -31,10 +31,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     Ok(board)
 }
 
-pub fn enumerate(
-    url: &str,
-    num_max_answers: usize,
-) -> Result<(Board, Vec<Board>), &'static str> {
+pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>), &'static str> {
     let problem = nurikabe::deserialize_problem(url).ok_or("invalid url")?;
     let ans_common = nurikabe::solve_nurikabe(&problem).ok_or("no answer")?;
     let answers = nurikabe::enumerate_answers_nurikabe(&problem, num_max_answers);

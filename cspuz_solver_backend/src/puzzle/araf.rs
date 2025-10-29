@@ -15,10 +15,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 board.push(Item::cell(y, x, "black", ItemKind::Circle));
                 if clue == -1 {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
-                }
-                else {
+                } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
-                }  
+                }
             }
         }
     }
