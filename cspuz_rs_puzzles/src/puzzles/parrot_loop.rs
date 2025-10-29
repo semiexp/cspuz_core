@@ -16,7 +16,7 @@ pub fn solve_parrot_loop(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let is_passed = &graph::single_cycle_grid_edges(&mut solver, &is_line);
+    let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
     let num_horizontal = solver.int_var_1d(w - 2, 0, h as i32);
     let num_vertical = solver.int_var_1d(h - 2, 0, w as i32);

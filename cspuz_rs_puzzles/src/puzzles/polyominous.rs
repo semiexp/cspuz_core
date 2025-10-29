@@ -85,10 +85,10 @@ fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize,
     let mut vertical = vec![];
 
     for &(y, x) in piece {
-        if piece.iter().find(|&&p| p == (y + 1, x)).is_some() {
+        if piece.iter().any(|&p| p == (y + 1, x)) {
             horizontal.push((y, x));
         }
-        if piece.iter().find(|&&p| p == (y, x + 1)).is_some() {
+        if piece.iter().any(|&p| p == (y, x + 1)) {
             vertical.push((y, x));
         }
     }

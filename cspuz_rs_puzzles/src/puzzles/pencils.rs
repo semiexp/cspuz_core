@@ -276,18 +276,18 @@ pub fn solve_pencils(
 
     for y in 0..h {
         for x in 0..w {
-            match &clues[y][x] {
-                &PencilsClue::None => (),
-                &PencilsClue::Num(n) => {
+            match clues[y][x] {
+                PencilsClue::None => (),
+                PencilsClue::Num(n) => {
                     solver.add_expr(cell_kind.at((y, x)).le(3));
                     if n != -1 {
                         solver.add_expr(pencil_size.at((y, x)).eq(n));
                     }
                 }
-                &PencilsClue::Up => solver.add_expr(cell_answer.at((y, x)).eq(1)),
-                &PencilsClue::Down => solver.add_expr(cell_answer.at((y, x)).eq(2)),
-                &PencilsClue::Left => solver.add_expr(cell_answer.at((y, x)).eq(3)),
-                &PencilsClue::Right => solver.add_expr(cell_answer.at((y, x)).eq(4)),
+                PencilsClue::Up => solver.add_expr(cell_answer.at((y, x)).eq(1)),
+                PencilsClue::Down => solver.add_expr(cell_answer.at((y, x)).eq(2)),
+                PencilsClue::Left => solver.add_expr(cell_answer.at((y, x)).eq(3)),
+                PencilsClue::Right => solver.add_expr(cell_answer.at((y, x)).eq(4)),
             }
         }
     }

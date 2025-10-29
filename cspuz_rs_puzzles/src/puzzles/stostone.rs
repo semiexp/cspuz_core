@@ -35,7 +35,7 @@ pub fn solve_stostone(
     assert_eq!(rooms.len(), clues.len());
 
     for i in 0..rooms.len() {
-        graph::active_vertices_connected_2d_region(&mut solver, &is_black, &rooms[i]);
+        graph::active_vertices_connected_2d_region(&mut solver, is_black, &rooms[i]);
         let mut cells = vec![];
         for &pt in &rooms[i] {
             cells.push(is_black.at(pt));

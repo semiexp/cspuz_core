@@ -45,7 +45,7 @@ pub fn solve_nikoji(
         graph::active_vertices_connected_2d(&mut solver, cell_group.eq(i as i32));
 
         let (_, y, x) = symbols[i];
-        solver.add_expr(cell_group.at((y as usize, x as usize)).eq(i as i32));
+        solver.add_expr(cell_group.at((y, x)).eq(i as i32));
     }
 
     let mut leader_ids = vec![];

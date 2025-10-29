@@ -17,8 +17,8 @@ pub enum ReflectLinkClue {
 }
 
 impl ReflectLinkClue {
-    fn to_tuple(&self) -> (i32, i32) {
-        match *self {
+    fn to_tuple(self) -> (i32, i32) {
+        match self {
             ReflectLinkClue::UpperLeft(n) => (4, n),
             ReflectLinkClue::UpperRight(n) => (3, n),
             ReflectLinkClue::LowerLeft(n) => (1, n),

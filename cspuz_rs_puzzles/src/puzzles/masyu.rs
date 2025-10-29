@@ -18,7 +18,7 @@ pub fn solve_masyu(clues: &[Vec<MasyuClue>]) -> Option<graph::BoolGridEdgesIrref
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    graph::single_cycle_grid_edges(&mut solver, &is_line);
+    graph::single_cycle_grid_edges(&mut solver, is_line);
 
     for y in 0..h {
         for x in 0..w {
