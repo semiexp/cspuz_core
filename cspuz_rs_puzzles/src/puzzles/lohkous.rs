@@ -107,7 +107,6 @@ type Problem = Vec<Vec<Option<Vec<i32>>>>;
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
     let content = strip_prefix(url)?;
     let toks = content.split("/").collect::<Vec<&str>>();
-    eprintln!("{:?}", toks);
     if toks[0] != "lohkous" {
         return None;
     }
