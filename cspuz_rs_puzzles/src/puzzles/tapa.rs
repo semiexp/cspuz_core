@@ -106,12 +106,12 @@ struct TapaClueCombinator;
 
 impl Combinator<[i32; 4]> for TapaClueCombinator {
     fn serialize(&self, _: &Context, input: &[[i32; 4]]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let clue = input[0];
         if clue[0] == 0 {
-            return Some((1, vec!['0' as u8]));
+            return Some((1, vec![b'0']));
         }
         let clue = clue.map(|n| if n == -2 { 0 } else { n });
         let mut num_clue = 0;
@@ -124,7 +124,7 @@ impl Combinator<[i32; 4]> for TapaClueCombinator {
         let encoded = match num_clue {
             0 => return None,
             1 => vec![if clue[0] == 0 {
-                '.' as u8
+                b'.'
             } else {
                 to_base36(clue[0])
             }],
@@ -138,7 +138,7 @@ impl Combinator<[i32; 4]> for TapaClueCombinator {
             }
             4 => {
                 if clue[0] == 1 && clue[1] == 1 && clue[2] == 1 && clue[3] == 1 {
-                    vec!['9' as u8]
+                    vec![b'9']
                 } else {
                     let v = clue[0] * 8 + clue[1] * 4 + clue[2] * 2 + clue[3] + 460;
                     vec![to_base36(v / 36), to_base36(v % 36)]
@@ -151,27 +151,27 @@ impl Combinator<[i32; 4]> for TapaClueCombinator {
     }
 
     fn deserialize(&self, _: &Context, input: &[u8]) -> Option<(usize, Vec<[i32; 4]>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
-        if input[0] == '.' as u8 {
+        if input[0] == b'.' {
             return Some((1, vec![[-2, -1, -1, -1]]));
         }
         let c0 = from_base36(input[0])?;
-        if 0 <= c0 && c0 <= 8 {
-            return Some((1, vec![[c0, -1, -1, -1]]));
+        if (0..=8).contains(&c0) {
+            Some((1, vec![[c0, -1, -1, -1]]))
         } else if c0 == 9 {
-            return Some((1, vec![[1, 1, 1, 1]]));
+            Some((1, vec![[1, 1, 1, 1]]))
         } else {
             if input.len() < 2 {
                 return None;
             }
             let v = c0 * 36 + from_base36(input[1])?;
-            let decoded = if 360 <= v && v < 396 {
+            let decoded = if (360..396).contains(&v) {
                 [(v - 360) / 6, (v - 360) % 6, -1, -1]
-            } else if 396 <= v && v < 460 {
+            } else if (396..460).contains(&v) {
                 [(v - 396) / 16, (v - 396) / 4 % 4, (v - 396) % 4, -1]
-            } else if 460 <= v && v < 476 {
+            } else if (460..476).contains(&v) {
                 [
                     (v - 460) / 8,
                     (v - 460) / 4 % 2,

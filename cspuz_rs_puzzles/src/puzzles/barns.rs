@@ -17,7 +17,7 @@ pub fn solve_barns(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let (is_passed, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, &is_line);
+    let (is_passed, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, is_line);
     solver.add_expr(&is_passed);
     for y in 0..h {
         for x in 0..w {

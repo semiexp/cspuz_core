@@ -164,7 +164,7 @@ impl Combinator<graph::InnerGridEdges<Vec<Vec<bool>>>> for ArrowCombinator {
         ctx: &Context,
         input: &[graph::InnerGridEdges<Vec<Vec<bool>>>],
     ) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let input = &input[0];
@@ -1011,7 +1011,7 @@ impl SimpleCustomConstraint for EvolminoConstraint {
                 if let Some(last_block_id) = last_block_id {
                     let mut isok = false;
                     let last_block = &board_info_detail.arrow_blocks[last_block_id];
-                    assert!(last_block.len() > 0);
+                    assert!(!last_block.is_empty());
 
                     for y in 0..height {
                         for x in 0..width {
@@ -1171,7 +1171,7 @@ impl SimpleCustomConstraint for EvolminoConstraint {
 
 fn foreach_neighbor<F>(y: usize, x: usize, height: usize, width: usize, mut op: F)
 where
-    F: FnMut(usize, usize) -> (),
+    F: FnMut(usize, usize),
 {
     if y > 0 {
         op(y - 1, x);

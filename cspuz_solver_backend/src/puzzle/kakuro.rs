@@ -26,10 +26,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         board.push(Item::cell(y, x, "black", ItemKind::NumUpperRight(n)));
                     }
                 }
-            } else {
-                if let Some(n) = answer[y][x] {
-                    board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
-                }
+            } else if let Some(n) = answer[y][x] {
+                board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
             }
         }
     }

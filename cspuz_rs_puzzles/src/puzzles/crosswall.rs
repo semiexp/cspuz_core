@@ -17,7 +17,7 @@ pub fn solve_crosswall(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    graph::crossable_single_cycle_grid_edges(&mut solver, &is_line);
+    graph::crossable_single_cycle_grid_edges(&mut solver, is_line);
 
     let mut sizes = vec![];
     let mut edges = vec![];
@@ -171,7 +171,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
         return deserialize_problem_v1_v2(url);
     }
 
-    let (width, height) = parse_kudamono_dimension(&desc.get("W")?)?;
+    let (width, height) = parse_kudamono_dimension(desc.get("W")?)?;
     let kudamono_v2 = true;
 
     let combinator = KudamonoGrid::new(
@@ -225,13 +225,13 @@ pub fn deserialize_problem_v1_v2(url: &str) -> Option<Problem> {
     }
 
     while sequencer.n_read() < content.len() {
-        if sequencer.peek() != Some('(' as u8) {
+        if sequencer.peek() != Some(b'(') {
             return None;
         }
         let val = sequencer.deserialize(&ctx, DecInt)?;
         assert_eq!(val.len(), 1);
         let val = val[0];
-        if sequencer.peek() != Some(')' as u8) {
+        if sequencer.peek() != Some(b')') {
             return None;
         }
         let ofs = sequencer.deserialize(&ctx, DecInt)?;

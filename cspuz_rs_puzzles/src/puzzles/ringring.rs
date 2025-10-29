@@ -102,17 +102,17 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     let body = toks[2].as_bytes();
     let mut pos = 0;
     for &b in body {
-        if b == '.' as u8 {
+        if b == b'.' {
             pos += 36;
-        } else if '0' as u8 <= b && b <= '9' as u8 {
-            pos += (b - '0' as u8) as usize;
+        } else if (b'0'..=b'9').contains(&b) {
+            pos += (b - b'0') as usize;
             if pos >= height * width {
                 return None;
             }
             ret[pos / width][pos % width] = true;
             pos += 1;
-        } else if 'a' as u8 <= b && b <= 'z' as u8 {
-            pos += (b - 'a' as u8) as usize + 10;
+        } else if (b'a'..=b'z').contains(&b) {
+            pos += (b - b'a') as usize + 10;
             if pos >= height * width {
                 return None;
             }

@@ -116,7 +116,7 @@ pub fn solve_coffeemilk(clues: &[Vec<i32>]) -> Option<graph::BoolGridEdgesIrrefu
         }
     }
 
-    if grey_cells.len() == 0 {
+    if grey_cells.is_empty() {
         return None;
     }
 

@@ -12,7 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        if undet_lines.len() == 0 {
+        if undet_lines.is_empty() {
             Uniqueness::Unique
         } else {
             Uniqueness::NonUnique

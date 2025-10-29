@@ -27,38 +27,34 @@ pub fn solve_firewalk(
     let is_inner = &solver.bool_var_2d((h - 1, w - 1));
     for y in 0..h {
         for x in 0..(w - 1) {
-            let up;
-            if y == 0 {
-                up = FALSE;
+            let up = if y == 0 {
+                FALSE
             } else {
-                up = is_inner.at((y - 1, x)).expr();
-            }
+                is_inner.at((y - 1, x)).expr()
+            };
 
-            let down;
-            if y == h - 1 {
-                down = FALSE;
+            let down = if y == h - 1 {
+                FALSE
             } else {
-                down = is_inner.at((y, x)).expr();
-            }
+                is_inner.at((y, x)).expr()
+            };
 
             solver.add_expr(!(up ^ down ^ is_line.horizontal.at((y, x))));
         }
     }
     for y in 0..(h - 1) {
         for x in 0..w {
-            let left;
-            if x == 0 {
-                left = FALSE;
+            let left = if x == 0 {
+                FALSE
             } else {
-                left = is_inner.at((y, x - 1)).expr();
-            }
+                is_inner.at((y, x - 1)).expr()
+            };
 
-            let right;
-            if x == w - 1 {
-                right = FALSE;
+            let right = if x == w - 1 {
+                FALSE
             } else {
-                right = is_inner.at((y, x)).expr();
-            }
+                is_inner.at((y, x)).expr()
+            };
 
             solver.add_expr(!(left ^ right ^ is_line.vertical.at((y, x))));
         }

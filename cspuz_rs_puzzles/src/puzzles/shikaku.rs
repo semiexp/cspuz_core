@@ -33,7 +33,7 @@ pub fn solve_shikaku(
         }
     }
 
-    if clue_pos.len() == 0 {
+    if clue_pos.is_empty() {
         return None;
     }
 

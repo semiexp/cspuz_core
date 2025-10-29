@@ -60,7 +60,7 @@ pub fn solve_statue_park(
 
     let mut solver = Solver::new();
     let is_block = &solver.bool_var_2d((h, w));
-    let cell_state = &solver.int_var_2d((h, w), 0, (id - 1) as i32);
+    let cell_state = &solver.int_var_2d((h, w), 0, id - 1);
     solver.add_answer_key_bool(is_block);
     graph::active_vertices_connected_2d(&mut solver, !is_block);
 
@@ -71,7 +71,7 @@ pub fn solve_statue_park(
             for i in 0..piece_transformations_ids_all.len() {
                 for j in 0..piece_transformations_ids_all[i].len() {
                     let piece_transformations_ids = &piece_transformations_ids_all[i][j];
-                    let (ph, pw) = util::infer_shape(&piece_transformations_ids);
+                    let (ph, pw) = util::infer_shape(piece_transformations_ids);
 
                     for py in 0..ph {
                         for px in 0..pw {
@@ -126,7 +126,7 @@ pub fn solve_statue_park(
             for x in 0..w {
                 let mut ind = vec![];
                 for &j in leader_ids_all[i].iter() {
-                    ind.push(cell_state.at((y, x)).eq(j as i32));
+                    ind.push(cell_state.at((y, x)).eq(j));
                 }
                 inds.push(any(ind));
             }
@@ -199,7 +199,7 @@ fn normalize_and_merge_pieces(pieces: &[Vec<Vec<bool>>]) -> (Vec<Vec<Vec<bool>>>
     let mut ret = vec![];
     let mut cnt = vec![];
     for p in pieces {
-        if ret.len() > 0 && ret[ret.len() - 1] == p {
+        if !ret.is_empty() && ret[ret.len() - 1] == p {
             *cnt.last_mut().unwrap() += 1;
         } else {
             ret.push(p);
@@ -292,7 +292,7 @@ impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
         ctx: &cspuz_rs::serializer::Context,
         input: &[Vec<Vec<bool>>],
     ) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
 
@@ -300,7 +300,7 @@ impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
         let height = data.len();
         let width = data[0].len();
 
-        if !(1 <= height && height <= 35 && 1 <= width && width <= 35) {
+        if !((1..=35).contains(&height) && (1..=35).contains(&width)) {
             return None;
         }
 
@@ -364,30 +364,30 @@ struct PiecesCombinator;
 
 impl Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator {
     fn serialize(&self, ctx: &Context, input: &[Vec<Vec<Vec<bool>>>]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
 
         let data = &input[0];
 
         if data == &tetrominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 't' as u8]));
+            return Some((1, vec![b'/', b'/', b't']));
         }
         if data == &double_tetrominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 'd' as u8]));
+            return Some((1, vec![b'/', b'/', b'd']));
         }
         if data == &pentominoes() {
-            return Some((1, vec!['/' as u8, '/' as u8, 'p' as u8]));
+            return Some((1, vec![b'/', b'/', b'p']));
         }
 
         let mut ret = vec![];
-        ret.push('/' as u8);
+        ret.push(b'/');
 
         let (_, app) = DecInt.serialize(ctx, &[data.len() as i32])?;
         ret.extend(app);
 
         for i in 0..data.len() {
-            ret.push('/' as u8);
+            ret.push(b'/');
 
             let (_, app) = PieceCombinator.serialize(ctx, &data[i..=i])?;
             ret.extend(app);

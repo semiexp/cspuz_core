@@ -51,26 +51,12 @@ pub fn solve_litherslink(
 
     // no loop (that is, all cells are reachable to the outside of the grid)
     let mut aux_graph = graph::Graph::new(h * w + 1 + h * (w + 1) + (h + 1) * w);
-    let mut indicator = vec![];
-
-    for _ in 0..=(h * w) {
-        indicator.push(TRUE);
-    }
+    let mut indicator = vec![TRUE; h * w + 1];
 
     for y in 0..=h {
         for x in 0..w {
-            let v1;
-            if y == 0 {
-                v1 = h * w;
-            } else {
-                v1 = (y - 1) * w + x;
-            }
-            let v2;
-            if y == h {
-                v2 = h * w;
-            } else {
-                v2 = y * w + x;
-            }
+            let v1 = if y == 0 { h * w } else { (y - 1) * w + x };
+            let v2 = if y == h { h * w } else { y * w + x };
 
             let e = indicator.len();
             aux_graph.add_edge(e, v1);
@@ -82,19 +68,8 @@ pub fn solve_litherslink(
 
     for y in 0..h {
         for x in 0..=w {
-            let v1;
-            if x == 0 {
-                v1 = h * w;
-            } else {
-                v1 = y * w + x - 1;
-            }
-
-            let v2;
-            if x == w {
-                v2 = h * w;
-            } else {
-                v2 = y * w + x;
-            }
+            let v1 = if x == 0 { h * w } else { y * w + x - 1 };
+            let v2 = if x == w { h * w } else { y * w + x };
 
             let e = indicator.len();
             aux_graph.add_edge(e, v1);

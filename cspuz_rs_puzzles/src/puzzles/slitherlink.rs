@@ -47,7 +47,7 @@ fn add_constraints(
 ) {
     let (h, w) = util::infer_shape(clues);
 
-    graph::single_cycle_grid_edges(solver, &is_line);
+    graph::single_cycle_grid_edges(solver, is_line);
 
     for y in 0..h {
         for x in 0..w {

@@ -148,8 +148,8 @@ impl ChainedbConstraint {
 }
 
 fn adjust_bbox(block: &mut [(i32, i32)]) {
-    let mut min_y = std::i32::MAX;
-    let mut min_x = std::i32::MAX;
+    let mut min_y = i32::MAX;
+    let mut min_x = i32::MAX;
     for &(y, x) in block.iter() {
         min_y = min_y.min(y);
         min_x = min_x.min(x);

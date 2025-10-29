@@ -275,7 +275,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     // TODO: consider problems with borders
     let borders;
     let offset;
-    if toks[4].as_bytes()[0] == 'b' as u8 {
+    if toks[4].as_bytes()[0] == b'b' {
         let mut tmp = Rooms
             .deserialize(&Context::sized(h, w), &toks[4].as_bytes()[1..])?
             .1;
@@ -300,12 +300,11 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
         };
 
         for j in 0..(pw * ph / 2) {
-            let v;
-            if '0' as u8 <= desc[j] && desc[j] <= '9' as u8 {
-                v = (desc[j] - '0' as u8) as i32;
+            let v = if b'0' <= desc[j] && desc[j] <= b'9' {
+                (desc[j] - b'0') as i32
             } else {
-                v = (desc[j] - 'a' as u8) as i32 + 10;
-            }
+                (desc[j] - b'a') as i32 + 10
+            };
             {
                 let y = j * 2 / pw;
                 let x = j * 2 % pw;

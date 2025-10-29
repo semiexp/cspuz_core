@@ -103,7 +103,7 @@ pub fn solve_double_lits(
                     cell_kinds[j].push(kinds[t].at((y, x)).eq(j as i32));
                 }
             }
-            let cell_kind_counts = cell_kinds.iter().map(|x| count_true(x)).collect::<Vec<_>>();
+            let cell_kind_counts = cell_kinds.iter().map(count_true).collect::<Vec<_>>();
             // L
             solver.add_expr(room_kind.eq(0).imp(
                 cell_kind_counts[1].eq(2)

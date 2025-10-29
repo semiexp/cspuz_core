@@ -85,22 +85,22 @@ struct KakuroNumCombinator;
 
 impl Combinator<Option<i32>> for KakuroNumCombinator {
     fn serialize(&self, _: &Context, input: &[Option<i32>]) -> Option<(usize, Vec<u8>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let n = input[0];
 
         if n.is_none() {
-            return Some((1, vec!['-' as u8]));
+            return Some((1, vec![b'-']));
         }
 
         let n = n.unwrap();
-        let c = if 1 <= n && n <= 9 {
-            n as u8 + '0' as u8
-        } else if 10 <= n && n <= 19 {
-            n as u8 - 10 + 'a' as u8
-        } else if 20 <= n && n <= 45 {
-            n as u8 - 20 + 'A' as u8
+        let c = if (1..=9).contains(&n) {
+            n as u8 + b'0'
+        } else if (10..=19).contains(&n) {
+            n as u8 - 10 + b'a'
+        } else if (20..=45).contains(&n) {
+            n as u8 - 20 + b'A'
         } else {
             return None;
         };
@@ -109,21 +109,21 @@ impl Combinator<Option<i32>> for KakuroNumCombinator {
     }
 
     fn deserialize(&self, _: &Context, input: &[u8]) -> Option<(usize, Vec<Option<i32>>)> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return None;
         }
         let c = input[0];
 
-        if c == '-' as u8 {
+        if c == b'-' {
             return Some((1, vec![None]));
         }
 
-        let v = if '0' as u8 <= c && c <= '9' as u8 {
-            c - '0' as u8
-        } else if 'a' as u8 <= c && c <= 'j' as u8 {
-            c - 'a' as u8 + 10
-        } else if 'A' as u8 <= c && c <= 'Z' as u8 {
-            c - 'A' as u8 + 20
+        let v = if (b'0'..=b'9').contains(&c) {
+            c - b'0'
+        } else if (b'a'..=b'j').contains(&c) {
+            c - b'a' + 10
+        } else if (b'A'..=b'Z').contains(&c) {
+            c - b'A' + 20
         } else {
             return None;
         };
