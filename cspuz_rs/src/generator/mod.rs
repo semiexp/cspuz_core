@@ -1,12 +1,17 @@
+use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 
 pub trait Pattern {
     type Output;
     type Update;
 
     fn initial(&self) -> Self::Output;
-    fn enumerate_update_candidates(&self, current: &Self::Output) -> Vec<Self::Update>;
+    fn enumerate_update_candidates(
+        &self,
+        current: &Self::Output,
+        rng: &mut StdRng,
+    ) -> Vec<Self::Update>;
     fn apply_update(&self, current: &Self::Output, update: &Self::Update) -> Self::Output;
 }
 
@@ -33,7 +38,11 @@ impl<T: Clone + PartialEq> Pattern for Choice<T> {
         self.initial.clone()
     }
 
-    fn enumerate_update_candidates(&self, current: &Self::Output) -> Vec<Self::Update> {
+    fn enumerate_update_candidates(
+        &self,
+        current: &Self::Output,
+        _rng: &mut StdRng,
+    ) -> Vec<Self::Update> {
         let mut ret = vec![];
         for cand in &self.candidates {
             if cand != current {
@@ -60,11 +69,15 @@ where
         self.iter().map(|x| x.initial()).collect()
     }
 
-    fn enumerate_update_candidates(&self, current: &Self::Output) -> Vec<Self::Update> {
+    fn enumerate_update_candidates(
+        &self,
+        current: &Self::Output,
+        rng: &mut StdRng,
+    ) -> Vec<Self::Update> {
         let mut ret = vec![];
         assert_eq!(self.len(), current.len());
         for i in 0..self.len() {
-            for c in self[i].enumerate_update_candidates(&current[i]) {
+            for c in self[i].enumerate_update_candidates(&current[i], rng) {
                 ret.push((i, c));
             }
         }
@@ -158,8 +171,12 @@ where
         let mut temperature = self.initial_temperature;
         let max_steps = 1000;
 
+        let mut aux_rng = rand::rngs::StdRng::from_seed(rng.gen());
+
         for _ in 0..max_steps {
-            let mut update_candidates = self.pattern.enumerate_update_candidates(&current_problem);
+            let mut update_candidates = self
+                .pattern
+                .enumerate_update_candidates(&current_problem, &mut aux_rng);
             update_candidates.shuffle(rng);
 
             for cand in &update_candidates {
@@ -309,8 +326,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use rand::SeedableRng;
-
     use super::*;
 
     #[test]
