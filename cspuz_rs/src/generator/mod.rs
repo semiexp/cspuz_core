@@ -2,6 +2,10 @@ use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 
+mod grid;
+
+pub use grid::{Grid, Symmetry};
+
 pub trait Pattern {
     type Output;
     type Update;
