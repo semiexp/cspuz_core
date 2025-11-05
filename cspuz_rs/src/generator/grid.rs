@@ -175,3 +175,111 @@ impl<T: Clone + PartialEq> Pattern for Grid<T> {
         new_grid
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::generator::Generator;
+
+    use super::*;
+    use rand::SeedableRng;
+
+    fn ensure_symmetry<F>(
+        is_symmetric: bool,
+        height: usize,
+        width: usize,
+        grid: &[Vec<i32>],
+        translate: F,
+    ) where
+        F: Fn(usize, usize) -> (usize, usize),
+    {
+        if is_symmetric {
+            for y in 0..height {
+                for x in 0..width {
+                    let (ty, tx) = translate(y, x);
+                    assert!(ty < height && tx < width);
+                    assert_eq!(grid[y][x] != 0, grid[ty][tx] != 0);
+                }
+            }
+        } else {
+            let mut found_asymmetry = false;
+            for y in 0..height {
+                for x in 0..width {
+                    let (ty, tx) = translate(y, x);
+                    assert!(ty < height && tx < width);
+                    if (grid[y][x] != 0) != (grid[ty][tx] != 0) {
+                        found_asymmetry = true;
+                    }
+                }
+            }
+            assert!(found_asymmetry);
+        }
+    }
+
+    fn run_check_symmetry<F>(symmetry: Symmetry, square_only: bool, checker: F)
+    where
+        F: Fn(usize, usize, &[Vec<i32>]) -> (),
+    {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(42);
+
+        for (h, w) in [(6, 6), (6, 7), (7, 6), (7, 7)] {
+            if square_only && h != w {
+                continue;
+            }
+
+            let grid = Grid::new(h, w, &[0, 1, 2], 0, symmetry);
+            let generated = Generator::new(
+                |_| Some(()),
+                grid,
+                |problem, _| {
+                    let mut cnt = 0;
+                    for y in 0..h {
+                        for x in 0..w {
+                            if problem[y][x] != 0 {
+                                cnt += 1;
+                            }
+                        }
+                    }
+                    cnt >= h * w / 2
+                },
+                |_, _| 0.0,
+            )
+            .generate(&mut rng);
+            assert!(generated.is_some());
+            let generated = generated.unwrap();
+            checker(h, w, &generated);
+        }
+    }
+
+    #[test]
+    fn test_grid_symmetry() {
+        run_check_symmetry(Symmetry::None, false, |h, w, generated| {
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, x));
+            ensure_symmetry(false, h, w, generated, |y, x| (y, w - 1 - x));
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, w - 1 - x));
+        });
+
+        run_check_symmetry(Symmetry::HorizontalLine, false, |h, w, generated| {
+            ensure_symmetry(true, h, w, generated, |y, x| (h - 1 - y, x));
+            ensure_symmetry(false, h, w, generated, |y, x| (y, w - 1 - x));
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, w - 1 - x));
+        });
+
+        run_check_symmetry(Symmetry::VerticalLine, false, |h, w, generated| {
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, x));
+            ensure_symmetry(true, h, w, generated, |y, x| (y, w - 1 - x));
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, w - 1 - x));
+        });
+
+        run_check_symmetry(Symmetry::Rotate180, false, |h, w, generated| {
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, x));
+            ensure_symmetry(false, h, w, generated, |y, x| (y, w - 1 - x));
+            ensure_symmetry(true, h, w, generated, |y, x| (h - 1 - y, w - 1 - x));
+        });
+
+        run_check_symmetry(Symmetry::Rotate90, true, |h, w, generated| {
+            ensure_symmetry(false, h, w, generated, |y, x| (h - 1 - y, x));
+            ensure_symmetry(false, h, w, generated, |y, x| (y, w - 1 - x));
+            ensure_symmetry(true, h, w, generated, |y, x| (x, h - 1 - y));
+        });
+    }
+}
