@@ -24,9 +24,17 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
-            if y < height - 1 {
+            if y < height - 1 && (problem[y][x] != Some(-2) && problem[y + 1][x] != Some(-2)) {
                 let mut need_default_edge = true;
-                if let Some(b) = border.horizontal[y][x] {
+                if problem[y][x] == Some(-2) || problem[y + 1][x] == Some(-2) {
+                    board.push(Item {
+                        y: y * 2 + 2,
+                        x: x * 2 + 1,
+                        color: "black",
+                        kind: ItemKind::BoldWall,
+                    });
+                    need_default_edge = false;
+                } else if let Some(b) = border.horizontal[y][x] {
                     board.push(Item {
                         y: y * 2 + 2,
                         x: x * 2 + 1,
@@ -50,9 +58,17 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     });
                 }
             }
-            if x < width - 1 {
+            if x < width - 1 && (problem[y][x] != Some(-2) && problem[y][x + 1] != Some(-2)) {
                 let mut need_default_edge = true;
-                if let Some(b) = border.vertical[y][x] {
+                if problem[y][x] == Some(-2) || problem[y][x + 1] == Some(-2) {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
+                        color: "black",
+                        kind: ItemKind::BoldWall,
+                    });
+                    need_default_edge = false;
+                } else if let Some(b) = border.vertical[y][x] {
                     board.push(Item {
                         y: y * 2 + 1,
                         x: x * 2 + 2,
