@@ -2,6 +2,7 @@ use super::traits::{ArrayShape, Item, Operand, PropagateBinary, PropagateTernary
 use crate::items::Arrow;
 use crate::solver::traits::BoolArrayLike;
 use crate::solver::traits::IntArrayLike;
+use crate::solver::BoolExprArray1D;
 use std::ops::{Bound, Not, RangeBounds};
 
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
@@ -609,6 +610,13 @@ where
             CSPBoolExpr::Or(parts.into_iter().map(Box::new).collect())
         })
     }
+
+    pub fn conv2d_count_true(&self, filter: (usize, usize)) -> NdArray<(usize, usize), CSPIntExpr> {
+        conv2d_impl(self, filter, |parts| {
+            let array = BoolExprArray1D::from_raw(parts);
+            array.count_true().data.0
+        })
+    }
 }
 
 fn conv2d_impl<A, I, O, F>(
@@ -652,6 +660,7 @@ where
 mod tests {
     use super::super::Solver;
     use cspuz_core::csp::BoolExpr as CSPBoolExpr;
+    use cspuz_core::csp::IntExpr as CSPIntExpr;
 
     #[test]
     fn test_ndarray_add_0d_0d() {
@@ -987,6 +996,38 @@ mod tests {
                     Box::new(a.at((y + 1, x)).data.0.expr()),
                     Box::new(a.at((y + 1, x + 1)).data.0.expr()),
                 ]);
+                assert_eq!(&expected, &b.at((y, x)).data.0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_ndarray_conv2d_count_true() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_2d((4, 5));
+        let b = a.conv2d_count_true((2, 2));
+
+        assert_eq!(b.shape(), (3, 4));
+        for y in 0..3 {
+            for x in 0..4 {
+                let expected = {
+                    let mut terms = vec![];
+                    for dy in 0..2 {
+                        for dx in 0..2 {
+                            terms.push((
+                                Box::new(
+                                    a.at((y + dy, x + dx))
+                                        .data
+                                        .0
+                                        .expr()
+                                        .ite(CSPIntExpr::Const(1), CSPIntExpr::Const(0)),
+                                ),
+                                1,
+                            ));
+                        }
+                    }
+                    CSPIntExpr::Linear(terms)
+                };
                 assert_eq!(&expected, &b.at((y, x)).data.0);
             }
         }
