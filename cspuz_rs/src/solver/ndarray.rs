@@ -599,40 +599,52 @@ where
     Self: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
 {
     pub fn conv2d_and(&self, filter: (usize, usize)) -> NdArray<(usize, usize), CSPBoolExpr> {
-        self.conv2d_impl(filter, CSPBoolExpr::And)
+        conv2d_impl(self, filter, |parts| {
+            CSPBoolExpr::And(parts.into_iter().map(Box::new).collect())
+        })
     }
 
     pub fn conv2d_or(&self, filter: (usize, usize)) -> NdArray<(usize, usize), CSPBoolExpr> {
-        self.conv2d_impl(filter, CSPBoolExpr::Or)
+        conv2d_impl(self, filter, |parts| {
+            CSPBoolExpr::Or(parts.into_iter().map(Box::new).collect())
+        })
+    }
+}
+
+fn conv2d_impl<A, I, O, F>(
+    array: &NdArray<(usize, usize), A>,
+    filter: (usize, usize),
+    op: F,
+) -> NdArray<(usize, usize), O>
+where
+    A: Clone,
+    I: Clone,
+    O: Clone,
+    NdArray<(usize, usize), A>: Operand<Shape = (usize, usize), Value = I>,
+    F: Fn(Vec<I>) -> O,
+{
+    let orig = array.as_ndarray();
+    let (h, w) = orig.shape;
+    let (fh, fw) = filter;
+    assert!(h >= fh);
+    assert!(w >= fw);
+
+    let mut data = vec![];
+    for y in 0..=(h - fh) {
+        for x in 0..=(w - fw) {
+            let mut part = vec![];
+            for dy in 0..fh {
+                for dx in 0..fw {
+                    part.push(orig.data[(y + dy) * w + (x + dx)].clone());
+                }
+            }
+            data.push(op(part));
+        }
     }
 
-    fn conv2d_impl<F>(&self, filter: (usize, usize), op: F) -> NdArray<(usize, usize), CSPBoolExpr>
-    where
-        F: Fn(Vec<Box<CSPBoolExpr>>) -> CSPBoolExpr,
-    {
-        let orig = self.as_ndarray();
-        let (h, w) = orig.shape;
-        let (fh, fw) = filter;
-        assert!(h >= fh);
-        assert!(w >= fw);
-
-        let mut data = vec![];
-        for y in 0..=(h - fh) {
-            for x in 0..=(w - fw) {
-                let mut part = vec![];
-                for dy in 0..fh {
-                    for dx in 0..fw {
-                        part.push(Box::new(orig.data[(y + dy) * w + (x + dx)].clone()));
-                    }
-                }
-                data.push(op(part));
-            }
-        }
-
-        NdArray {
-            shape: (h - fh + 1, w - fw + 1),
-            data,
-        }
+    NdArray {
+        shape: (h - fh + 1, w - fw + 1),
+        data,
     }
 }
 
