@@ -651,6 +651,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::super::Solver;
+    use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 
     #[test]
     fn test_ndarray_add_0d_0d() {
@@ -948,6 +949,46 @@ mod tests {
             let model = model.unwrap();
             assert_eq!(model.get(a), -2);
             assert_eq!(model.get(b), -3);
+        }
+    }
+
+    #[test]
+    fn test_ndarray_conv2d_and() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_2d((4, 5));
+        let b = a.conv2d_and((2, 2));
+
+        assert_eq!(b.shape(), (3, 4));
+        for y in 0..3 {
+            for x in 0..4 {
+                let expected = CSPBoolExpr::And(vec![
+                    Box::new(a.at((y, x)).data.0.expr()),
+                    Box::new(a.at((y, x + 1)).data.0.expr()),
+                    Box::new(a.at((y + 1, x)).data.0.expr()),
+                    Box::new(a.at((y + 1, x + 1)).data.0.expr()),
+                ]);
+                assert_eq!(&expected, &b.at((y, x)).data.0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_ndarray_conv2d_or() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_2d((4, 5));
+        let b = a.conv2d_or((2, 2));
+
+        assert_eq!(b.shape(), (3, 4));
+        for y in 0..3 {
+            for x in 0..4 {
+                let expected = CSPBoolExpr::Or(vec![
+                    Box::new(a.at((y, x)).data.0.expr()),
+                    Box::new(a.at((y, x + 1)).data.0.expr()),
+                    Box::new(a.at((y + 1, x)).data.0.expr()),
+                    Box::new(a.at((y + 1, x + 1)).data.0.expr()),
+                ]);
+                assert_eq!(&expected, &b.at((y, x)).data.0);
+            }
         }
     }
 }
