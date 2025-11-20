@@ -39,6 +39,7 @@ pub mod guidearrow;
 pub mod hashi;
 pub mod hebiichigo;
 pub mod herugolf;
+pub mod heteromino;
 pub mod heyawake;
 pub mod hidato;
 pub mod hitori;
