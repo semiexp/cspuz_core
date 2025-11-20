@@ -108,6 +108,7 @@ pub mod the_longest;
 pub mod timebomb;
 pub mod tontonbeya;
 pub mod tricklayer;
+pub mod waterwalk;
 pub mod yajikazu;
 pub mod yajilin;
 pub mod yajilin_regions;
