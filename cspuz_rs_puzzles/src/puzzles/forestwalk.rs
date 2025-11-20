@@ -1,10 +1,11 @@
 use crate::util;
+use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{count_true, BoolVar, Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_forestwalk(
     forest: &[Vec<bool>],
@@ -26,11 +27,7 @@ pub fn solve_forestwalk(
     }
 
     let is_passed = &solver.bool_var_2d((h, w));
-
-    let rank = &solver.int_var_2d((h, w), 0, (h * w - 1) as i32);
-    let size = &solver.int_var_2d((h, w), 0, (h * w - 1) as i32);
-    solver.add_expr(rank.le(size));
-
+    let line_size = &walk_line_size(&mut solver, &is_line, forest, false);
     for y in 0..h {
         for x in 0..w {
             solver.add_expr((!is_passed.at((y, x))).imp(!(is_line.vertex_neighbors((y, x)).any())));
@@ -41,8 +38,6 @@ pub fn solve_forestwalk(
                         .at((y, x))
                         .imp(is_line.vertex_neighbors((y, x)).count_true().eq(3)),
                 );
-                solver.add_expr(rank.at((y, x)).eq(0));
-                solver.add_expr(size.at((y, x)).eq(0));
             } else {
                 solver.add_expr(
                     is_passed
@@ -52,48 +47,10 @@ pub fn solve_forestwalk(
 
                 if let Some(n) = num[y][x] {
                     if n >= 0 {
-                        solver.add_expr(size.at((y, x)).eq(n - 1));
+                        solver.add_expr(line_size.at((y, x)).eq(n));
                     }
                     solver.add_expr(is_passed.at((y, x)));
                 }
-
-                let mut lower = vec![];
-                let mut upper = vec![];
-
-                let mut check_neighbor = |e: &BoolVar, y2: usize, x2: usize| {
-                    if forest[y2][x2] {
-                        solver.add_expr(
-                            e.imp(rank.at((y, x)).eq(0) | rank.at((y, x)).eq(size.at((y, x)))),
-                        );
-                        lower.push(e & rank.at((y, x)).eq(0));
-                        upper.push(e & rank.at((y, x)).eq(size.at((y, x))));
-                    } else {
-                        solver.add_expr(e.imp(
-                            rank.at((y2, x2)).eq(rank.at((y, x)) + 1)
-                                | rank.at((y2, x2)).eq(rank.at((y, x)) - 1),
-                        ));
-                        solver.add_expr(e.imp(size.at((y2, x2)).eq(size.at((y, x)))));
-                        lower.push(e & rank.at((y2, x2)).eq(rank.at((y, x)) - 1));
-                        upper.push(e & rank.at((y2, x2)).eq(rank.at((y, x)) + 1));
-                    }
-                };
-
-                if y > 0 {
-                    check_neighbor(&is_line.vertical.at((y - 1, x)), y - 1, x);
-                }
-                if y < h - 1 {
-                    check_neighbor(&is_line.vertical.at((y, x)), y + 1, x);
-                }
-                if x > 0 {
-                    check_neighbor(&is_line.horizontal.at((y, x - 1)), y, x - 1);
-                }
-                if x < w - 1 {
-                    check_neighbor(&is_line.horizontal.at((y, x)), y, x + 1);
-                }
-
-                // NOTE: size[(y, x)] can be 0
-                solver.add_expr(is_passed.at((y, x)).imp(count_true(&lower).ge(1)));
-                solver.add_expr(is_passed.at((y, x)).imp(count_true(&upper).ge(1)));
             }
         }
     }
