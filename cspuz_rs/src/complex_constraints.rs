@@ -1,7 +1,10 @@
-use crate::solver::{
-    all, any, int_constant,
-    traits::{BoolArrayLike, IntArrayLike},
-    BoolExpr, BoolExprArray1D, IntExprArray1D, IntVarArray1D, Solver,
+use crate::{
+    graph,
+    solver::{
+        all, any, count_true, int_constant,
+        traits::{BoolArrayLike, IntArrayLike},
+        BoolExpr, BoolExprArray1D, IntExprArray1D, IntVarArray1D, IntVarArray2D, Solver,
+    },
 };
 
 /// Adds a constraint that, if `condition` is true (or not present),
@@ -177,6 +180,106 @@ pub fn japanese<T: BoolArrayLike>(
     }
 
     ret
+}
+
+pub fn walk_line_size(
+    solver: &mut Solver,
+    is_line: &graph::BoolGridEdges,
+    is_special_cell: &[Vec<bool>],
+    count_size_for_special_cells: bool,
+) -> IntVarArray2D {
+    let (h, w) = is_line.base_shape();
+    let h = h + 1;
+    let w = w + 1;
+
+    let direction = &graph::BoolGridEdges::new(solver, (h - 1, w - 1));
+    let up = &(&is_line.vertical & &direction.vertical);
+    let down = &(&is_line.vertical & !&direction.vertical);
+    let left = &(&is_line.horizontal & &direction.horizontal);
+    let right = &(&is_line.horizontal & !&direction.horizontal);
+
+    let line_size = solver.int_var_2d((h, w), 0, (h * w) as i32);
+    let line_rank = solver.int_var_2d((h, w), 0, (h * w) as i32);
+
+    let mut add_constraint = |src: (usize, usize), dest: (usize, usize), edge: BoolExpr| match (
+        is_special_cell[src.0][src.1],
+        is_special_cell[dest.0][dest.1],
+    ) {
+        (false, false) => {
+            solver.add_expr(edge.imp(
+                line_size.at(src).eq(line_size.at(dest))
+                    & line_rank.at(src).eq(line_rank.at(dest) + 1),
+            ));
+        }
+        (false, true) => {
+            solver.add_expr(edge.imp(line_rank.at(src).eq(1)));
+            if count_size_for_special_cells {
+                solver.add_expr(edge.imp(line_rank.at(dest).eq(line_size.at(dest))));
+            }
+        }
+        (true, false) => {
+            solver.add_expr(edge.imp(line_rank.at(dest).eq(line_size.at(dest))));
+            if count_size_for_special_cells {
+                solver.add_expr(edge.imp(line_rank.at(src).eq(1)));
+            }
+        }
+        (true, true) => {
+            if count_size_for_special_cells {
+                solver.add_expr(edge.imp(
+                    line_size.at(src).eq(line_size.at(dest))
+                        & line_rank.at(src).eq(line_rank.at(dest) + 1),
+                ));
+            }
+        }
+    };
+
+    for y in 0..h {
+        for x in 0..w {
+            if y > 0 {
+                add_constraint((y, x), (y - 1, x), up.at((y - 1, x)));
+            }
+            if y < h - 1 {
+                add_constraint((y, x), (y + 1, x), down.at((y, x)));
+            }
+            if x > 0 {
+                add_constraint((y, x), (y, x - 1), left.at((y, x - 1)));
+            }
+            if x < w - 1 {
+                add_constraint((y, x), (y, x + 1), right.at((y, x)));
+            }
+        }
+    }
+
+    for y in 0..h {
+        for x in 0..w {
+            if !count_size_for_special_cells && is_special_cell[y][x] {
+                continue;
+            }
+
+            let mut inbound = vec![];
+            let mut outbound = vec![];
+            if y > 0 {
+                inbound.push(is_line.vertical.at((y - 1, x)) & !direction.vertical.at((y - 1, x)));
+                outbound.push(up.at((y - 1, x)));
+            }
+            if y < h - 1 {
+                inbound.push(is_line.vertical.at((y, x)) & direction.vertical.at((y, x)));
+                outbound.push(down.at((y, x)));
+            }
+            if x > 0 {
+                inbound
+                    .push(is_line.horizontal.at((y, x - 1)) & !direction.horizontal.at((y, x - 1)));
+                outbound.push(left.at((y, x - 1)));
+            }
+            if x < w - 1 {
+                inbound.push(is_line.horizontal.at((y, x)) & direction.horizontal.at((y, x)));
+                outbound.push(right.at((y, x)));
+            }
+            solver.add_expr(count_true(&inbound).eq(count_true(&outbound)));
+        }
+    }
+
+    line_size
 }
 
 #[cfg(test)]
@@ -370,6 +473,77 @@ mod tests {
             }
 
             assert_eq!(n_patterns_actual, n_patterns_expected, "{} {}", n, mask);
+        }
+    }
+
+    #[test]
+    fn test_walk_line_size() {
+        {
+            let mut solver = Solver::new();
+            let is_line = graph::BoolGridEdges::new(&mut solver, (2, 2));
+            let horizontal = [[true, false], [true, true], [false, true]];
+            let vertical = [[true, true, false], [false, true, true]];
+            for y in 0..3 {
+                for x in 0..2 {
+                    solver.add_expr(is_line.horizontal.at((y, x)).iff(horizontal[y][x]));
+                }
+            }
+            for y in 0..2 {
+                for x in 0..3 {
+                    solver.add_expr(is_line.vertical.at((y, x)).iff(vertical[y][x]));
+                }
+            }
+            let is_special_cell = vec![
+                vec![false, false, false],
+                vec![false, true, false],
+                vec![false, true, false],
+            ];
+            let line_size = walk_line_size(&mut solver, &is_line, &is_special_cell, false);
+            assert_eq!(line_size.shape(), (3, 3));
+
+            let model = solver.solve().unwrap();
+            let expected = [[3, 3, -1], [3, -1, 2], [-1, -1, 2]];
+            for y in 0..3 {
+                for x in 0..3 {
+                    if expected[y][x] != -1 {
+                        assert_eq!(model.get(&line_size.at((y, x))), expected[y][x]);
+                    }
+                }
+            }
+        }
+
+        {
+            let mut solver = Solver::new();
+            let is_line = graph::BoolGridEdges::new(&mut solver, (2, 2));
+            let horizontal = [[true, true], [true, false], [false, true]];
+            let vertical = [[true, false, true], [false, true, true]];
+            for y in 0..3 {
+                for x in 0..2 {
+                    solver.add_expr(is_line.horizontal.at((y, x)).iff(horizontal[y][x]));
+                }
+            }
+            for y in 0..2 {
+                for x in 0..3 {
+                    solver.add_expr(is_line.vertical.at((y, x)).iff(vertical[y][x]));
+                }
+            }
+            let is_special_cell = vec![
+                vec![false, false, true],
+                vec![false, true, false],
+                vec![false, true, false],
+            ];
+            let line_size = walk_line_size(&mut solver, &is_line, &is_special_cell, true);
+            assert_eq!(line_size.shape(), (3, 3));
+
+            let model = solver.solve().unwrap();
+            let expected = [[3, 3, 1], [3, 2, 2], [-1, 2, 2]];
+            for y in 0..3 {
+                for x in 0..3 {
+                    if expected[y][x] != -1 {
+                        assert_eq!(model.get(&line_size.at((y, x))), expected[y][x]);
+                    }
+                }
+            }
         }
     }
 }
