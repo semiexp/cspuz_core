@@ -1,10 +1,11 @@
 use crate::util;
+use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{count_true, BoolExpr, Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_icewalk(
     icebarn: &[Vec<bool>],
@@ -54,79 +55,15 @@ pub fn solve_icewalk(
         }
     }
 
-    let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let up = &(&is_line.vertical & &direction.vertical);
-    let down = &(&is_line.vertical & !&direction.vertical);
-    let left = &(&is_line.horizontal & &direction.horizontal);
-    let right = &(&is_line.horizontal & !&direction.horizontal);
-
-    let line_size = &solver.int_var_2d((h, w), 0, (h * w) as i32);
-    let line_rank = &solver.int_var_2d((h, w), 0, (h * w) as i32);
-
-    let mut add_constraint = |src: (usize, usize), dest: (usize, usize), edge: BoolExpr| match (
-        icebarn[src.0][src.1],
-        icebarn[dest.0][dest.1],
-    ) {
-        (false, false) => {
-            solver.add_expr(edge.imp(
-                line_size.at(src).eq(line_size.at(dest))
-                    & line_rank.at(src).eq(line_rank.at(dest) + 1),
-            ));
-        }
-        (false, true) => {
-            solver.add_expr(edge.imp(line_rank.at(src).eq(0)));
-        }
-        (true, false) => {
-            solver.add_expr(edge.imp(line_rank.at(dest).eq(line_size.at(dest))));
-        }
-        (true, true) => (),
-    };
-
-    for y in 0..h {
-        for x in 0..w {
-            if y > 0 {
-                add_constraint((y, x), (y - 1, x), up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                add_constraint((y, x), (y + 1, x), down.at((y, x)));
-            }
-            if x > 0 {
-                add_constraint((y, x), (y, x - 1), left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                add_constraint((y, x), (y, x + 1), right.at((y, x)));
-            }
-        }
-    }
+    let line_size = &walk_line_size(&mut solver, &is_line, icebarn, false);
 
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = num[y][x] {
                 if n >= 0 {
-                    solver.add_expr(line_size.at((y, x)).eq(n - 1));
+                    solver.add_expr(line_size.at((y, x)).eq(n));
                 }
             }
-
-            let mut inbound = vec![];
-            let mut outbound = vec![];
-            if y > 0 {
-                inbound.push(is_line.vertical.at((y - 1, x)) & !direction.vertical.at((y - 1, x)));
-                outbound.push(up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                inbound.push(is_line.vertical.at((y, x)) & direction.vertical.at((y, x)));
-                outbound.push(down.at((y, x)));
-            }
-            if x > 0 {
-                inbound
-                    .push(is_line.horizontal.at((y, x - 1)) & !direction.horizontal.at((y, x - 1)));
-                outbound.push(left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                inbound.push(is_line.horizontal.at((y, x)) & direction.horizontal.at((y, x)));
-                outbound.push(right.at((y, x)));
-            }
-            solver.add_expr(count_true(&inbound).eq(count_true(&outbound)));
         }
     }
 
