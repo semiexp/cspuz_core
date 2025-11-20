@@ -112,4 +112,5 @@ pub mod waterwalk;
 pub mod yajikazu;
 pub mod yajilin;
 pub mod yajilin_regions;
+pub mod yajisoko;
 pub mod yinyang;
