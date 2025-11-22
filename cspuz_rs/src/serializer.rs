@@ -404,6 +404,7 @@ pub struct Spaces<T: Clone + PartialEq> {
     space: T,
     minimum: i32,
     maximum: i32,
+    repetition: usize,
 }
 
 impl<T: Clone + PartialEq> Spaces<T> {
@@ -412,6 +413,16 @@ impl<T: Clone + PartialEq> Spaces<T> {
             space,
             minimum: from_base36(minimum as u8).unwrap(),
             maximum: from_base36(b'z').unwrap(),
+            repetition: 1,
+        }
+    }
+
+    pub fn new_with_repetition(space: T, minimum: char, repetition: usize) -> Spaces<T> {
+        Spaces {
+            space,
+            minimum: from_base36(minimum as u8).unwrap(),
+            maximum: from_base36(b'z').unwrap(),
+            repetition,
         }
     }
 
@@ -420,23 +431,29 @@ impl<T: Clone + PartialEq> Spaces<T> {
             space,
             minimum: from_base36(minimum as u8).unwrap(),
             maximum: from_base36(maximum as u8).unwrap(),
+            repetition: 1,
         }
     }
 }
 
 impl<T: Clone + PartialEq> Combinator<T> for Spaces<T> {
     fn serialize(&self, _: &Context, input: &[T]) -> Option<(usize, Vec<u8>)> {
-        let n_spaces_max = (self.maximum - self.minimum) as usize + 1;
+        let n_spaces_max = ((self.maximum - self.minimum) as usize + 1) * self.repetition;
         let mut n_spaces = 0;
         while n_spaces < input.len() && n_spaces < n_spaces_max && input[n_spaces] == self.space {
             n_spaces += 1;
         }
-        if n_spaces == 0 {
+        let n_units = if n_spaces == input.len() {
+            n_spaces.div_ceil(self.repetition)
+        } else {
+            n_spaces / self.repetition
+        };
+        if n_units == 0 {
             None
         } else {
             Some((
-                n_spaces,
-                vec![to_base36(self.minimum + (n_spaces as i32 - 1))],
+                (n_units * self.repetition).min(input.len()),
+                vec![to_base36(self.minimum + (n_units as i32 - 1))],
             ))
         }
     }
@@ -450,7 +467,7 @@ impl<T: Clone + PartialEq> Combinator<T> for Spaces<T> {
             return None;
         }
         let mut ret = vec![];
-        for _ in 0..=(v - self.minimum) {
+        for _ in 0..((v - self.minimum + 1) as usize * self.repetition) {
             ret.push(self.space.clone());
         }
         Some((1, ret))
@@ -1961,6 +1978,33 @@ mod tests {
         assert_eq!(
             combinator.deserialize(ctx, "b".as_bytes()),
             Some((1, vec![0, 0, 0]))
+        );
+
+        let combinator = Spaces::new_with_repetition(0i32, 'x', 2);
+        assert_eq!(combinator.serialize(ctx, &[0, 1]), None,);
+        assert_eq!(
+            combinator.serialize(ctx, &[0, 0, 0, 0, 1]),
+            Some((4, Vec::from("y")))
+        );
+        assert_eq!(
+            combinator.serialize(ctx, &[0, 0, 0, 0, 0, 1]),
+            Some((4, Vec::from("y")))
+        );
+        assert_eq!(
+            combinator.serialize(ctx, &[0, 0, 0, 0, 0]),
+            Some((5, Vec::from("z")))
+        );
+        assert_eq!(
+            combinator.serialize(ctx, &[0, 0, 0, 0, 0, 0, 1]),
+            Some((6, Vec::from("z")))
+        );
+        assert_eq!(
+            combinator.serialize(ctx, &[0, 0, 0, 0, 0, 0, 0, 0, 1]),
+            Some((6, Vec::from("z")))
+        );
+        assert_eq!(
+            combinator.deserialize(ctx, "y".as_bytes()),
+            Some((1, vec![0, 0, 0, 0]))
         );
     }
 

@@ -51,6 +51,7 @@ pub mod koburin;
 pub mod kouchoku;
 pub mod kropki;
 pub mod kropki_pairs;
+pub mod kurarin;
 pub mod kurodoko;
 pub mod kurotto;
 pub mod letter_weights;
