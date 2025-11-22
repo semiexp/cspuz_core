@@ -2,7 +2,7 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
-    ContextBasedGrid, MultiDigit, Size, Spaces,
+    ContextBasedGrid, MultiDigit, Size, SizeDoubler, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -64,39 +64,6 @@ pub fn solve_kurarin(
 }
 
 type Problem = Vec<Vec<i32>>;
-
-pub struct SizeDoubler<S> {
-    base_serializer: S,
-}
-
-impl<S> SizeDoubler<S> {
-    fn new(base_serializer: S) -> SizeDoubler<S> {
-        SizeDoubler { base_serializer }
-    }
-}
-
-impl<S, T> Combinator<T> for SizeDoubler<S>
-where
-    S: Combinator<T>,
-{
-    fn serialize(&self, ctx: &Context, input: &[T]) -> Option<(usize, Vec<u8>)> {
-        let ctx = Context {
-            height: ctx.height.map(|a| a * 2 - 1),
-            width: ctx.width.map(|a| a * 2 - 1),
-            ..*ctx
-        };
-        self.base_serializer.serialize(&ctx, input)
-    }
-
-    fn deserialize(&self, ctx: &Context, input: &[u8]) -> Option<(usize, Vec<T>)> {
-        let ctx = Context {
-            height: ctx.height.map(|a| a * 2 - 1),
-            width: ctx.width.map(|a| a * 2 - 1),
-            ..*ctx
-        };
-        self.base_serializer.deserialize(&ctx, input)
-    }
-}
 
 fn combinator() -> impl Combinator<Problem> {
     Size::new(SizeDoubler::new(ContextBasedGrid::new(Choice::new(vec![
