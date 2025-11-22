@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid,
-    Choice, Combinator, Dict, KudamonoGrid,
+    get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
+    Combinator, Dict, KudamonoGrid,
 };
 use cspuz_rs::solver::{any, Solver};
 
@@ -204,9 +204,7 @@ pub fn solve_tamago_town(
         }
     }
 
-    solver
-        .irrefutable_facts()
-        .map(|f| f.get(&is_border))
+    solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
 
 type Problem = Vec<Vec<TamagoTownCell>>;
