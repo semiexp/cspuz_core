@@ -102,6 +102,7 @@ pub mod statue_park;
 pub mod stostone;
 pub mod sudoku;
 pub mod sukoro;
+pub mod tamago_town;
 pub mod tapa;
 pub mod tasquare;
 pub mod the_longest;
