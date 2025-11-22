@@ -195,6 +195,7 @@ puzzle_list!(kudamono,
     (sniping_arrow, ["sniping-arrow"], "Sniping Arrow", "スナイピングアロー"),
     (soulmates, ["soulmates"], "Soulmates", "ソウルメイツ"),
     (spokes, ["spokes"], "Spokes", "Spokes"),
+    (tamago_town, ["tamago-town"], "Tamago Town", "Tamago Town"),
     (the_longest, ["the-longest"], "The Longest", "短辺消失"),
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
 );

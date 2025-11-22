@@ -1775,6 +1775,8 @@ pub struct KudamonoURLInfo<'a> {
 pub fn get_kudamono_url_body(url: &str) -> Option<&str> {
     if !url.contains("pedros.works/paper-puzzle-player?")
         && !url.contains("pedros.works/paper-puzzle-player.html?")
+        && !url.contains("pedros.works/kudamono/editor?")
+        && !url.contains("pedros.works/kudamono/player?")
     {
         None
     } else {
