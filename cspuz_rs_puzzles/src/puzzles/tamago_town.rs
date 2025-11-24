@@ -1,71 +1,11 @@
 use crate::util;
+use crate::polyomino::{adjacent_edges, bbox, enumerate_variants, named_tetrominoes};
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, Dict, KudamonoGrid,
 };
 use cspuz_rs::solver::{any, Solver};
-
-fn tetrominoes() -> Vec<Vec<(usize, usize)>> {
-    vec![
-        vec![(0, 0), (0, 1), (0, 2), (0, 3)],
-        vec![(0, 0), (1, 0), (2, 0), (0, 1)],
-        vec![(0, 0), (0, 1), (1, 0), (1, 1)],
-        vec![(0, 0), (0, 1), (1, 1), (1, 2)],
-        vec![(0, 0), (0, 1), (0, 2), (1, 1)],
-    ]
-}
-
-fn bbox(piece: &[(usize, usize)]) -> (usize, usize) {
-    let mut h = 0;
-    let mut w = 0;
-    for &(y, x) in piece {
-        h = h.max(y + 1);
-        w = w.max(x + 1);
-    }
-    (h, w)
-}
-
-fn rotate(piece: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let (h, _w) = bbox(piece);
-    piece.iter().map(|&(y, x)| (x, h - y - 1)).collect()
-}
-
-fn flip(piece: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let (h, _w) = bbox(piece);
-    piece.iter().map(|&(y, x)| (h - y - 1, x)).collect()
-}
-
-fn enumerate_variants(piece: &[(usize, usize)]) -> Vec<Vec<(usize, usize)>> {
-    let mut cands = vec![];
-    cands.push(piece.to_owned());
-    for i in 0..3 {
-        cands.push(rotate(&cands[i]));
-    }
-    for i in 0..4 {
-        cands.push(flip(&cands[i]));
-    }
-    cands.sort();
-    cands.dedup();
-
-    cands
-}
-
-fn connections(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
-    let mut conns_horizontal = vec![];
-    let mut conns_vertical = vec![];
-
-    for &(y, x) in piece {
-        if piece.contains(&(y + 1, x)) {
-            conns_horizontal.push((y, x));
-        }
-        if piece.contains(&(y, x + 1)) {
-            conns_vertical.push((y, x));
-        }
-    }
-
-    (conns_horizontal, conns_vertical)
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TamagoTownCell {
@@ -103,7 +43,7 @@ pub fn solve_tamago_town(
     graph::graph_division_2d(&mut solver, ranges, &is_border);
 
     let mut variants = vec![];
-    for piece in tetrominoes() {
+    for (_, piece) in named_tetrominoes() {
         variants.extend(enumerate_variants(&piece));
     }
 
@@ -180,7 +120,7 @@ pub fn solve_tamago_town(
                     }
                 }
 
-                let (conns_horizontal, conns_vertical) = connections(piece);
+                let (conns_horizontal, conns_vertical) = adjacent_edges(piece);
                 let v = solver.bool_var();
                 for &(dy, dx) in &conns_horizontal {
                     solver.add_expr(v.imp(!is_border.horizontal.at((y + dy, x + dx))));
