@@ -1,3 +1,6 @@
+use crate::polyomino::{
+    adjacent_edges, bbox, enumerate_variants, named_pentominoes, named_tetrominoes, Piece,
+};
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
@@ -11,89 +14,11 @@ enum PieceSet {
     Pentomino,
 }
 
-fn pentominoes() -> Vec<(char, Vec<(usize, usize)>)> {
-    Vec::from([
-        ('F', vec![(0, 0), (1, 0), (1, 1), (1, 2), (2, 1)]),
-        ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]),
-        ('L', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 0)]),
-        ('N', vec![(0, 1), (0, 2), (0, 3), (1, 0), (1, 1)]),
-        ('P', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 1)]),
-        ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1), (2, 1)]),
-        ('U', vec![(0, 0), (0, 1), (0, 2), (1, 0), (1, 2)]),
-        ('V', vec![(0, 0), (0, 1), (0, 2), (1, 0), (2, 0)]),
-        ('W', vec![(0, 0), (1, 0), (1, 1), (2, 1), (2, 2)]),
-        ('X', vec![(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]),
-        ('Y', vec![(0, 0), (0, 1), (0, 2), (0, 3), (1, 1)]),
-        ('Z', vec![(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)]),
-    ])
-}
-
-fn tetrominoes() -> Vec<(char, Vec<(usize, usize)>)> {
-    Vec::from([
-        ('I', vec![(0, 0), (0, 1), (0, 2), (0, 3)]),
-        ('L', vec![(0, 0), (1, 0), (2, 0), (0, 1)]),
-        ('O', vec![(0, 0), (0, 1), (1, 0), (1, 1)]),
-        ('S', vec![(0, 0), (0, 1), (1, 1), (1, 2)]),
-        ('T', vec![(0, 0), (0, 1), (0, 2), (1, 1)]),
-    ])
-}
-
-fn get_pieces(piece_set: PieceSet) -> Vec<(char, Vec<(usize, usize)>)> {
+fn get_pieces(piece_set: PieceSet) -> Vec<(char, Piece)> {
     match piece_set {
-        PieceSet::Tetromino => tetrominoes(),
-        PieceSet::Pentomino => pentominoes(),
+        PieceSet::Tetromino => named_tetrominoes(),
+        PieceSet::Pentomino => named_pentominoes(),
     }
-}
-
-fn bbox(piece: &[(usize, usize)]) -> (usize, usize) {
-    let mut h = 0;
-    let mut w = 0;
-    for &(y, x) in piece {
-        h = h.max(y + 1);
-        w = w.max(x + 1);
-    }
-    (h, w)
-}
-
-fn rotate(piece: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let (h, _w) = bbox(piece);
-    piece.iter().map(|&(y, x)| (x, h - y - 1)).collect()
-}
-
-fn flip(piece: &[(usize, usize)]) -> Vec<(usize, usize)> {
-    let (h, _w) = bbox(piece);
-    piece.iter().map(|&(y, x)| (h - y - 1, x)).collect()
-}
-
-fn enumerate_variants(piece: &[(usize, usize)]) -> Vec<Vec<(usize, usize)>> {
-    let mut cands = vec![];
-    cands.push(piece.to_owned());
-    for i in 0..3 {
-        cands.push(rotate(&cands[i]));
-    }
-    for i in 0..4 {
-        cands.push(flip(&cands[i]));
-    }
-    cands.sort();
-    cands.dedup();
-
-    cands
-}
-
-fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
-    let mut horizontal = vec![];
-    let mut vertical = vec![];
-
-    for &(y, x) in piece {
-        if piece.iter().any(|&p| p == (y + 1, x)) {
-            horizontal.push((y, x));
-        }
-        if piece.iter().any(|&p| p == (y, x + 1)) {
-            vertical.push((y, x));
-        }
-    }
-
-    (horizontal, vertical)
 }
 
 fn solve_polyominous(
