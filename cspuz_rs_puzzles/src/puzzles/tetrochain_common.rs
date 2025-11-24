@@ -25,7 +25,6 @@ pub fn add_tetrochain_constraints(solver: &mut Solver, is_black: &BoolVarArray2D
     for y in 0..h {
         for x in 0..w {
             for k in 0..5 {
-                eprintln!("y={}, x={}, k={}", y, x, k);
                 let mut cands = vec![];
                 for (piece, outside_cells) in &variants[k] {
                     let (ph, pw) = bbox(piece);
@@ -39,10 +38,8 @@ pub fn add_tetrochain_constraints(solver: &mut Solver, is_black: &BoolVarArray2D
                             continue;
                         }
 
-                        eprint!("- ");
                         let mut conditions = vec![];
                         for &(py2, px2) in piece {
-                            eprint!("({},{}) ", oy + py2, ox + px2);
                             conditions.push(is_black.at((oy + py2, ox + px2)).expr());
                         }
                         for &(dy, dx) in outside_cells {
@@ -50,11 +47,9 @@ pub fn add_tetrochain_constraints(solver: &mut Solver, is_black: &BoolVarArray2D
                             let x2 = ox as isize + dx;
 
                             if 0 <= y2 && y2 < h as isize && 0 <= x2 && x2 < w as isize {
-                                eprint!("!({},{}) ", y2, x2);
                                 conditions.push(!is_black.at((y2 as usize, x2 as usize)));
                             }
                         }
-                        eprintln!();
 
                         cands.push(all(conditions));
                     }
