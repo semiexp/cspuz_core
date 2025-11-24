@@ -56,6 +56,9 @@ pub fn enumerate_variants(piece: &[(usize, usize)]) -> Vec<Piece> {
     for i in 0..4 {
         cands.push(flip(&cands[i]));
     }
+    for cand in &mut cands {
+        cand.sort();
+    }
     cands.sort();
     cands.dedup();
 
