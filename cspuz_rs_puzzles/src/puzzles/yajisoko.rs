@@ -96,8 +96,10 @@ pub fn solve_yajisoko(
     for y in 0..h {
         for x in 0..w {
             if let YajisokoCell::Arrow((dir, n)) = clues[y][x] {
-                let cells = block_after_move.pointing_cells((y, x), dir).unwrap();
-                solver.add_expr((!block_after_move.at((y, x))).imp(cells.count_true().eq(n)));
+                if dir != Arrow::Unspecified {
+                    let cells = block_after_move.pointing_cells((y, x), dir).unwrap();
+                    solver.add_expr((!block_after_move.at((y, x))).imp(cells.count_true().eq(n)));
+                }
             }
         }
     }
