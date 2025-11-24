@@ -1,3 +1,6 @@
+use crate::polyomino::{
+    adjacent_edges, bbox, enumerate_variants, named_pentominoes, named_tetrominoes, Piece,
+};
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
@@ -5,7 +8,6 @@ use cspuz_rs::serializer::{
     Dict, MultiDigit, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{all, any, Solver};
-use crate::polyomino::{named_pentominoes, named_tetrominoes, Piece, adjacent_edges, bbox, enumerate_variants};
 
 enum PieceSet {
     Tetromino,

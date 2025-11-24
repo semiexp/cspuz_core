@@ -108,6 +108,8 @@ pub mod sukoro;
 pub mod tamago_town;
 pub mod tapa;
 pub mod tasquare;
+mod tetrochain_common;
+pub mod tetrochain_y;
 pub mod the_longest;
 pub mod timebomb;
 pub mod tontonbeya;

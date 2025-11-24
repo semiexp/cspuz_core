@@ -63,7 +63,7 @@ pub fn enumerate_variants(piece: &[(usize, usize)]) -> Vec<Piece> {
 }
 
 /// Returns the coordinates of cell edges adjacent to 2 cells in the piece.
-/// 
+///
 /// The first element in the returned tuple is for horizontal edges between (y, x) and (y+1, x).
 /// The second element is for vertical edges between (y, x) and (y, x+1).
 pub fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
@@ -80,4 +80,23 @@ pub fn adjacent_edges(piece: &[(usize, usize)]) -> (Vec<(usize, usize)>, Vec<(us
     }
 
     (horizontal, vertical)
+}
+
+pub fn adjacent_outside_cells(piece: &[(usize, usize)]) -> Vec<(isize, isize)> {
+    let mut ret = vec![];
+
+    for &(y, x) in piece {
+        for &(dy, dx) in &[(0, 1), (1, 0), (0, -1), (-1, 0)] {
+            let ny = y as isize + dy;
+            let nx = x as isize + dx;
+            if !piece.iter().any(|&p| p == (ny as usize, nx as usize)) {
+                ret.push((ny, nx));
+            }
+        }
+    }
+
+    ret.sort();
+    ret.dedup();
+
+    ret
 }

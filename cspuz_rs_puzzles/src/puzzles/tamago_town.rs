@@ -1,5 +1,5 @@
-use crate::util;
 use crate::polyomino::{adjacent_edges, bbox, enumerate_variants, named_tetrominoes};
+use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
