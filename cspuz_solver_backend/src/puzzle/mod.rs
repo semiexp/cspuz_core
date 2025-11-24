@@ -201,6 +201,7 @@ puzzle_list!(kudamono,
     (soulmates, ["soulmates"], "Soulmates", "ソウルメイツ"),
     (spokes, ["spokes"], "Spokes", "Spokes"),
     (tamago_town, ["tamago-town"], "Tamago Town", "Tamago Town"),
+    (tetrochain_ctb, ["tetrochain-ctb"], "Tetrochain CTB", "Tetrochain CTB"),
     (the_longest, ["the-longest"], "The Longest", "短辺消失"),
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
 );

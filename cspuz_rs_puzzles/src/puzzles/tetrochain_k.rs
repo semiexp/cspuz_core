@@ -15,7 +15,7 @@ pub fn solve_tetrochain_k(clues: &[Vec<i32>]) -> Option<Vec<Vec<Option<bool>>>> 
     let is_black = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(is_black);
 
-    add_tetrochain_constraints(&mut solver, is_black);
+    add_tetrochain_constraints(&mut solver, is_black, None);
 
     for y in 0..(h * 2 - 1) {
         for x in 0..(w * 2 - 1) {

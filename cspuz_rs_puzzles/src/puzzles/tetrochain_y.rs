@@ -13,7 +13,7 @@ pub fn solve_tetrochain_y(clues: &[Vec<Option<NumberedArrow>>]) -> Option<Vec<Ve
     let is_black = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(is_black);
 
-    super::tetrochain_common::add_tetrochain_constraints(&mut solver, is_black);
+    super::tetrochain_common::add_tetrochain_constraints(&mut solver, is_black, None);
 
     for y in 0..h {
         for x in 0..w {

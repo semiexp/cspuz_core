@@ -1,8 +1,14 @@
-use crate::polyomino::{adjacent_outside_cells, bbox, enumerate_variants, named_tetrominoes};
+use crate::polyomino::{
+    adjacent_edges, adjacent_outside_cells, bbox, enumerate_variants, named_tetrominoes,
+};
 use cspuz_rs::graph;
 use cspuz_rs::solver::{all, any, BoolVarArray2D, Solver};
 
-pub fn add_tetrochain_constraints(solver: &mut Solver, is_black: &BoolVarArray2D) {
+pub fn add_tetrochain_constraints(
+    solver: &mut Solver,
+    is_black: &BoolVarArray2D,
+    overlap_with_borders: Option<&graph::InnerGridEdges<Vec<Vec<bool>>>>,
+) {
     let (h, w) = is_black.shape();
 
     let mut variants = vec![];
@@ -36,6 +42,31 @@ pub fn add_tetrochain_constraints(solver: &mut Solver, is_black: &BoolVarArray2D
                         let ox = x - px;
                         if oy + ph > h || ox + pw > w {
                             continue;
+                        }
+
+                        if let Some(overlap_with_borders) = overlap_with_borders {
+                            let mut has_overlap = false;
+
+                            let (adj_horizontal, adj_vertical) = adjacent_edges(piece);
+                            for &(dy, dx) in &adj_horizontal {
+                                let y2 = oy + dy;
+                                let x2 = ox + dx;
+                                if overlap_with_borders.horizontal[y2 as usize][x2 as usize] {
+                                    has_overlap = true;
+                                    break;
+                                }
+                            }
+                            for &(dy, dx) in &adj_vertical {
+                                let y2 = oy + dy;
+                                let x2 = ox + dx;
+                                if overlap_with_borders.vertical[y2 as usize][x2 as usize] {
+                                    has_overlap = true;
+                                    break;
+                                }
+                            }
+                            if !has_overlap {
+                                continue;
+                            }
                         }
 
                         let mut conditions = vec![];
