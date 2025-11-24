@@ -63,6 +63,7 @@ pub mod loop_special;
 pub mod masyu;
 pub mod milktea;
 pub mod moonsun;
+pub mod morningwalk;
 pub mod multiplication_link;
 pub mod n_cells;
 pub mod nagenawa;
