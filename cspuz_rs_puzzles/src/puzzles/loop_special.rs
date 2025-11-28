@@ -65,11 +65,17 @@ pub fn solve_loop_special(
         for y in 0..h {
             for x in 0..w {
                 if let LoopSpecialClue::Num(n) = clues[y][x] {
-                    solver.add_expr(loop_i.vertex_neighbors((y, x)).count_true().eq(if n == i {
-                        2
+                    if n > 0 {
+                        solver.add_expr(
+                            loop_i.vertex_neighbors((y, x)).count_true().eq(if n == i {
+                                2
+                            } else {
+                                0
+                            }),
+                        );
                     } else {
-                        0
-                    }));
+                        solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(2));
+                    }
                 }
             }
         }
@@ -153,6 +159,7 @@ fn combinator() -> impl Combinator<Problem> {
                 }
             },
         )),
+        Box::new(Dict::new(LoopSpecialClue::Num(-1), ".")),
         Box::new(Dict::new(LoopSpecialClue::Cross, "g")),
         Box::new(Dict::new(LoopSpecialClue::Vertical, "h")),
         Box::new(Dict::new(LoopSpecialClue::Horizontal, "i")),
