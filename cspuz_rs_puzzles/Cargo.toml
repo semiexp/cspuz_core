@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_core = { path = "../cspuz_core", default-features = false }
+base64 = "0.22.1"
+flate2 = "1.1.5"
+json = "0.12.4"
 
 [lints.clippy]
 # For better readability, allow loops like `for y in 0..height`
