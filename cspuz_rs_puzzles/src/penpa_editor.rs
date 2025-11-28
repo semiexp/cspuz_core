@@ -27,7 +27,7 @@ pub struct Symbol {
 pub struct PenpaEditorSquare {
     height: usize,
     width: usize,
-    cells: Vec<Vec<Option<Item>>>,
+    cells: Vec<Vec<Vec<Item>>>,
 }
 
 impl PenpaEditorSquare {
@@ -35,7 +35,7 @@ impl PenpaEditorSquare {
         Self {
             height,
             width,
-            cells: vec![vec![None; width]; height],
+            cells: vec![vec![vec![]; width]; height],
         }
     }
 
@@ -47,12 +47,12 @@ impl PenpaEditorSquare {
         self.width
     }
 
-    pub fn get_cell(&self, y: usize, x: usize) -> &Option<Item> {
+    pub fn get_cell(&self, y: usize, x: usize) -> &[Item] {
         &self.cells[y][x]
     }
 
-    pub fn set_cell(&mut self, y: usize, x: usize, item: Option<Item>) {
-        self.cells[y][x] = item;
+    pub fn add_cell_item(&mut self, y: usize, x: usize, item: Item) {
+        self.cells[y][x].push(item);
     }
 }
 
@@ -192,7 +192,7 @@ fn decode_penpa_editor_data_square(
             let fill_value = v.as_i32().ok_or("Invalid fill value")?;
 
             if let Some((y, x)) = cell_position(ki) {
-                ret.set_cell(y, x, Some(Item::Fill(fill_value)));
+                ret.add_cell_item(y, x, Item::Fill(fill_value));
             }
         }
     }
@@ -213,14 +213,14 @@ fn decode_penpa_editor_data_square(
                 let color_id = v[1].as_i32().ok_or("Invalid color_id")?;
                 let style = v[2].as_str().ok_or("Invalid style")?.to_string();
 
-                ret.set_cell(
+                ret.add_cell_item(
                     y,
                     x,
-                    Some(Item::Text(Text {
+                    Item::Text(Text {
                         color_id,
                         text,
                         style,
-                    })),
+                    }),
                 );
             }
         }
@@ -242,14 +242,14 @@ fn decode_penpa_editor_data_square(
                 let name = v[1].as_str().ok_or("Invalid symbol_name")?.to_string();
                 let style_id = v[2].as_i32().ok_or("Invalid style_id")?;
 
-                ret.set_cell(
+                ret.add_cell_item(
                     y,
                     x,
-                    Some(Item::Symbol(Symbol {
+                    Item::Symbol(Symbol {
                         color_id,
                         name,
                         style_id,
-                    })),
+                    }),
                 );
             }
         }
@@ -277,27 +277,27 @@ mod tests {
         for y in 0..5 {
             for x in 0..6 {
                 if (y, x) == (0, 0) {
-                    assert_eq!(decoded.get_cell(y, x), &Some(Item::Fill(1)));
+                    assert_eq!(decoded.get_cell(y, x), &[Item::Fill(1)]);
                 } else if (y, x) == (1, 3) {
                     assert_eq!(
                         decoded.get_cell(y, x),
-                        &Some(Item::Text(Text {
+                        &[Item::Text(Text {
                             text: "3".to_string(),
                             color_id: 1,
                             style: "1".to_string(),
-                        }))
+                        })]
                     );
                 } else if (y, x) == (3, 1) {
                     assert_eq!(
                         decoded.get_cell(y, x),
-                        &Some(Item::Symbol(Symbol {
+                        &[Item::Symbol(Symbol {
                             color_id: 3,
                             name: "circle_L".to_string(),
                             style_id: 1,
-                        }))
+                        })]
                     );
                 } else {
-                    assert!(decoded.get_cell(y, x).is_none());
+                    assert!(decoded.get_cell(y, x).is_empty());
                 }
             }
         }
