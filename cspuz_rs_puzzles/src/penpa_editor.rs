@@ -296,6 +296,8 @@ mod tests {
                             style_id: 1,
                         }))
                     );
+                } else {
+                    assert!(decoded.get_cell(y, x).is_none());
                 }
             }
         }
