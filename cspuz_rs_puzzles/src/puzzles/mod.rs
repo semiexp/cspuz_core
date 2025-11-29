@@ -32,6 +32,7 @@ pub mod doppelblock;
 pub mod double_lits;
 pub mod energywalk;
 pub mod evolmino;
+pub mod exercise;
 pub mod fillomino;
 pub mod firefly;
 pub mod firewalk;

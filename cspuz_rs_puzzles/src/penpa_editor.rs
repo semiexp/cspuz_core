@@ -56,6 +56,8 @@ impl PenpaEditorSquare {
     }
 }
 
+#[allow(unused)]
+#[cfg(not(target_arch = "wasm32"))]
 fn decompress_url_data(data: &str) -> Result<String, &'static str> {
     use base64::Engine;
     use flate2::read::ZlibDecoder;
@@ -117,23 +119,37 @@ fn preprocess_json(json: &str) -> String {
 }
 
 pub fn decode_penpa_editor_url(url: &str) -> Result<PenpaEditorPuzzle, &'static str> {
-    let prefix = "https://opt-pan.github.io/penpa-edit/";
-    if !url.starts_with(prefix) {
-        return Err("Invalid URL prefix");
+    let decompressed_data;
+
+    if url.starts_with("penpa-edit-predecoded:") {
+        decompressed_data = url["penpa-edit-predecoded:".len()..].to_string();
+    } else {
+        #[cfg(target_arch = "wasm32")]
+        {
+            panic!("raw penpa-edit URLs are not supported in wasm32 target");
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let prefix = "https://opt-pan.github.io/penpa-edit/";
+            if !url.starts_with(prefix) {
+                return Err("Invalid URL prefix");
+            }
+            let data = &url[prefix.len()..];
+
+            let p = match data.find("&p=") {
+                Some(pos) => &data[pos + 3..],
+                None => return Err("Missing &p= in URL"),
+            };
+
+            let p = match p.find("&") {
+                Some(pos) => &p[..pos],
+                None => p,
+            };
+
+            decompressed_data = decompress_url_data(p)?;
+        }
     }
-    let data = &url[prefix.len()..];
-
-    let p = match data.find("&p=") {
-        Some(pos) => &data[pos + 3..],
-        None => return Err("Missing &p= in URL"),
-    };
-
-    let p = match p.find("&") {
-        Some(pos) => &p[..pos],
-        None => p,
-    };
-
-    let decompressed_data = decompress_url_data(p)?;
 
     let lines = decompressed_data.split("\n").collect::<Vec<_>>();
     if lines.len() < 4 {

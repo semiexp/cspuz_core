@@ -8,9 +8,23 @@ mod uniqueness;
 
 use board::Board;
 use cspuz_rs::serializer::{get_kudamono_url_info_detailed, url_to_puzzle_kind};
-pub use puzzle::{list_puzzles_for_enumerate, list_puzzles_for_solve};
+pub use puzzle::{list_penpa_edit_puzzles, list_puzzles_for_enumerate, list_puzzles_for_solve};
 
 static mut SHARED_ARRAY: Vec<u8> = vec![];
+
+fn parse_penpa_edit_special_url(url: &str) -> Option<(&str, &str)> {
+    let separator = url.find("!")?;
+    let kind = &url[..separator];
+    let url = &url[separator + 1..];
+
+    if !(url.starts_with("https://opt-pan.github.io/penpa-edit/")
+        || url.starts_with("penpa-edit-predecoded:"))
+    {
+        return None;
+    }
+
+    Some((kind, url))
+}
 
 fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
     let url = std::str::from_utf8(url).map_err(|_| "failed to decode URL as UTF-8")?;
@@ -25,6 +39,10 @@ fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
 
         return puzzle::dispatch_kudamono(puzzle_kind, puzzle_variant, url)
             .unwrap_or(Err("unknown puzzle type"));
+    }
+
+    if let Some((kind, url)) = parse_penpa_edit_special_url(url) {
+        return puzzle::dispatch_penpa_edit(kind, url).unwrap_or(Err("unknown puzzle type"));
     }
 
     Err("URL cannot be parsed")
