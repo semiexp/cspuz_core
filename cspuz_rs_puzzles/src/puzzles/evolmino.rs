@@ -584,9 +584,7 @@ impl BoardManager {
                     }
                 );
             }
-            eprintln!();
         }
-        eprintln!();
     }
 
     pub fn compute_board_info_simple(&self) -> BoardInfoSimple {

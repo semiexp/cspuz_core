@@ -167,8 +167,6 @@ pub fn solve_balloon(
         }
     }
 
-    solver.solve().map(|m| eprintln!("{:?}", m.get(has_line)));
-
     solver.irrefutable_facts().map(|f| f.get(has_line))
 }
 
