@@ -57,6 +57,7 @@ impl PenpaEditorSquare {
 }
 
 #[allow(unused)]
+#[cfg(not(target_arch = "wasm32"))]
 fn decompress_url_data(data: &str) -> Result<String, &'static str> {
     use base64::Engine;
     use flate2::read::ZlibDecoder;
