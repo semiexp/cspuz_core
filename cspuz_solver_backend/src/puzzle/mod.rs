@@ -208,6 +208,11 @@ puzzle_list!(kudamono,
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
 );
 
+#[rustfmt::skip]
+puzzle_list!(penpa_edit,
+    (exercise, ["exercise"], "Exercise", "Exercise"),
+);
+
 pub mod double_lits;
 
 pub fn dispatch_puzz_link(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
@@ -238,6 +243,10 @@ pub fn dispatch_kudamono(
     None
 }
 
+pub fn dispatch_penpa_edit(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
+    penpa_edit::dispatch(puzzle_kind, url)
+}
+
 pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
     let mut puzzles = Vec::new();
 
@@ -245,6 +254,8 @@ pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
 
     puzzles.extend(kudamono::list_puzzles());
     puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
+
+    puzzles.extend(penpa_edit::list_puzzles());
 
     puzzles.sort();
 
