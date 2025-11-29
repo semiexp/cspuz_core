@@ -62,6 +62,15 @@ macro_rules! puzzle_list {
             }
 
             #[allow(unused)]
+            pub fn list_puzzles_with_key() -> Vec<(String, String, String)> {
+                vec![
+                    $(
+                        (String::from($aliases[0]), String::from($en_name), String::from($ja_name)),
+                    )*
+                ]
+            }
+
+            #[allow(unused)]
             pub fn list_puzzles_enumerate() -> Vec<(String, String)> {
                 let mut ret = vec![];
                 $(
@@ -270,4 +279,8 @@ pub fn list_puzzles_for_enumerate() -> Vec<(String, String)> {
     puzzles.sort();
 
     puzzles
+}
+
+pub fn list_penpa_edit_puzzles() -> Vec<(String, String, String)> {
+    penpa_edit::list_puzzles_with_key()
 }
