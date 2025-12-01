@@ -80,6 +80,7 @@ pub mod nothree;
 pub mod nurikabe;
 pub mod nurimaze;
 pub mod nurimisaki;
+pub mod nuritwin;
 pub mod parrot_loop;
 pub mod pencils;
 pub mod polyominous;
