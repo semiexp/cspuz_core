@@ -50,6 +50,7 @@ pub mod icewalk;
 pub mod inverse_litso;
 pub mod japanese_sums;
 pub mod kakuro;
+pub mod keywest;
 pub mod koburin;
 pub mod kouchoku;
 pub mod kropki;
