@@ -20,20 +20,19 @@ pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdge
             if let Some(n) = clues[y][x] {
                 solver.add_expr(is_passed.at((y, x)));
 
+                let has_left = if x > 0 {
+                    is_line.horizontal.at((y, x - 1)).expr()
+                } else {
+                    FALSE
+                };
+                let has_right = if x < w - 1 {
+                    is_line.horizontal.at((y, x)).expr()
+                } else {
+                    FALSE
+                };
                 if n > 0 {
-                    let has_left = if x > 0 {
-                        is_line.horizontal.at((y, x - 1)).expr()
-                    } else {
-                        FALSE
-                    };
-                    let has_right = if x < w - 1 {
-                        is_line.horizontal.at((y, x)).expr()
-                    } else {
-                        FALSE
-                    };
-
                     solver.add_expr(
-                        (has_left | has_right).imp(
+                        (has_left.clone() | has_right.clone()).imp(
                             (is_line
                                 .horizontal
                                 .slice_fixed_y((y, ..x))
@@ -46,20 +45,22 @@ pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdge
                             .eq(n),
                         ),
                     );
+                }
 
-                    let has_up = if y > 0 {
-                        is_line.vertical.at((y - 1, x)).expr()
-                    } else {
-                        FALSE
-                    };
-                    let has_down = if y < h - 1 {
-                        is_line.vertical.at((y, x)).expr()
-                    } else {
-                        FALSE
-                    };
+                let has_up = if y > 0 {
+                    is_line.vertical.at((y - 1, x)).expr()
+                } else {
+                    FALSE
+                };
+                let has_down = if y < h - 1 {
+                    is_line.vertical.at((y, x)).expr()
+                } else {
+                    FALSE
+                };
 
+                if n > 0 {
                     solver.add_expr(
-                        (has_up | has_down).imp(
+                        (has_up.clone() | has_down.clone()).imp(
                             (is_line
                                 .vertical
                                 .slice_fixed_x((..y, x))
@@ -70,6 +71,33 @@ pub fn solve_geradeweg(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdge
                                     .slice_fixed_x((y.., x))
                                     .consecutive_prefix_true())
                             .eq(n),
+                        ),
+                    );
+                }
+
+                if n <= 0 {
+                    solver.add_expr(
+                        ((has_up.clone() | has_down.clone())
+                            & (has_left.clone() | has_right.clone()))
+                        .imp(
+                            (is_line
+                                .vertical
+                                .slice_fixed_x((..y, x))
+                                .reverse()
+                                .consecutive_prefix_true()
+                                + is_line
+                                    .vertical
+                                    .slice_fixed_x((y.., x))
+                                    .consecutive_prefix_true())
+                            .eq(is_line
+                                .horizontal
+                                .slice_fixed_y((y, ..x))
+                                .reverse()
+                                .consecutive_prefix_true()
+                                + is_line
+                                    .horizontal
+                                    .slice_fixed_y((y, x..))
+                                    .consecutive_prefix_true()),
                         ),
                     );
                 }
