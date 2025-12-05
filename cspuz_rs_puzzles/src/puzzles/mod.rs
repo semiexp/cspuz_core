@@ -4,6 +4,7 @@ pub mod akari_rgb;
 pub mod akichiwake;
 pub mod aqre;
 pub mod aquapelago;
+pub mod aquarium;
 pub mod araf;
 pub mod archipelago;
 pub mod ayeheya;
