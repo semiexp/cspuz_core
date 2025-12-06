@@ -67,6 +67,7 @@ pub enum ItemKind {
     DottedBackslash,
     Plus,
     Text(&'static str),
+    TextString(String),
     Num(i32),
     NumUpperLeft(i32),
     NumUpperRight(i32),
@@ -129,6 +130,7 @@ impl ItemKind {
             &ItemKind::FirewalkCellUlDr => String::from("\"firewalkCellUlDr\""),
             &ItemKind::FirewalkCellUrDl => String::from("\"firewalkCellUrDl\""),
             &ItemKind::Text(text) => format!("{{\"kind\":\"text\",\"data\":\"{}\"}}", text),
+            ItemKind::TextString(text) => format!("{{\"kind\":\"text\",\"data\":\"{}\"}}", text),
             &ItemKind::Num(num) => format!("{{\"kind\":\"text\",\"data\":\"{}\"}}", num),
             &ItemKind::NumUpperLeft(num) => format!(
                 "{{\"kind\":\"text\",\"data\":\"{}\",\"pos\":\"upperLeft\"}}",
