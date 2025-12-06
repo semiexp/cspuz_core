@@ -10,6 +10,7 @@ pub mod archipelago;
 pub mod ayeheya;
 pub mod balloon;
 pub mod barns;
+pub mod bdwalk;
 pub mod bosanowa;
 pub mod castle_wall;
 pub mod cave;
