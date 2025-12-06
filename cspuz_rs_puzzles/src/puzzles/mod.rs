@@ -124,6 +124,7 @@ pub mod timebomb;
 pub mod tontonbeya;
 pub mod tricklayer;
 pub mod waterwalk;
+pub mod windows;
 pub mod yajikazu;
 pub mod yajilin;
 pub mod yajilin_regions;
