@@ -219,6 +219,7 @@ puzzle_list!(kudamono,
     (tetrochain_ctb, ["tetrochain-ctb"], "Tetrochain CTB", "Tetrochain CTB"),
     (the_longest, ["the-longest"], "The Longest", "短辺消失"),
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
+    (windows, ["windows"], "Windows", "Windows"),
 );
 
 #[rustfmt::skip]
