@@ -39,6 +39,9 @@ pub fn solve_windows(
         let cnt = is_black.select(room).count_true();
         let n = solver.int_var(room.len() as i32 / 2, room.len().div_ceil(2) as i32);
         solver.add_expr(cnt.eq(n));
+
+        graph::active_vertices_connected_2d_region(&mut solver, is_black, room);
+        graph::active_vertices_connected_2d_region(&mut solver, !is_black, room);
     }
 
     for y in 0..h {
