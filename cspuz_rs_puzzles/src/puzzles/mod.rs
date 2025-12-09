@@ -120,6 +120,7 @@ pub mod tetrochain_ctb;
 pub mod tetrochain_k;
 pub mod tetrochain_y;
 pub mod the_longest;
+pub mod tilecity;
 pub mod timebomb;
 pub mod tontonbeya;
 pub mod tricklayer;
