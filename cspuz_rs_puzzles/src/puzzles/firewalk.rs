@@ -180,7 +180,7 @@ pub fn solve_firewalk(
             Some((merged_edges, modes))
         }
         (Some((edges, modes)), None) => Some((edges, modes)),
-        (None, Some(edges2)) => Some((edges2, vec![vec![None; w]; h])),
+        (None, Some(edges2)) => Some((edges2, vec![vec![Some(false); w]; h])),
         (None, None) => None,
     }
 }
