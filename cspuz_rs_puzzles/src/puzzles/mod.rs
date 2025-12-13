@@ -123,6 +123,7 @@ pub mod the_longest;
 pub mod timebomb;
 pub mod tontonbeya;
 pub mod tricklayer;
+pub mod walk_common;
 pub mod waterwalk;
 pub mod windows;
 pub mod yajikazu;
