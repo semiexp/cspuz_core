@@ -1,3 +1,4 @@
+use crate::puzzles::walk_common::{merge_walk_answers, walk_not_passing_colored_cell};
 use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
@@ -15,6 +16,7 @@ pub fn solve_firewalk(
 
     let mut solver = Solver::new();
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
+    solver.add_expr(is_line.horizontal.any() | is_line.vertical.any());
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
@@ -166,9 +168,21 @@ pub fn solve_firewalk(
         }
     }
 
-    solver
+    let ans1 = solver
         .irrefutable_facts()
-        .map(|f| (f.get(is_line), f.get(fire_cell_mode)))
+        .map(|f| (f.get(is_line), f.get(fire_cell_mode)));
+
+    let ans2 = walk_not_passing_colored_cell(fire_cell, num);
+
+    match (ans1, ans2) {
+        (Some((edges, modes)), Some(edges2)) => {
+            let merged_edges = merge_walk_answers(Some(edges), Some(edges2))?;
+            Some((merged_edges, modes))
+        }
+        (Some((edges, modes)), None) => Some((edges, modes)),
+        (None, Some(edges2)) => Some((edges2, vec![vec![None; w]; h])),
+        (None, None) => None,
+    }
 }
 
 type Problem = (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>);
