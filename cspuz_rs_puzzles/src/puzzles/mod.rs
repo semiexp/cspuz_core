@@ -79,6 +79,7 @@ pub mod norinori;
 pub mod norinuri;
 pub mod nothing;
 pub mod nothree;
+pub mod numcity;
 pub mod nurikabe;
 pub mod nurimaze;
 pub mod nurimisaki;
