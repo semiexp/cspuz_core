@@ -226,6 +226,7 @@ puzzle_list!(kudamono,
 
 #[rustfmt::skip]
 puzzle_list!(penpa_edit,
+    (castle_walker, ["castle_walker"], "Castle Walker", "Castle Walker"),
     (exercise, ["exercise"], "Exercise", "Exercise"),
 );
 
