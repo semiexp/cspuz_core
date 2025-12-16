@@ -62,6 +62,15 @@ macro_rules! puzzle_list {
             }
 
             #[allow(unused)]
+            pub fn list_puzzles_with_key() -> Vec<(String, String, String)> {
+                vec![
+                    $(
+                        (String::from($aliases[0]), String::from($en_name), String::from($ja_name)),
+                    )*
+                ]
+            }
+
+            #[allow(unused)]
             pub fn list_puzzles_enumerate() -> Vec<(String, String)> {
                 let mut ret = vec![];
                 $(
@@ -81,11 +90,13 @@ puzzle_list!(puzz_link,
     (akichiwake, ["akichi"], "Akichiwake", "Akichiwake"),
     (aqre, ["aqre"], "Aqre", "Aqre"),
     (aquapelago, ["aquapelago"], "Aquapelago", "Aquapelago"),
+    (aquarium, ["aquarium"], "Aquarium", "アクアプレース"),
     (araf, ["araf"], "Araf", "相ダ部屋"),
     (archipelago, ["archipelago"], "Archipelago", "Archipelago"),
     (ayeheya, ["ayeheya"], "Ekawayeh (Symmetry Heyawake)", "∀人∃ＨＥＹＡ"),
     (balloon, ["balloon"], "Balloon Box (Revised)", "風船箱 (改訂版)"),
     (barns, ["barns"], "Barns", "バーンズ"),
+    (bdwalk, ["bdwalk"], "Building Walk", "ビルウォーク"),
     (bosanowa, ["bosanowa"], "Bosanowa", "ボサノワ"),
     (castle_wall, ["castle"], "Castle Wall", "Castle Wall"),
     (cave, ["cave"], "Cave", "バッグ"),
@@ -104,6 +115,7 @@ puzzle_list!(puzz_link,
     (dbchoco, ["dbchoco"], "Double Choco", "ダブルチョコ"),
     (dominion, ["dominion"], "Dominion", "ドミニオン"),
     (doppelblock, ["doppelblock"], "Doppelblock", "ビトゥイーン・サム"),
+    (energywalk, ["energywalk"], "Energy Walk", "Energy Walk"),
     (evolmino, ["evolmino"], "Evolmino", "シンカミノ"),
     (fillomino, ["fillomino"], "Fillomino", "フィルオミノ"),
     (firefly, ["firefly"], "Firefly", "ホタルビーム"),
@@ -123,6 +135,7 @@ puzzle_list!(puzz_link,
     (inverse_litso, ["invlitso"], "Inverse LITSO", "Inverse LITSO"),
     (japanese_sums, ["japanesesums"], "Japanese Sums", "Japanese Sums"),
     (kakuro, ["kakuro"], "Kakuro", "カックロ"),
+    (keywest, ["keywest"], "Key West", "キーウエスト"),
     (koburin, ["koburin"], "Koburin", "コブリン"),
     (kouchoku, ["kouchoku"], "Kouchoku", "交差は直交に限る"),
     (kropki, ["kropki"], "Kropki", "Kropki"),
@@ -144,9 +157,11 @@ puzzle_list!(puzz_link,
     (norinuri, ["norinuri"], "Norinori", "海苔ぬり"),
     (nothing, ["nothing"], "All or Nothing", "オールｏｒナッシング"),
     (nothree, ["nothree"], "No Three", "ノースリー"),
+    (numcity, ["numcity"], "Number City", "ナンバーシティー"),
     (nurikabe, ["nurikabe"], "Nurikabe", "ぬりかべ", enumerable),
     (nurimaze, ["nurimaze"], "Nurimaze", "ぬりめいず"),
     (nurimisaki, ["nurimisaki"], "Nurimisaki", "ぬりみさき"),
+    (nuritwin, ["nuritwin"], "Nuritwin", "ぬりツイン"),
     (pencils, ["pencils"], "Pencils", "ペンシルズ"),
     (pentominous, ["pentominous"], "Pentominous", "Pentominous"),
     (putteria, ["putteria"], "Putteria", "プッテリア"),
@@ -174,6 +189,7 @@ puzzle_list!(puzz_link,
     (tetrochain_k, ["tetrochaink"], "Tetrochain K", "テトロチェーンK"),
     (tetrochain_y, ["tetrochain"], "Tetrochain Y", "テトロチェーンY"),
     (tetrominous, ["tetrominous"], "Tetrominous", "Tetrominous"),
+    (tilecity, ["tilecity"], "Tile City", "タイルシティー"),
     (timebomb, ["timebomb"], "Time Bomb", "時限爆弾"),
     (tontonbeya, ["tontonbeya"], "Tontonbeya", "とんとんべや"),
     (waterwalk, ["waterwalk"], "Water Walk", "ウォーターウォーク"),
@@ -205,6 +221,12 @@ puzzle_list!(kudamono,
     (tetrochain_ctb, ["tetrochain-ctb"], "Tetrochain CTB", "Tetrochain CTB"),
     (the_longest, ["the-longest"], "The Longest", "短辺消失"),
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
+    (windows, ["windows"], "Windows", "Windows"),
+);
+
+#[rustfmt::skip]
+puzzle_list!(penpa_edit,
+    (exercise, ["exercise"], "Exercise", "Exercise"),
 );
 
 pub mod double_lits;
@@ -237,6 +259,10 @@ pub fn dispatch_kudamono(
     None
 }
 
+pub fn dispatch_penpa_edit(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
+    penpa_edit::dispatch(puzzle_kind, url)
+}
+
 pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
     let mut puzzles = Vec::new();
 
@@ -244,6 +270,8 @@ pub fn list_puzzles_for_solve() -> Vec<(String, String)> {
 
     puzzles.extend(kudamono::list_puzzles());
     puzzles.push(("Double LITS".to_string(), "Double LITS".to_string()));
+
+    puzzles.extend(penpa_edit::list_puzzles());
 
     puzzles.sort();
 
@@ -258,4 +286,8 @@ pub fn list_puzzles_for_enumerate() -> Vec<(String, String)> {
     puzzles.sort();
 
     puzzles
+}
+
+pub fn list_penpa_edit_puzzles() -> Vec<(String, String, String)> {
+    penpa_edit::list_puzzles_with_key()
 }

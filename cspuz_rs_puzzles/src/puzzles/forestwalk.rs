@@ -1,3 +1,4 @@
+use crate::puzzles::walk_common::{merge_walk_answers, walk_not_passing_colored_cell};
 use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
@@ -15,6 +16,7 @@ pub fn solve_forestwalk(
 
     let mut solver = Solver::new();
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
+    solver.add_expr(is_line.horizontal.any() | is_line.vertical.any());
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
@@ -55,7 +57,9 @@ pub fn solve_forestwalk(
         }
     }
 
-    solver.irrefutable_facts().map(|f| f.get(is_line))
+    let ans1 = solver.irrefutable_facts().map(|f| f.get(is_line));
+    let ans2 = walk_not_passing_colored_cell(forest, num);
+    merge_walk_answers(ans1, ans2)
 }
 
 type Problem = (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>);
