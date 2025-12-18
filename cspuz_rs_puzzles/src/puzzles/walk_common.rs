@@ -59,8 +59,7 @@ fn merge_grids(
                         Some(b1)
                     }
                 }
-                (Some(b), None) | (None, Some(b)) => Some(b),
-                (None, None) => None,
+                _ => None,
             };
         }
     }
