@@ -97,14 +97,17 @@ fn preprocess_json(json: &str) -> String {
             result.push(chars[i]);
         } else {
             if !is_quote {
-                if chars[i] == 'z' && i + 2 < chars.len() && chars[i + 2] == ':' {
+                if chars[i] == 'z'
+                    && i + 2 < chars.len()
+                    && (chars[i + 2] == ':' || chars[i + 2] == ',')
+                {
                     result.push('"');
                     result.push(chars[i]);
                     if i + 1 < chars.len() {
                         result.push(chars[i + 1]);
                     }
                     result.push('"');
-                    result.push(':');
+                    result.push(chars[i + 2]);
                     i += 2;
                     i += 1;
                     continue;

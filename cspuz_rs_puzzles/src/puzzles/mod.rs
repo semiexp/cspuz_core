@@ -12,6 +12,7 @@ pub mod balloon;
 pub mod barns;
 pub mod bdwalk;
 pub mod bosanowa;
+pub mod castle_walker;
 pub mod castle_wall;
 pub mod cave;
 pub mod chainedb;
