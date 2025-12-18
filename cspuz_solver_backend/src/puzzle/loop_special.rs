@@ -17,7 +17,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             match problem[y][x] {
                 LoopSpecialClue::Num(n) => {
                     board.push(Item::cell(y, x, "black", ItemKind::Circle));
-                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                    if n > 0 {
+                        board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                    }
                 }
                 LoopSpecialClue::Empty => (),
                 _ => {

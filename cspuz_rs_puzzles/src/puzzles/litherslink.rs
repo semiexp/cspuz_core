@@ -17,7 +17,9 @@ pub fn solve_litherslink(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                solver.add_expr(is_line.cell_neighbors((y, x)).count_true().eq(n));
+                if n != -1 {
+                    solver.add_expr(is_line.cell_neighbors((y, x)).count_true().eq(n));
+                }
             }
         }
     }
