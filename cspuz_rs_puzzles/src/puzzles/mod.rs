@@ -19,6 +19,7 @@ pub mod chainedb;
 pub mod chocobanana;
 pub mod chocona;
 pub mod circlesquare;
+pub mod city_space;
 pub mod cocktail;
 pub mod coffeemilk;
 pub mod compass;
