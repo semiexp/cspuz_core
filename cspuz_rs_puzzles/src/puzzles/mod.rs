@@ -95,6 +95,7 @@ pub mod putteria;
 pub mod reflect;
 pub mod ringring;
 pub mod ripple;
+pub mod roma;
 pub mod sansaroad;
 pub mod sasahigane;
 pub mod school_trip;
