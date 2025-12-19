@@ -63,6 +63,7 @@ pub mod kropki_pairs;
 pub mod kurarin;
 pub mod kurodoko;
 pub mod kurotto;
+pub mod lapaz;
 pub mod letter_weights;
 pub mod litherslink;
 pub mod lits;
