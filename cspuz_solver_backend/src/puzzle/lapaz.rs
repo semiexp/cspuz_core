@@ -1,0 +1,72 @@
+use crate::board::{Board, BoardKind, Item, ItemKind};
+use crate::uniqueness::is_unique;
+use cspuz_rs_puzzles::puzzles::lapaz;
+
+pub fn solve(url: &str) -> Result<Board, &'static str> {
+    let problem = lapaz::deserialize_problem(url).ok_or("invalid url")?;
+    let (is_black, is_connected) = lapaz::solve_lapaz(&problem).ok_or("no answer")?;
+
+    let height = problem.len();
+    let width = problem[0].len();
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        is_unique(&(&is_black, &is_connected)),
+    );
+    for y in 0..height {
+        for x in 0..width {
+            if let Some(clue) = problem[y][x] {
+                if clue >= 0 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                } else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+                }
+            } else {
+                if is_black[y][x] == Some(true) {
+                    board.push(Item::cell(y, x, "green", ItemKind::Block));
+                } else if is_black[y][x] == Some(false) {
+                    board.push(Item::cell(y, x, "green", ItemKind::Dot));
+                }
+            }
+        }
+    }
+    for y in 0..height {
+        for x in 0..width {
+            if y < height - 1 {
+                board.push(Item {
+                    y: y * 2 + 2,
+                    x: x * 2 + 1,
+                    color: if is_connected.vertical[y][x].is_some() {
+                        "green"
+                    } else {
+                        "#cccccc"
+                    },
+                    kind: match is_connected.vertical[y][x] {
+                        Some(true) => ItemKind::Cross,
+                        Some(false) => ItemKind::BoldWall,
+                        None => ItemKind::Wall,
+                    },
+                });
+            }
+            if x < width - 1 {
+                board.push(Item {
+                    y: y * 2 + 1,
+                    x: x * 2 + 2,
+                    color: if is_connected.horizontal[y][x].is_some() {
+                        "green"
+                    } else {
+                        "#cccccc"
+                    },
+                    kind: match is_connected.horizontal[y][x] {
+                        Some(true) => ItemKind::Cross,
+                        Some(false) => ItemKind::BoldWall,
+                        None => ItemKind::Wall,
+                    },
+                })
+            };
+        }
+    }
+
+    Ok(board)
+}
