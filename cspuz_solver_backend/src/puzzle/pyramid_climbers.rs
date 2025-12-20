@@ -5,7 +5,7 @@ use cspuz_rs_puzzles::puzzles::pyramid_climbers;
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = pyramid_climbers::deserialize_problem(url).ok_or("invalid url")?;
     let ans = pyramid_climbers::solve_pyramid_climbers(&clues).ok_or("no answer")?;
-    let size = ans.len();
+    let size = ans.len() + 1;
 
     let mut board = Board::new(BoardKind::Empty, size, size * 2, is_unique(&ans.concat()));
 
