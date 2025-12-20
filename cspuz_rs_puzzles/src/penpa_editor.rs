@@ -1,5 +1,6 @@
 pub enum PenpaEditorPuzzle {
     Square(PenpaEditorSquare),
+    Pyramid(PenpaEditorPyramid),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,6 +54,48 @@ impl PenpaEditorSquare {
 
     pub fn add_cell_item(&mut self, y: usize, x: usize, item: Item) {
         self.cells[y][x].push(item);
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PenpaEditorPyramid {
+    size: usize,
+    cells: Vec<Vec<Vec<Item>>>,
+    outside: Vec<Item>,
+}
+
+impl PenpaEditorPyramid {
+    pub fn new(size: usize) -> Self {
+        let mut cells = vec![];
+        for i in 0..size {
+            cells.push(vec![vec![]; i + 1]);
+        }
+
+        Self {
+            size,
+            cells,
+            outside: vec![],
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn get_cell(&self, y: usize, x: usize) -> &[Item] {
+        &self.cells[y][x]
+    }
+
+    pub fn get_outside(&self) -> &[Item] {
+        &self.outside
+    }
+
+    pub fn add_cell_item(&mut self, y: usize, x: usize, item: Item) {
+        self.cells[y][x].push(item);
+    }
+
+    pub fn add_outside_item(&mut self, item: Item) {
+        self.outside.push(item);
     }
 }
 
@@ -170,6 +213,10 @@ pub fn decode_penpa_editor_url(url: &str) -> Result<PenpaEditorPuzzle, &'static 
         Ok(PenpaEditorPuzzle::Square(decode_penpa_editor_data_square(
             &header, body,
         )?))
+    } else if header[0] == "pyramid" {
+        Ok(PenpaEditorPuzzle::Pyramid(
+            decode_penpa_editor_data_pyramid(&header, &lines[1], body)?,
+        ))
     } else {
         Err("Unsupported board type")
     }
@@ -277,6 +324,137 @@ fn decode_penpa_editor_data_square(
     Ok(ret)
 }
 
+fn decode_penpa_editor_data_pyramid(
+    header: &[&str],
+    margin_line: &str,
+    body: json::JsonValue,
+) -> Result<PenpaEditorPyramid, &'static str> {
+    if header.len() < 3 {
+        return Err("Insufficient header data for square board");
+    }
+    let height: usize = header[2].parse().map_err(|_| "Invalid height")?;
+    let width: usize = header[1].parse().map_err(|_| "Invalid width")?;
+    if height != width {
+        return Err("Pyramid board must have equal height and width");
+    }
+
+    let margin = margin_line[1..(margin_line.len() - 1)]
+        .parse::<usize>()
+        .map_err(|_| "Invalid margin")?;
+    if !(margin == 0 || margin == 1) {
+        return Err("Unsupported margin value");
+    }
+
+    let mut ret = PenpaEditorPyramid::new(height - margin * 2);
+
+    let mut row_starts = vec![];
+    {
+        let start;
+        let count;
+
+        if margin == 0 {
+            start = 5 * height / 2 + 10;
+            count = height;
+        } else {
+            start = 5 * height / 2 + 2 * height + 18;
+            count = height - 2;
+        }
+
+        row_starts.push(start);
+        for i in 1..count {
+            let diff = if i % 2 == 1 { height + 3 } else { height + 4 };
+            row_starts.push(row_starts[i - 1] + diff);
+        }
+    }
+
+    let size = ret.size();
+    let cell_position = |ki: usize| -> Option<(usize, usize)> {
+        for y in 0..size {
+            let row_start = row_starts[y];
+            if ki >= row_start && ki < row_start + y + 1 {
+                let x = ki - row_start;
+                return Some((y, x));
+            }
+        }
+        None
+    };
+    let mut add_item = |ki: usize, item: Item| {
+        if let Some((y, x)) = cell_position(ki) {
+            ret.add_cell_item(y, x, item);
+        } else {
+            ret.add_outside_item(item);
+        }
+    };
+
+    {
+        // fills
+        let fill_data = &body["zS"];
+        if !fill_data.is_object() {
+            return Err("Invalid cell data");
+        }
+        for (k, v) in fill_data.entries() {
+            let ki = k.parse::<usize>().map_err(|_| "Invalid cell key")?;
+            let fill_value = v.as_i32().ok_or("Invalid fill value")?;
+
+            add_item(ki, Item::Fill(fill_value));
+        }
+    }
+    {
+        // texts
+        let symbol_data = &body["zN"];
+        if !symbol_data.is_object() {
+            return Err("Invalid cell data");
+        }
+        for (k, v) in symbol_data.entries() {
+            let ki = k.parse::<usize>().map_err(|_| "Invalid cell key")?;
+            if !v.is_array() {
+                return Err("Invalid cell value");
+            }
+
+            let text = v[0].as_str().ok_or("Invalid text")?.to_string();
+            let color_id = v[1].as_i32().ok_or("Invalid color_id")?;
+            let style = v[2].as_str().ok_or("Invalid style")?.to_string();
+
+            add_item(
+                ki,
+                Item::Text(Text {
+                    color_id,
+                    text,
+                    style,
+                }),
+            );
+        }
+    }
+    {
+        // symbols
+        let symbol_data = &body["zY"];
+        if !symbol_data.is_object() {
+            return Err("Invalid cell data");
+        }
+        for (k, v) in symbol_data.entries() {
+            let ki = k.parse::<usize>().map_err(|_| "Invalid cell key")?;
+            if !v.is_array() {
+                return Err("Invalid cell value");
+            }
+
+            let color_id = v[0].as_i32().ok_or("Invalid color_id")?;
+            let name = v[1].as_str().ok_or("Invalid symbol_name")?.to_string();
+            let style_id = v[2].as_i32().ok_or("Invalid style_id")?;
+
+            add_item(
+                ki,
+                Item::Symbol(Symbol {
+                    color_id,
+                    name,
+                    style_id,
+                }),
+            );
+        }
+    }
+
+    Ok(ret)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,6 +491,45 @@ mod tests {
                             color_id: 3,
                             name: "circle_L".to_string(),
                             style_id: 1,
+                        })]
+                    );
+                } else {
+                    assert!(decoded.get_cell(y, x).is_empty());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_decode_pyramid_cells() {
+        let url = "https://opt-pan.github.io/penpa-edit/#m=edit&p=7ZTBb5swFMbv+Ssmn98BQ0gXblnX7JJl69KpqhCKnIQ2qBBnBtaOKP9733vQUQcm7bKqhwn55eOHsT9sf9n/MipLNjDCy3fAAYmXh4qa9IfciNN1lRRpHLyDSVlstUEB8GU6hVuV5vEgdKLBoRoH1SVUn4JQSAHCxSZFBNVlcKg+B9UcqgU+EuAhm9WdXJQXrbzm56TOaygd1PNGo7xBuU7MOo2Xs5p8DcLqCgTN84HfJiky/TMWjQ+6X+tslRBIk1382MC83Oj7sukmoyNUk9rp4tkpTdA4JdONU5K1U1I9TukD/p3TcXQ84mJ/Q6/LICTb31v5vpWL4CC8oQg81HPU7ogGmKCZel+Ez8B7BthNBgesN1ynXF2uVzgiVB7Xj1wdrj7XGfe54HrN9ZzrkOuI+5yRp790Xft9BTuh68MYv56ahDOu7a8E/7eS0SDEEy5ynS7z0tyqNW4aH33cHGS7MlvFxkKp1nvaQwsmdztt4t5HBOPNXV//lTabk9EfVJpaIP9RKmO/XB8/CxUGz9aLe2WMfrBIpoqtBVaqwODn22RvjxTvCttAoWyL6l6dzJa133wciEfBLXTBHYGLK/z/D+QV/0Bo6Z23Fsi3ZodPrTa9kUfck3qkvelueCfgyDtRpgm7aUbaE2ikp5lG1I01wk6ykf0h3DTqab7J1WnEaapOymmql0EPo8ET";
+        let decoded = decode_penpa_editor_url(url).unwrap();
+
+        #[allow(unreachable_patterns)]
+        let decoded = match decoded {
+            PenpaEditorPuzzle::Pyramid(sq) => sq,
+            _ => panic!("Expected pyramid puzzle"),
+        };
+        assert_eq!(decoded.size(), 6);
+        assert_eq!(
+            decoded.get_outside(),
+            &[Item::Text(Text {
+                text: "A".to_string(),
+                color_id: 1,
+                style: "1".to_string(),
+            })]
+        );
+        for y in 0..6 {
+            for x in 0..=y {
+                if (y, x) == (1, 0) {
+                    assert_eq!(decoded.get_cell(y, x), &[Item::Fill(3)]);
+                } else if (y, x) == (3, 3) {
+                    assert_eq!(
+                        decoded.get_cell(y, x),
+                        &[Item::Text(Text {
+                            text: "3".to_string(),
+                            color_id: 1,
+                            style: "1".to_string(),
                         })]
                     );
                 } else {
