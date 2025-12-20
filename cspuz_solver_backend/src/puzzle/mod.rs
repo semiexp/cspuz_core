@@ -232,6 +232,7 @@ puzzle_list!(kudamono,
 puzzle_list!(penpa_edit,
     (castle_walker, ["castle_walker"], "Castle Walker", "Castle Walker"),
     (exercise, ["exercise"], "Exercise", "Exercise"),
+    (pyramid, ["pyramid"], "Pyramid", "ピラミッド"),
 );
 
 pub mod double_lits;
