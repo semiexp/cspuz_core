@@ -93,6 +93,7 @@ pub mod pencils;
 pub mod polyominous;
 pub mod putteria;
 pub mod pyramid;
+pub mod pyramid_climbers;
 pub mod reflect;
 pub mod ringring;
 pub mod ripple;

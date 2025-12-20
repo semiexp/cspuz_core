@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    fn test_exercise_serializer() {
+    fn test_pyramid_serializer() {
         let problem = problem_for_tests();
         let url = "https://opt-pan.github.io/penpa-edit/?m=solve&p=vVNNb5tAEL3zK6o5byUDBjd7c9O6l9T9chVFK2StbRKjgHEXaFws57dnZsC1F1ypl1ZoH4/HwDyWedtfRmfJSoR4BAMxEC4ePjJaXjDkRTods6RMY/lKjKtynRskQnyaTMS9TovYUW7kKHBBgIfLhei5nj6z4EXOvv4q9/Vcqugg6u8n+uZEv8k9DAOQvoBw2JzaqxBPWDDFgpEPUkEAaJJaCBhhqQL/TMCHuOtR8H0uUe7rUcRqCNTOlXvEO8YJo8c4Qzei9hnfMQ4YA8YbrnnPeMt4zThkDLlmRN/jOGoYiCvsR8sVI0baItwMKPJ0XlTmXi9jkLx9grVNlS1iA7I0Vaukeb5Nk41dljxschNfvEVivHq4VL/IzYpefnbjSaepJRQ/Km3sh5eJWaa2VJrEutbG5E+WkulybQkLXeLsFOtka78p3pS2gVLbFvWj7nTLTt98cGAHvJQnvFB4uMH7+krWY1F/aMbgOI2i/oKz9lHWUxo1BSB8/p/thNJP/U1v+T6x63aWBsinyEPkSO+QNvsyv2mUz1LVMwHU5y0/TRSy/CdabXzQ9TLPFvgxCui/7VqxqFb5Y3WcWprNcccpNWidkunWKdHGKbGu0/ZT/p3Tq+jQbP/gL9PdRPg/RG/XJiw3F0OG8jFntnoxUK3eyxTqvfRQw36AUL2QIVS7MUKpnyQUe2FC7Q95ord2I0WuuqmiVr1gUavzbKnIeQE=&a=RcvBCUAxDALQXTx7+kQ7TMj+a6T5ORSEh4iZxReEGCAU/Ab9eJt3s+nLMYV5VQM=";
         assert_eq!(deserialize_problem(url).unwrap(), problem);
