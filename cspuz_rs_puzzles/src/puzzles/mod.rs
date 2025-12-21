@@ -103,6 +103,7 @@ pub mod sasahigane;
 pub mod school_trip;
 pub mod scrabble;
 pub mod seiza;
+pub mod sendai;
 pub mod shakashaka;
 pub mod shikaku;
 pub mod shimaguni;
