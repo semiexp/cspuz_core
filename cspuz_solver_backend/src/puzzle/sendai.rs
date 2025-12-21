@@ -20,7 +20,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     board.push(Item {
                         y: y * 2 + 2,
                         x: x * 2 + 1,
-                        color: if borders.horizontal[y][x] { "black" } else { "green" },
+                        color: if borders.horizontal[y][x] {
+                            "black"
+                        } else {
+                            "green"
+                        },
                         kind: if b {
                             ItemKind::BoldWall
                         } else {
@@ -46,7 +50,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     board.push(Item {
                         y: y * 2 + 1,
                         x: x * 2 + 2,
-                        color: if borders.vertical[y][x] { "black" } else { "green" },
+                        color: if borders.vertical[y][x] {
+                            "black"
+                        } else {
+                            "green"
+                        },
                         kind: if b {
                             ItemKind::BoldWall
                         } else {

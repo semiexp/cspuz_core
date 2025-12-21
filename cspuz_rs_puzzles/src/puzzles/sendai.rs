@@ -3,8 +3,8 @@ use std::ops::Index;
 use crate::util::Grid;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
-    Optionalize, RoomsWithValues, Size, Spaces,
+    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict,
+    HexInt, Optionalize, RoomsWithValues, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -41,14 +41,20 @@ pub fn solve_sendai(
 
     #[cfg(not(test))]
     {
-        let constraint = SendaiShapeConstraint { board: BoardManager::new(h, w) };
+        let constraint = SendaiShapeConstraint {
+            board: BoardManager::new(h, w),
+        };
         solver.add_custom_constraint(Box::new(constraint), edges_flat);
     }
 
     #[cfg(test)]
     {
-        let constraint = SendaiShapeConstraint { board: BoardManager::new(h, w) };
-        let cloned_constraint = SendaiShapeConstraint { board: BoardManager::new(h, w) };
+        let constraint = SendaiShapeConstraint {
+            board: BoardManager::new(h, w),
+        };
+        let cloned_constraint = SendaiShapeConstraint {
+            board: BoardManager::new(h, w),
+        };
 
         solver.add_custom_constraint(
             Box::new(crate::util::tests::ReasonVerifier::new(
@@ -80,9 +86,7 @@ pub fn solve_sendai(
                     ));
                     edge_values.push(is_border.horizontal.at((y, x)).clone());
                 }
-                if x + 1 < w
-                    && vertex_id_map[y * w + (x + 1)].is_some()
-                    && !borders.vertical[y][x]
+                if x + 1 < w && vertex_id_map[y * w + (x + 1)].is_some() && !borders.vertical[y][x]
                 {
                     edges.push((
                         vertex_id_map[y * w + x].unwrap(),
@@ -94,8 +98,7 @@ pub fn solve_sendai(
 
             #[cfg(not(test))]
             {
-                let constraint =
-                    CityCountConstraint::new(num_vertices, edges, clue as usize);
+                let constraint = CityCountConstraint::new(num_vertices, edges, clue as usize);
                 solver.add_custom_constraint(Box::new(constraint), edge_values);
             }
             #[cfg(test)]
@@ -282,7 +285,11 @@ impl BoardManager {
         }
     }
 
-    pub fn reason_for_unit_and_its_boundary(&self, info: &BoardInfo, unit_id: usize) -> Vec<(usize, bool)> {
+    pub fn reason_for_unit_and_its_boundary(
+        &self,
+        info: &BoardInfo,
+        unit_id: usize,
+    ) -> Vec<(usize, bool)> {
         let mut ret = vec![];
 
         for &(y, x) in &info.units[unit_id] {
@@ -428,10 +435,7 @@ impl BoardManager {
         }
     }
 
-    pub fn compute_connected_components(
-        &self,
-        is_potential: bool,
-    ) -> GroupInfo {
+    pub fn compute_connected_components(&self, is_potential: bool) -> GroupInfo {
         let mut group_id = Grid::new(self.height, self.width, NO_GROUP);
         let mut stack = vec![];
         let mut last_id = 0;
@@ -513,12 +517,18 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
         // no extra wall
         for y in 0..height {
             for x in 0..width {
-                if y < height - 1 && self.board.vertical_borders[(y, x)] == Border::Wall && info.units.group_id[(y, x)] == info.units.group_id[(y + 1, x)] {
+                if y < height - 1
+                    && self.board.vertical_borders[(y, x)] == Border::Wall
+                    && info.units.group_id[(y, x)] == info.units.group_id[(y + 1, x)]
+                {
                     let mut ret = self.board.reason_for_path(y, x, y + 1, x);
                     ret.push((self.board.vertical_idx(y, x), true));
                     return Some(ret);
                 }
-                if x < width - 1 && self.board.horizontal_borders[(y, x)] == Border::Wall && info.units.group_id[(y, x)] == info.units.group_id[(y, x + 1)] {
+                if x < width - 1
+                    && self.board.horizontal_borders[(y, x)] == Border::Wall
+                    && info.units.group_id[(y, x)] == info.units.group_id[(y, x + 1)]
+                {
                     let mut ret = self.board.reason_for_path(y, x, y, x + 1);
                     ret.push((self.board.horizontal_idx(y, x), true));
                     return Some(ret);
@@ -583,10 +593,8 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
             let mut reason = vec![];
             let mut isok = false;
 
-            'outer:
-            for y in 0..(height as i32) {
-                'inner:
-                for x in 0..(width as i32) {
+            'outer: for y in 0..(height as i32) {
+                'inner: for x in 0..(width as i32) {
                     let mut has_adj_potential_unit = false;
                     for &(dy, dx) in &cells {
                         let y2 = y - cells[0].0 + dy;
@@ -598,7 +606,14 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
                             continue 'inner;
                         }
 
-                        if adjacent_potential_units_flat.binary_search(&(info.potential_units.group_id[(cells[0].0 as usize, cells[0].1 as usize)], info.potential_units.group_id[(y2 as usize, x2 as usize)])).is_ok() {
+                        if adjacent_potential_units_flat
+                            .binary_search(&(
+                                info.potential_units.group_id
+                                    [(cells[0].0 as usize, cells[0].1 as usize)],
+                                info.potential_units.group_id[(y2 as usize, x2 as usize)],
+                            ))
+                            .is_ok()
+                        {
                             has_adj_potential_unit = true;
                         }
                     }
@@ -607,21 +622,37 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
                     }
 
                     for &(dy, dx) in &connections {
-                        let y2 = y * 2- cells[0].0 * 2 + dy;
+                        let y2 = y * 2 - cells[0].0 * 2 + dy;
                         let x2 = x * 2 - cells[0].1 * 2 + dx;
 
-                        if y2 < 0 || y2 >= (height as i32) * 2 - 1 || x2 < 0 || x2 >= (width as i32) * 2 - 1 {
+                        if y2 < 0
+                            || y2 >= (height as i32) * 2 - 1
+                            || x2 < 0
+                            || x2 >= (width as i32) * 2 - 1
+                        {
                             continue 'inner;
                         }
 
                         if y2 % 2 == 1 {
-                            if self.board.vertical_borders[((y2 / 2) as usize, (x2 / 2) as usize)] == Border::Wall {
-                                reason.push((self.board.vertical_idx((y2 / 2) as usize, (x2 / 2) as usize), true));
+                            if self.board.vertical_borders[((y2 / 2) as usize, (x2 / 2) as usize)]
+                                == Border::Wall
+                            {
+                                reason.push((
+                                    self.board
+                                        .vertical_idx((y2 / 2) as usize, (x2 / 2) as usize),
+                                    true,
+                                ));
                                 continue 'inner;
                             }
                         } else {
-                            if self.board.horizontal_borders[((y2 / 2) as usize, (x2 / 2) as usize)] == Border::Wall {
-                                reason.push((self.board.horizontal_idx((y2 / 2) as usize, (x2 / 2) as usize), true));
+                            if self.board.horizontal_borders[((y2 / 2) as usize, (x2 / 2) as usize)]
+                                == Border::Wall
+                            {
+                                reason.push((
+                                    self.board
+                                        .horizontal_idx((y2 / 2) as usize, (x2 / 2) as usize),
+                                    true,
+                                ));
                                 continue 'inner;
                             }
                         }
@@ -630,18 +661,34 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
                         let y2 = y * 2 - cells[0].0 * 2 + dy;
                         let x2 = x * 2 - cells[0].1 * 2 + dx;
 
-                        if y2 < 0 || y2 >= (height as i32) * 2 - 1 || x2 < 0 || x2 >= (width as i32) * 2 - 1 {
+                        if y2 < 0
+                            || y2 >= (height as i32) * 2 - 1
+                            || x2 < 0
+                            || x2 >= (width as i32) * 2 - 1
+                        {
                             continue;
                         }
 
                         if y2 % 2 == 1 {
-                            if self.board.vertical_borders[((y2 / 2) as usize, (x2 / 2) as usize)] == Border::Connected {
-                                reason.push((self.board.vertical_idx((y2 / 2) as usize, (x2 / 2) as usize), false));
+                            if self.board.vertical_borders[((y2 / 2) as usize, (x2 / 2) as usize)]
+                                == Border::Connected
+                            {
+                                reason.push((
+                                    self.board
+                                        .vertical_idx((y2 / 2) as usize, (x2 / 2) as usize),
+                                    false,
+                                ));
                                 continue 'inner;
                             }
                         } else {
-                            if self.board.horizontal_borders[((y2 / 2) as usize, (x2 / 2) as usize)] == Border::Connected {
-                                reason.push((self.board.horizontal_idx((y2 / 2) as usize, (x2 / 2) as usize), false));
+                            if self.board.horizontal_borders[((y2 / 2) as usize, (x2 / 2) as usize)]
+                                == Border::Connected
+                            {
+                                reason.push((
+                                    self.board
+                                        .horizontal_idx((y2 / 2) as usize, (x2 / 2) as usize),
+                                    false,
+                                ));
                                 continue 'inner;
                             }
                         }
@@ -655,7 +702,8 @@ impl SimpleCustomConstraint for SendaiShapeConstraint {
             if !isok {
                 reason.extend(self.board.reason_for_unit_and_its_boundary(&info, i));
 
-                let p_unit = info.potential_units.group_id[(cells[0].0 as usize, cells[0].1 as usize)];
+                let p_unit =
+                    info.potential_units.group_id[(cells[0].0 as usize, cells[0].1 as usize)];
                 for &(i2, j2) in &adjacent_potential_units_flat {
                     if i2 == p_unit {
                         reason.extend(self.board.reason_for_potential_unit_boundary(&info, j2));
@@ -691,12 +739,16 @@ struct CityCountConstraint {
     edges: Vec<(usize, usize)>,
     city_count: usize,
     decision_stack: Vec<usize>,
-    adj: Vec<Vec<(usize, usize)>>,  // adjacency list: (neighbor_vertex, edge_index)
+    adj: Vec<Vec<(usize, usize)>>, // adjacency list: (neighbor_vertex, edge_index)
     borders: Vec<Border>,
 }
 
 impl CityCountConstraint {
-    pub fn new(num_vertices: usize, edges: Vec<(usize, usize)>, city_count: usize) -> CityCountConstraint {
+    pub fn new(
+        num_vertices: usize,
+        edges: Vec<(usize, usize)>,
+        city_count: usize,
+    ) -> CityCountConstraint {
         let mut adj = vec![vec![]; num_vertices];
         for (i, &(u, v)) in edges.iter().enumerate() {
             adj[u].push((v, i));
@@ -721,7 +773,9 @@ struct UnionFind {
 
 impl UnionFind {
     pub fn new(n: usize) -> UnionFind {
-        UnionFind { parent: (0..n).collect() }
+        UnionFind {
+            parent: (0..n).collect(),
+        }
     }
 
     pub fn find(&mut self, x: usize) -> usize {
@@ -792,12 +846,7 @@ impl SimpleCustomConstraint for CityCountConstraint {
         let mut num_min_components = 0;
         let mut visited = vec![false; self.num_vertices];
 
-        fn dfs(
-            u: usize,
-            visited: &mut [bool],
-            adj: &[Vec<(usize, usize)>],
-            borders: &[Border],
-        ) {
+        fn dfs(u: usize, visited: &mut [bool], adj: &[Vec<(usize, usize)>], borders: &[Border]) {
             visited[u] = true;
             for &(v, edge_idx) in &adj[u] {
                 if borders[edge_idx] != Border::Wall && !visited[v] {
@@ -875,15 +924,7 @@ mod tests {
                 [1, 1, 1, 0],
             ]),
         };
-        let clues = vec![
-            Some(1),
-            Some(4),
-            None,
-            None,
-            None,
-            Some(2),
-            None,
-        ];
+        let clues = vec![Some(1), Some(4), None, None, None, Some(2), None];
         (borders, clues)
     }
 
