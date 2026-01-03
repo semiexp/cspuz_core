@@ -62,7 +62,10 @@ jobs:
         node-version: '22.x'
     - name: Setup environment
       run: |
+        rustup toolchain install nightly
         rustup target add wasm32-unknown-emscripten
+        rustup override set nightly
+        rustup toolchain list
         cd ${{ runner.temp }}
         git clone https://github.com/emscripten-core/emsdk.git
         cd emsdk
