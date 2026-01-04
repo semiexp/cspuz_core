@@ -62,8 +62,10 @@ jobs:
         node-version: '22.x'
     - name: Setup environment
       run: |
-        rustup toolchain install nightly
-        rustup override set nightly
+        rustup install 1.92.0
+        rustup default 1.92.0
+        # rustup toolchain install nightly
+        # rustup override set nightly
         rustup target add wasm32-unknown-emscripten
         rustup toolchain list
         cd ${{ runner.temp }}
