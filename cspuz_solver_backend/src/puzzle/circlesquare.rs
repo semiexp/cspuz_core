@@ -30,3 +30,52 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://puzz.link/p?circlesquare/5/5/0799i8010"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 5,
+                width: 5,
+                data: vec![
+                    Item { y: 1, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 3, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 5, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 9, color: "black", kind: ItemKind::Fill },
+                    Item { y: 3, x: 1, color: "black", kind: ItemKind::Dot },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::Dot },
+                    Item { y: 3, x: 5, color: "green", kind: ItemKind::Block },
+                    Item { y: 3, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 9, color: "black", kind: ItemKind::Dot },
+                    Item { y: 5, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 5, color: "black", kind: ItemKind::Fill },
+                    Item { y: 5, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 7, x: 3, color: "black", kind: ItemKind::Fill },
+                    Item { y: 7, x: 5, color: "black", kind: ItemKind::Fill },
+                    Item { y: 7, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 7, x: 9, color: "green", kind: ItemKind::Block },
+                    Item { y: 9, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 9, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 5, color: "green", kind: ItemKind::Block },
+                    Item { y: 9, x: 7, color: "black", kind: ItemKind::Dot },
+                    Item { y: 9, x: 9, color: "green", kind: ItemKind::Block },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

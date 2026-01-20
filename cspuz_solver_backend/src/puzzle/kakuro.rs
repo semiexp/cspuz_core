@@ -34,3 +34,103 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://puzz.link/p?kakuro/6/5/Dclh4t9fl3-p-gl-alJeC3BgG"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 6,
+                width: 7,
+                data: vec![
+                    Item { y: 1, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 3, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 3, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 5, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 5, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 5, color: "black", kind: ItemKind::NumLowerLeft(29) },
+                    Item { y: 1, x: 7, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 7, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 7, color: "black", kind: ItemKind::NumLowerLeft(14) },
+                    Item { y: 1, x: 9, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 9, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 11, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 11, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 11, color: "black", kind: ItemKind::NumLowerLeft(22) },
+                    Item { y: 1, x: 13, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 13, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 1, x: 13, color: "black", kind: ItemKind::NumLowerLeft(3) },
+                    Item { y: 3, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 3, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 3, x: 3, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::NumLowerLeft(23) },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::NumUpperRight(12) },
+                    Item { y: 3, x: 5, color: "green", kind: ItemKind::Num(3) },
+                    Item { y: 3, x: 7, color: "green", kind: ItemKind::Num(9) },
+                    Item { y: 3, x: 9, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 3, x: 9, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 3, x: 9, color: "black", kind: ItemKind::NumLowerLeft(17) },
+                    Item { y: 3, x: 9, color: "black", kind: ItemKind::NumUpperRight(4) },
+                    Item { y: 3, x: 11, color: "green", kind: ItemKind::Num(3) },
+                    Item { y: 3, x: 13, color: "green", kind: ItemKind::Num(1) },
+                    Item { y: 5, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 5, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 5, x: 1, color: "black", kind: ItemKind::NumUpperRight(21) },
+                    Item { y: 5, x: 3, color: "green", kind: ItemKind::Num(6) },
+                    Item { y: 5, x: 5, color: "green", kind: ItemKind::Num(4) },
+                    Item { y: 5, x: 7, color: "green", kind: ItemKind::Num(5) },
+                    Item { y: 5, x: 9, color: "green", kind: ItemKind::Num(3) },
+                    Item { y: 5, x: 11, color: "green", kind: ItemKind::Num(1) },
+                    Item { y: 5, x: 13, color: "green", kind: ItemKind::Num(2) },
+                    Item { y: 7, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 7, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 7, x: 1, color: "black", kind: ItemKind::NumUpperRight(16) },
+                    Item { y: 7, x: 3, color: "green", kind: ItemKind::Num(9) },
+                    Item { y: 7, x: 5, color: "green", kind: ItemKind::Num(7) },
+                    Item { y: 7, x: 7, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 7, x: 7, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 7, x: 7, color: "black", kind: ItemKind::NumLowerLeft(9) },
+                    Item { y: 7, x: 7, color: "black", kind: ItemKind::NumUpperRight(15) },
+                    Item { y: 7, x: 9, color: "green", kind: ItemKind::Num(9) },
+                    Item { y: 7, x: 11, color: "green", kind: ItemKind::Num(6) },
+                    Item { y: 7, x: 13, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 7, x: 13, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 7, x: 13, color: "black", kind: ItemKind::NumLowerLeft(3) },
+                    Item { y: 9, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 9, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 9, x: 1, color: "black", kind: ItemKind::NumUpperRight(26) },
+                    Item { y: 9, x: 3, color: "green", kind: ItemKind::Num(8) },
+                    Item { y: 9, x: 5, color: "green", kind: ItemKind::Num(6) },
+                    Item { y: 9, x: 7, color: "green", kind: ItemKind::Num(2) },
+                    Item { y: 9, x: 9, color: "green", kind: ItemKind::Num(5) },
+                    Item { y: 9, x: 11, color: "green", kind: ItemKind::Num(4) },
+                    Item { y: 9, x: 13, color: "green", kind: ItemKind::Num(1) },
+                    Item { y: 11, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 11, x: 1, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 11, x: 3, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 11, x: 3, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 11, x: 3, color: "black", kind: ItemKind::NumUpperRight(16) },
+                    Item { y: 11, x: 5, color: "green", kind: ItemKind::Num(9) },
+                    Item { y: 11, x: 7, color: "green", kind: ItemKind::Num(7) },
+                    Item { y: 11, x: 9, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 11, x: 9, color: "black", kind: ItemKind::Backslash },
+                    Item { y: 11, x: 9, color: "black", kind: ItemKind::NumUpperRight(10) },
+                    Item { y: 11, x: 11, color: "green", kind: ItemKind::Num(8) },
+                    Item { y: 11, x: 13, color: "green", kind: ItemKind::Num(2) },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}
