@@ -86,3 +86,107 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://puzz.link/p?firefly/5/6/f1.a43b4.a42b2.a32g3.c"),
+            Board {
+                kind: BoardKind::Empty,
+                height: 6,
+                width: 5,
+                data: vec![
+                    Item { y: 1, x: 0, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 0, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 1, x: 2, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 4, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 6, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 8, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 0, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 2, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 3, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 4, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 3, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 6, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 3, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 8, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 5, x: 0, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 2, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 5, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 4, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 5, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 6, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 5, x: 8, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 0, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 2, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 4, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 6, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 7, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 8, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 9, x: 0, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 9, x: 2, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 9, x: 4, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 9, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 6, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 9, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 8, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 0, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 1, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 0, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 0, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 5, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 0, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 1, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 3, color: "green", kind: ItemKind::Cross },
+                    Item { y: 2, x: 3, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 2, x: 5, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 4, x: 1, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 4, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 5, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 6, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 6, x: 1, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 6, x: 3, color: "green", kind: ItemKind::Cross },
+                    Item { y: 6, x: 3, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 6, x: 5, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 6, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 8, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 1, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 8, x: 3, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 3, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 8, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 5, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 8, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 7, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 10, x: 1, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 10, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 10, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 10, x: 5, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 10, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 10, x: 7, color: "black", kind: ItemKind::DottedWall },
+                    Item { y: 2, x: 2, color: "black", kind: ItemKind::Firefly(FireflyDir::Up, -1) },
+                    Item { y: 2, x: 6, color: "black", kind: ItemKind::Firefly(FireflyDir::Right, 3) },
+                    Item { y: 4, x: 2, color: "black", kind: ItemKind::Firefly(FireflyDir::Right, -1) },
+                    Item { y: 4, x: 6, color: "black", kind: ItemKind::Firefly(FireflyDir::Right, 2) },
+                    Item { y: 6, x: 2, color: "black", kind: ItemKind::Firefly(FireflyDir::Down, -1) },
+                    Item { y: 6, x: 6, color: "black", kind: ItemKind::Firefly(FireflyDir::Left, 2) },
+                    Item { y: 10, x: 2, color: "black", kind: ItemKind::Firefly(FireflyDir::Left, -1) },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

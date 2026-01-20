@@ -35,3 +35,39 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/paper-puzzle-player?W=4x3&L=(4)2(6)1x3(1)3(11)2&G=hidoku"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 3,
+                width: 4,
+                data: vec![
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::Num(4) },
+                    Item { y: 1, x: 3, color: "green", kind: ItemKind::Num(3) },
+                    Item { y: 1, x: 5, color: "green", kind: ItemKind::Num(9) },
+                    Item { y: 1, x: 7, color: "black", kind: ItemKind::Num(11) },
+                    Item { y: 3, x: 1, color: "green", kind: ItemKind::Num(5) },
+                    Item { y: 3, x: 3, color: "green", kind: ItemKind::Num(8) },
+                    Item { y: 3, x: 5, color: "green", kind: ItemKind::Num(2) },
+                    Item { y: 3, x: 7, color: "green", kind: ItemKind::Num(10) },
+                    Item { y: 5, x: 1, color: "green", kind: ItemKind::Num(7) },
+                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Num(6) },
+                    Item { y: 5, x: 5, color: "black", kind: ItemKind::Fill },
+                    Item { y: 5, x: 7, color: "black", kind: ItemKind::Num(1) },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

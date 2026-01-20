@@ -100,3 +100,62 @@ pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>
 
     Ok((board_common, board_answers))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://puzz.link/p?curvedata/4/5/=n01o/b0100000/3/3/ec24/2/3/ba1"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 5,
+                width: 4,
+                data: vec![
+                    Item { y: 7, x: 2, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::Fill },
+                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Circle },
+                    Item { y: 5, x: 5, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 2, x: 3, color: "green", kind: ItemKind::Line },
+                    Item { y: 2, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 2, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 4, x: 1, color: "green", kind: ItemKind::Line },
+                    Item { y: 4, x: 3, color: "green", kind: ItemKind::Line },
+                    Item { y: 4, x: 5, color: "green", kind: ItemKind::Line },
+                    Item { y: 4, x: 7, color: "green", kind: ItemKind::Line },
+                    Item { y: 6, x: 1, color: "green", kind: ItemKind::Line },
+                    Item { y: 6, x: 3, color: "green", kind: ItemKind::Line },
+                    Item { y: 6, x: 5, color: "green", kind: ItemKind::Line },
+                    Item { y: 6, x: 7, color: "green", kind: ItemKind::Line },
+                    Item { y: 8, x: 1, color: "green", kind: ItemKind::Line },
+                    Item { y: 8, x: 3, color: "green", kind: ItemKind::Line },
+                    Item { y: 8, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 4, color: "green", kind: ItemKind::Line },
+                    Item { y: 1, x: 6, color: "green", kind: ItemKind::Line },
+                    Item { y: 3, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 6, color: "green", kind: ItemKind::Line },
+                    Item { y: 5, x: 2, color: "green", kind: ItemKind::Line },
+                    Item { y: 5, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 6, color: "green", kind: ItemKind::Line },
+                    Item { y: 9, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 4, color: "green", kind: ItemKind::Line },
+                    Item { y: 9, x: 6, color: "green", kind: ItemKind::Line },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

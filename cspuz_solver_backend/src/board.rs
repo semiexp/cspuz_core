@@ -1,7 +1,7 @@
 use crate::uniqueness::Uniqueness;
 use cspuz_rs::graph;
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Compass {
     pub up: Option<i32>,
     pub down: Option<i32>,
@@ -9,7 +9,7 @@ pub struct Compass {
     pub right: Option<i32>,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FireflyDir {
     Up,
     Down,
@@ -18,7 +18,7 @@ pub enum FireflyDir {
 }
 
 #[allow(unused)]
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ItemKind {
     Dot,
     Block,
@@ -186,6 +186,7 @@ impl ItemKind {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Item {
     pub y: usize,
     pub x: usize,
@@ -215,6 +216,7 @@ impl Item {
 }
 
 #[allow(unused)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BoardKind {
     Empty,
     Grid,
@@ -222,12 +224,13 @@ pub enum BoardKind {
     DotGrid,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Board {
-    kind: BoardKind,
-    height: usize,
-    width: usize,
-    data: Vec<Item>,
-    uniqueness: Uniqueness,
+    pub(crate) kind: BoardKind,
+    pub(crate) height: usize,
+    pub(crate) width: usize,
+    pub(crate) data: Vec<Item>,
+    pub(crate) uniqueness: Uniqueness,
 }
 
 impl Board {

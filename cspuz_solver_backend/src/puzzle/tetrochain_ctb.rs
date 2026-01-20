@@ -30,3 +30,91 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/kudamono/player?W=7x5&L=(1)0(1)2(4)2(0)4(1)16(3)5&SIE=1RU2RURRRU4RRD14RRUU1DDLLU12RDR&G=tetrochain-ctb"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 5,
+                width: 7,
+                data: vec![
+                    Item { y: 2, x: 3, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 5, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 7, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 8, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 10, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 11, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 1, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 2, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 6, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 7, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 9, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 10, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 12, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 13, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 2, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 6, x: 3, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 6, x: 5, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 6, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 8, x: 1, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 2, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 8, x: 3, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 8, x: 5, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 9, x: 6, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::NumUpperLeft(4) },
+                    Item { y: 1, x: 3, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 5, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 9, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 1, x: 11, color: "green", kind: ItemKind::Block },
+                    Item { y: 1, x: 11, color: "black", kind: ItemKind::NumUpperLeft(3) },
+                    Item { y: 1, x: 13, color: "green", kind: ItemKind::Block },
+                    Item { y: 3, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 3, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::NumUpperLeft(0) },
+                    Item { y: 3, x: 5, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 3, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 11, color: "green", kind: ItemKind::Block },
+                    Item { y: 3, x: 13, color: "green", kind: ItemKind::Block },
+                    Item { y: 5, x: 1, color: "green", kind: ItemKind::Block },
+                    Item { y: 5, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 5, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 5, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 5, x: 9, color: "green", kind: ItemKind::Block },
+                    Item { y: 5, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 13, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 3, color: "green", kind: ItemKind::Block },
+                    Item { y: 7, x: 5, color: "green", kind: ItemKind::Block },
+                    Item { y: 7, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 13, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 9, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 5, color: "green", kind: ItemKind::Block },
+                    Item { y: 9, x: 7, color: "green", kind: ItemKind::Block },
+                    Item { y: 9, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 13, color: "green", kind: ItemKind::Dot },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

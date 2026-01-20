@@ -135,3 +135,89 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/paper-puzzle-player?W=5x4&L=(3)0(2)1(2)1x1x1x1(1)1(1)2(3)1(1)1(2)1(4)1(2)1(1)1(1)2x3&G=spokes"),
+            Board {
+                kind: BoardKind::Empty,
+                height: 3,
+                width: 4,
+                data: vec![
+                    Item { y: 0, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 0, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 4, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 1, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 7, color: "green", kind: ItemKind::Wall },
+                    Item { y: 1, x: 2, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 0, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 8, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 0, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 6, color: "green", kind: ItemKind::Wall },
+                    Item { y: 1, x: 1, color: "green", kind: ItemKind::Slash },
+                    Item { y: 1, x: 7, color: "green", kind: ItemKind::Backslash },
+                    Item { y: 3, x: 3, color: "green", kind: ItemKind::Slash },
+                    Item { y: 3, x: 5, color: "green", kind: ItemKind::Slash },
+                    Item { y: 5, x: 1, color: "green", kind: ItemKind::Slash },
+                    Item { y: 5, x: 5, color: "green", kind: ItemKind::Backslash },
+                    Item { y: 5, x: 7, color: "green", kind: ItemKind::Slash },
+                    Item { y: 0, x: 2, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 0, x: 2, color: "black", kind: ItemKind::Circle },
+                    Item { y: 0, x: 4, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 0, x: 4, color: "black", kind: ItemKind::Circle },
+                    Item { y: 0, x: 4, color: "black", kind: ItemKind::Num(2) },
+                    Item { y: 0, x: 6, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 0, x: 6, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 0, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 2, x: 0, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 0, color: "black", kind: ItemKind::Num(2) },
+                    Item { y: 2, x: 2, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 2, x: 2, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 2, color: "black", kind: ItemKind::Num(1) },
+                    Item { y: 2, x: 4, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 2, x: 4, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 4, color: "black", kind: ItemKind::Num(1) },
+                    Item { y: 2, x: 6, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 2, x: 6, color: "black", kind: ItemKind::Circle },
+                    Item { y: 2, x: 6, color: "black", kind: ItemKind::Num(1) },
+                    Item { y: 2, x: 8, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 2, x: 8, color: "black", kind: ItemKind::Circle },
+                    Item { y: 4, x: 0, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 4, x: 0, color: "black", kind: ItemKind::Circle },
+                    Item { y: 4, x: 0, color: "black", kind: ItemKind::Num(2) },
+                    Item { y: 4, x: 4, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 4, x: 4, color: "black", kind: ItemKind::Circle },
+                    Item { y: 4, x: 4, color: "black", kind: ItemKind::Num(3) },
+                    Item { y: 4, x: 6, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 4, x: 6, color: "black", kind: ItemKind::Circle },
+                    Item { y: 4, x: 6, color: "black", kind: ItemKind::Num(2) },
+                    Item { y: 4, x: 8, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 4, x: 8, color: "black", kind: ItemKind::Circle },
+                    Item { y: 6, x: 0, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 6, x: 0, color: "black", kind: ItemKind::Circle },
+                    Item { y: 6, x: 0, color: "black", kind: ItemKind::Num(3) },
+                    Item { y: 6, x: 4, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 6, x: 4, color: "black", kind: ItemKind::Circle },
+                    Item { y: 6, x: 4, color: "black", kind: ItemKind::Num(1) },
+                    Item { y: 6, x: 6, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 6, x: 6, color: "black", kind: ItemKind::Circle },
+                    Item { y: 6, x: 6, color: "black", kind: ItemKind::Num(4) },
+                    Item { y: 6, x: 8, color: "white", kind: ItemKind::FilledCircle },
+                    Item { y: 6, x: 8, color: "black", kind: ItemKind::Circle },
+                    Item { y: 6, x: 8, color: "black", kind: ItemKind::Num(1) },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}
