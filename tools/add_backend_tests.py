@@ -179,7 +179,7 @@ def main():
 
     for filename, url, status, has_test, added in results:
         # Skip files where both test_solve and URL are OK, unless --show-all is specified
-        if not args.show_all and has_test and url and not added:
+        if not args.show_all and has_test and not added:
             continue
 
         print(f"\n{filename}:")
