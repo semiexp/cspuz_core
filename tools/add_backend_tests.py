@@ -114,6 +114,11 @@ def main():
         action="store_true",
         help="Automatically add test_solve() functions to files that don't have them"
     )
+    parser.add_argument(
+        "--show-all",
+        action="store_true",
+        help="Show all files including those with both test_solve and URL"
+    )
     args = parser.parse_args()
 
     # Project root
@@ -173,6 +178,10 @@ def main():
     print("=" * 80)
 
     for filename, url, status, has_test, added in results:
+        # Skip files where both test_solve and URL are OK, unless --show-all is specified
+        if not args.show_all and has_test and url and not added:
+            continue
+
         print(f"\n{filename}:")
         if added:
             print(f"  test_solve(): ✅ Added automatically")
