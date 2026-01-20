@@ -75,3 +75,61 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/paper-puzzle-player?W=5x4&L=x1x2x8x7x1&G=tricklayer"),
+            Board {
+                kind: BoardKind::OuterGrid,
+                height: 4,
+                width: 5,
+                data: vec![
+                    Item { y: 1, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 5, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 1, x: 9, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 3, x: 9, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 5, x: 1, color: "#cccccc", kind: ItemKind::Fill },
+                    Item { y: 2, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 2, x: 7, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 3, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 2, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 4, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 3, x: 4, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 4, x: 5, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 6, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 6, x: 3, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 4, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 6, x: 5, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 6, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 6, x: 7, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 8, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 6, x: 9, color: "green", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 2, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 7, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 4, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 7, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 6, color: "#cccccc", kind: ItemKind::Wall },
+                    Item { y: 7, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 8, color: "#cccccc", kind: ItemKind::Wall },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}

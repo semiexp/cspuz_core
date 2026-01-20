@@ -50,3 +50,96 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/paper-puzzle-player?W=5x5&L-N=(2)6(3)1(4)2(4)1(1)1(6)11&L-S=(0)9(2)3(2)6&G=crosswall"),
+            Board {
+                kind: BoardKind::DotGrid,
+                height: 5,
+                width: 5,
+                data: vec![
+                    Item { y: 1, x: 3, color: "black", kind: ItemKind::Num(4) },
+                    Item { y: 1, x: 3, color: "black", kind: ItemKind::NumLowerRight(0) },
+                    Item { y: 3, x: 7, color: "black", kind: ItemKind::NumLowerRight(2) },
+                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Num(3) },
+                    Item { y: 5, x: 5, color: "black", kind: ItemKind::NumLowerRight(2) },
+                    Item { y: 5, x: 9, color: "black", kind: ItemKind::Num(6) },
+                    Item { y: 7, x: 3, color: "black", kind: ItemKind::Num(2) },
+                    Item { y: 7, x: 5, color: "black", kind: ItemKind::Num(1) },
+                    Item { y: 9, x: 5, color: "black", kind: ItemKind::Num(4) },
+                    Item { y: 1, x: 0, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 4, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 6, color: "green", kind: ItemKind::Wall },
+                    Item { y: 1, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 1, x: 10, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 0, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 2, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 4, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 6, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 8, color: "green", kind: ItemKind::Wall },
+                    Item { y: 3, x: 10, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 0, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 4, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 6, color: "green", kind: ItemKind::Wall },
+                    Item { y: 5, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 5, x: 10, color: "green", kind: ItemKind::Wall },
+                    Item { y: 7, x: 0, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 7, x: 4, color: "green", kind: ItemKind::Wall },
+                    Item { y: 7, x: 6, color: "green", kind: ItemKind::Wall },
+                    Item { y: 7, x: 8, color: "green", kind: ItemKind::Wall },
+                    Item { y: 7, x: 10, color: "green", kind: ItemKind::Wall },
+                    Item { y: 9, x: 0, color: "green", kind: ItemKind::Wall },
+                    Item { y: 9, x: 2, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 4, color: "green", kind: ItemKind::Wall },
+                    Item { y: 9, x: 6, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 8, color: "green", kind: ItemKind::Cross },
+                    Item { y: 9, x: 10, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 3, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 0, x: 7, color: "green", kind: ItemKind::Wall },
+                    Item { y: 0, x: 9, color: "green", kind: ItemKind::Wall },
+                    Item { y: 2, x: 1, color: "green", kind: ItemKind::Wall },
+                    Item { y: 2, x: 3, color: "green", kind: ItemKind::Cross },
+                    Item { y: 2, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 2, x: 7, color: "green", kind: ItemKind::Wall },
+                    Item { y: 2, x: 9, color: "green", kind: ItemKind::Cross },
+                    Item { y: 4, x: 1, color: "green", kind: ItemKind::Cross },
+                    Item { y: 4, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 4, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 4, x: 7, color: "green", kind: ItemKind::Wall },
+                    Item { y: 4, x: 9, color: "green", kind: ItemKind::Cross },
+                    Item { y: 6, x: 1, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 7, color: "green", kind: ItemKind::Wall },
+                    Item { y: 6, x: 9, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 1, color: "green", kind: ItemKind::Wall },
+                    Item { y: 8, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 8, x: 5, color: "green", kind: ItemKind::Wall },
+                    Item { y: 8, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 8, x: 9, color: "green", kind: ItemKind::Wall },
+                    Item { y: 10, x: 1, color: "green", kind: ItemKind::Wall },
+                    Item { y: 10, x: 3, color: "green", kind: ItemKind::Wall },
+                    Item { y: 10, x: 5, color: "green", kind: ItemKind::Cross },
+                    Item { y: 10, x: 7, color: "green", kind: ItemKind::Cross },
+                    Item { y: 10, x: 9, color: "green", kind: ItemKind::Cross },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}
