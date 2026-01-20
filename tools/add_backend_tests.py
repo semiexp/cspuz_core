@@ -103,6 +103,8 @@ def add_test_solve_to_file(file_path, url):
         print(f"Error updating {file_path}: {e}")
         return False
 
+IGNORED_FILES = ["mod.rs", "heyawake_internal.rs"]
+
 
 def main():
     # Parse arguments
@@ -144,8 +146,8 @@ def main():
     for backend_file in backend_files:
         filename = backend_file.name
 
-        # Skip mod.rs
-        if filename == "mod.rs":
+        # Skip ignored files
+        if filename in IGNORED_FILES:
             continue
 
         # Check if test_solve exists in backend file
