@@ -1,5 +1,6 @@
 use cspuz_rs::graph::{GridEdges, InnerGridEdges};
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Uniqueness {
     Unique,
     NonUnique,

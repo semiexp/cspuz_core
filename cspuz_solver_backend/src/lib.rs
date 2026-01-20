@@ -6,6 +6,9 @@ pub mod board;
 mod puzzle;
 mod uniqueness;
 
+#[cfg(test)]
+pub mod testing;
+
 use board::Board;
 use cspuz_rs::serializer::{get_kudamono_url_info_detailed, url_to_puzzle_kind};
 pub use puzzle::{list_penpa_edit_puzzles, list_puzzles_for_enumerate, list_puzzles_for_solve};
