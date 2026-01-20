@@ -40,3 +40,72 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     Ok(board)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::solve;
+    use crate::board::*;
+    use crate::compare_board;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_solve() {
+        compare_board!(
+            solve("https://pedros.works/paper-puzzle-player?W=6x5&L=z7z6z8&L-N=(2)3(2)1(1)15(0)4&SIE=9UL3UU9RURR1U4U5R&G=akari-regional"),
+            Board {
+                kind: BoardKind::Grid,
+                height: 5,
+                width: 6,
+                data: vec![
+                    Item { y: 2, x: 1, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 6, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 9, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 2, x: 11, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 2, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 4, x: 7, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 3, x: 8, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 5, x: 8, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 7, x: 4, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 8, x: 11, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 9, x: 4, color: "black", kind: ItemKind::BoldWall },
+                    Item { y: 1, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::NumUpperLeft(2) },
+                    Item { y: 1, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 5, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 1, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 7, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 1, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 1, color: "black", kind: ItemKind::NumUpperLeft(2) },
+                    Item { y: 3, x: 3, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 3, x: 5, color: "black", kind: ItemKind::Fill },
+                    Item { y: 3, x: 7, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 3, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 3, x: 9, color: "black", kind: ItemKind::NumUpperLeft(0) },
+                    Item { y: 3, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 1, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Fill },
+                    Item { y: 5, x: 5, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 5, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 5, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 3, color: "green", kind: ItemKind::FilledCircle },
+                    Item { y: 7, x: 5, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 7, x: 9, color: "black", kind: ItemKind::Fill },
+                    Item { y: 7, x: 11, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 1, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 3, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 5, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 7, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 9, color: "green", kind: ItemKind::Dot },
+                    Item { y: 9, x: 11, color: "green", kind: ItemKind::FilledCircle },
+                ],
+                uniqueness: Uniqueness::Unique,
+            },
+        );
+    }
+}
