@@ -41,9 +41,9 @@ macro_rules! compare_board_and_check_no_solution_case {
             );
         }
 
-        cspuz_core::solver::force_solver_fail_for_tests(true);
+        cspuz_rs::solver::set_force_solver_fail(true);
         let actual = $actual;
-        cspuz_core::solver::force_solver_fail_for_tests(false);
+        cspuz_rs::solver::set_force_solver_fail(false);
         if actual.is_err() {
             panic!("Expected Ok(_), but got Err({})", actual.err().unwrap());
         }
