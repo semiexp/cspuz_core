@@ -188,4 +188,11 @@ mod tests {
         ]);
         assert_eq!(ans, expected);
     }
+
+    #[test]
+    fn test_slashpack_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?slashpack/6/6/h1j1m1i2j.o.g";
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
 }
