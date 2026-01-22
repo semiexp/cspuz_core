@@ -1,16 +1,23 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::coffeemilk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = coffeemilk::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = coffeemilk::solve_coffeemilk(&clues).ok_or("no answer")?;
+    let is_line = coffeemilk::solve_coffeemilk(&clues);
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(BoardKind::Empty, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Empty,
+        height,
+        width,
+        is_line.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
+    );
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(is_line) = is_line {
+        board.add_lines_irrefutable_facts(&is_line, "green", None);
+    }
 
     for y in 0..height {
         for x in 0..width {
@@ -33,13 +40,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?coffeemilk/6/5/a2b2.1.1e1a1e.21a2b2"),
             Board {
                 kind: BoardKind::Empty,

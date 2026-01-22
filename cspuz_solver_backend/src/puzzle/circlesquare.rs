@@ -1,25 +1,33 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::circlesquare::{self, CircleSquareClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = circlesquare::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = circlesquare::solve_circlesquare(&problem).ok_or("no answer")?;
+    let ans = circlesquare::solve_circlesquare(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
+    );
+    
     for y in 0..height {
         for x in 0..width {
             match problem[y][x] {
                 CircleSquareClue::None => {
-                    if let Some(a) = ans[y][x] {
-                        board.push(Item::cell(
-                            y,
-                            x,
-                            "green",
-                            if a { ItemKind::Block } else { ItemKind::Dot },
-                        ));
+                    if let Some(ref ans) = ans {
+                        if let Some(a) = ans[y][x] {
+                            board.push(Item::cell(
+                                y,
+                                x,
+                                "green",
+                                if a { ItemKind::Block } else { ItemKind::Dot },
+                            ));
+                        }
                     }
                 }
                 CircleSquareClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
@@ -35,13 +43,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?circlesquare/5/5/0799i8010"),
             Board {
                 kind: BoardKind::Grid,
