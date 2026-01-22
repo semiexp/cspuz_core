@@ -44,6 +44,18 @@ pub struct Solver<'a> {
     answer_key_int: Vec<CSPIntVar>,
 }
 
+#[cfg(test)]
+thread_local! {
+    static FORCE_SOLVER_FAIL: std::cell::Cell<bool> = std::cell::Cell::new(false);
+}
+
+#[cfg(test)]
+pub fn set_force_solver_fail(value: bool) {
+    FORCE_SOLVER_FAIL.with(|cell| {
+        cell.set(value);
+    });
+}
+
 impl<'a> Solver<'a> {
     /// Creates a new `Solver` instance.
     ///
@@ -388,6 +400,13 @@ impl<'a> Solver<'a> {
     /// assert!(model.is_none());
     /// ```
     pub fn solve<'b>(&'b mut self) -> Option<Model<'b>> {
+        #[cfg(test)]
+        {
+            if FORCE_SOLVER_FAIL.with(|cell| cell.get()) {
+                return None;
+            }
+        }
+
         self.solver.solve().map(|model| Model { model })
     }
 
@@ -425,6 +444,13 @@ impl<'a> Solver<'a> {
     /// assert_eq!(partial_model.get(z), None);
     /// ```
     pub fn irrefutable_facts(self) -> Option<OwnedPartialModel> {
+        #[cfg(test)]
+        {
+            if FORCE_SOLVER_FAIL.with(|cell| cell.get()) {
+                return None;
+            }
+        }
+
         self.solver
             .decide_irrefutable_facts(&self.answer_key_bool, &self.answer_key_int)
             .map(|assignment| OwnedPartialModel { assignment })
@@ -459,8 +485,22 @@ impl<'a> Solver<'a> {
     /// assert_eq!(count, 3);
     /// ```
     pub fn answer_iter(self) -> impl Iterator<Item = OwnedPartialModel> + 'a {
-        self.solver
-            .answer_iter(&self.answer_key_bool, &self.answer_key_int)
+        let s;
+        #[cfg(test)]
+        {
+            let mut t = self;
+            if FORCE_SOLVER_FAIL.with(|cell| cell.get()) {
+                t.add_expr(FALSE);
+            }
+            s = t;
+        }
+        #[cfg(not(test))]
+        {
+            s = self;
+        }
+
+        s.solver
+            .answer_iter(&s.answer_key_bool, &s.answer_key_int)
             .map(|assignment| OwnedPartialModel { assignment })
     }
 }
