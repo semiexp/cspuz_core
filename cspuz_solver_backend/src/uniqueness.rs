@@ -5,6 +5,7 @@ pub enum Uniqueness {
     Unique,
     NonUnique,
     NotApplicable,
+    NoAnswer,
 }
 
 pub trait UniquenessCheckable {

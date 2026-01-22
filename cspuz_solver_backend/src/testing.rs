@@ -1,23 +1,55 @@
 use crate::board::{Board, ItemKind};
+use crate::uniqueness::Uniqueness;
 use std::fs;
 use std::io::Write;
 
 #[macro_export]
 macro_rules! compare_board {
     ($actual:expr, $expected:expr $(,)?) => {
-        if $actual.is_err() {
-            panic!("Expected Ok(_), but got Err({})", $actual.err().unwrap());
+        let actual = $actual;
+        if actual.is_err() {
+            panic!("Expected Ok(_), but got Err({})", actual.err().unwrap());
         }
-        let actual_board = $actual.unwrap();
-        if actual_board != $expected {
+        let actual = actual.unwrap();
+        if actual != $expected {
             $crate::testing::expectation_mismatch(
                 file!().to_string(),
                 line!(),
                 column!(),
-                actual_board,
+                actual,
                 $expected,
             );
         }
+    };
+}
+
+#[macro_export]
+macro_rules! compare_board_and_check_no_solution_case {
+    ($actual:expr, $expected:expr $(,)?) => {
+        let actual = $actual;
+        if actual.is_err() {
+            panic!("Expected Ok(_), but got Err({})", actual.err().unwrap());
+        }
+        let actual = actual.unwrap();
+        if actual != $expected {
+            $crate::testing::expectation_mismatch(
+                file!().to_string(),
+                line!(),
+                column!(),
+                actual,
+                $expected,
+            );
+        }
+
+        cspuz_rs::solver::set_force_solver_fail(true);
+        let actual = $actual;
+        cspuz_rs::solver::set_force_solver_fail(false);
+        if actual.is_err() {
+            panic!("Expected Ok(_), but got Err({})", actual.err().unwrap());
+        }
+        let actual = actual.unwrap();
+        let expected_no_solution = $crate::testing::expectation_no_solution(&$expected);
+        assert_eq!(actual, expected_no_solution);
     };
 }
 
@@ -115,6 +147,23 @@ pub fn expectation_mismatch(file: String, line: u32, column: u32, actual: Board,
         .expect(&format!("Failed to write to file: {}", full_path));
 
     eprintln!("Updated expectation at {}:{}:{}", file, line, column);
+}
+
+pub fn expectation_no_solution(board: &Board) -> Board {
+    let filtered_data = board
+        .data
+        .iter()
+        .filter(|item| item.color != "green")
+        .cloned()
+        .collect::<Vec<_>>();
+
+    Board {
+        kind: board.kind,
+        height: board.height,
+        width: board.width,
+        data: filtered_data,
+        uniqueness: Uniqueness::NoAnswer,
+    }
 }
 
 fn add_indent(s: &str, indent: &str) -> String {
