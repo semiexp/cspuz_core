@@ -1,23 +1,27 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::Uniqueness;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::doppelblock;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues_up, clues_left, cells) =
         doppelblock::deserialize_problem(url).ok_or("invalid url")?;
-    let answer: Vec<Vec<Option<i32>>> =
-        doppelblock::solve_doppelblock(&clues_up, &clues_left, &cells).ok_or("no answer")?;
+    let ans: Option<Vec<Vec<Option<i32>>>> =
+        doppelblock::solve_doppelblock(&clues_up, &clues_left, &cells);
 
     let height = clues_left.len();
     let width = clues_up.len();
 
     let mut is_unique = Uniqueness::Unique;
-    for y in 0..height {
-        for x in 0..width {
-            if answer[y][x].is_none() || answer[y][x] == Some(-1) {
-                is_unique = Uniqueness::NonUnique;
+    if let Some(answer) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if answer[y][x].is_none() || answer[y][x] == Some(-1) {
+                    is_unique = Uniqueness::NonUnique;
+                }
             }
         }
+    } else {
+        is_unique = Uniqueness::NoAnswer;
     }
     let mut board = Board::new(BoardKind::Empty, height + 1, width + 1, is_unique);
 
@@ -43,13 +47,15 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 }
             }
 
-            if let Some(n) = answer[y][x] {
-                if n == 0 {
-                    board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Block));
-                } else if n == -1 {
-                    board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Circle));
-                } else {
-                    board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Num(n)));
+            if let Some(answer) = &ans {
+                if let Some(n) = answer[y][x] {
+                    if n == 0 {
+                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Block));
+                    } else if n == -1 {
+                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Circle));
+                    } else {
+                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Num(n)));
+                    }
                 }
             }
         }
@@ -62,13 +68,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?doppelblock/5/5/61j4g35"),
             Board {
                 kind: BoardKind::Empty,

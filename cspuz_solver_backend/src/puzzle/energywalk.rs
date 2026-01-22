@@ -1,13 +1,18 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::energywalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (forest, num) = energywalk::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = energywalk::solve_energywalk(&forest, &num).ok_or("no answer")?;
+    let ans = energywalk::solve_energywalk(&forest, &num);
     let height = forest.len();
     let width = forest[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -24,7 +29,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(is_line) = ans {
+        board.add_lines_irrefutable_facts(&is_line, "green", None);
+    }
 
     Ok(board)
 }
@@ -33,13 +40,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?energywalk/6/5/545g2p3h1o2v"),
             Board {
                 kind: BoardKind::Grid,

@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::crosswall;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = crosswall::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = crosswall::solve_crosswall(&problem).ok_or("no answer")?;
+    let ans = crosswall::solve_crosswall(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::DotGrid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::DotGrid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -23,27 +28,29 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for y in 0..height {
-        for x in 0..=width {
-            if let Some(b) = is_line.vertical[y][x] {
-                board.push(Item {
-                    y: y * 2 + 1,
-                    x: x * 2,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                })
+    if let Some(is_line) = ans {
+        for y in 0..height {
+            for x in 0..=width {
+                if let Some(b) = is_line.vertical[y][x] {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    })
+                }
             }
         }
-    }
-    for y in 0..=height {
-        for x in 0..width {
-            if let Some(b) = is_line.horizontal[y][x] {
-                board.push(Item {
-                    y: y * 2,
-                    x: x * 2 + 1,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                })
+        for y in 0..=height {
+            for x in 0..width {
+                if let Some(b) = is_line.horizontal[y][x] {
+                    board.push(Item {
+                        y: y * 2,
+                        x: x * 2 + 1,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    })
+                }
             }
         }
     }
@@ -55,13 +62,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player?W=5x5&L-N=(2)6(3)1(4)2(4)1(1)1(6)11&L-S=(0)9(2)3(2)6&G=crosswall"),
             Board {
                 kind: BoardKind::DotGrid,

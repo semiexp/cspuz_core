@@ -4,11 +4,16 @@ use cspuz_rs_puzzles::puzzles::curvedata;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (piece_id, borders, pieces) = curvedata::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = curvedata::solve_curvedata(&piece_id, &borders, &pieces).ok_or("no answer")?;
+    let ans = curvedata::solve_curvedata(&piece_id, &borders, &pieces);
 
     let height = piece_id.len();
     let width = piece_id[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     if let Some(borders) = borders {
         board.add_borders(&borders, "black");
@@ -28,7 +33,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(is_line) = ans {
+        board.add_lines_irrefutable_facts(&is_line, "green", None);
+    }
 
     Ok(board)
 }
@@ -105,13 +112,13 @@ pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?curvedata/4/5/=n01o/b0100000/3/3/ec24/2/3/ba1"),
             Board {
                 kind: BoardKind::Grid,
