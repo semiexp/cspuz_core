@@ -69,3 +69,66 @@ pub fn serialize_problem(problem: &Problem) -> Option<String> {
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
     url_to_problem(heyawake::combinator(), &["ayeheya"], url)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn problem_for_tests() -> Problem {
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([
+                [0, 0, 0, 0, 0, 0],
+                [1, 1, 0, 0, 0, 0],
+                [0, 0, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 0, 0],
+            ]),
+            vertical: crate::util::tests::to_bool_2d([
+                [0, 1, 1, 0, 1],
+                [0, 1, 1, 0, 1],
+                [0, 1, 1, 0, 1],
+                [0, 1, 0, 1, 0],
+                [0, 1, 0, 1, 0],
+                [0, 1, 1, 1, 0],
+            ]),
+        };
+        let clues = vec![
+            None,
+            Some(1),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        (borders, clues)
+    }
+
+    #[test]
+    fn test_ayeheya_problem() {
+        let (borders, clues) = problem_for_tests();
+        let ans = solve_ayeheya(&borders, &clues);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = crate::util::tests::to_option_bool_2d([
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0],
+            [1, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0],
+        ]);
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_ayeheya_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://puzz.link/p?ayeheya/6/6/dddaae0c1s1sg1n";
+        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+}
