@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  format:
+  styles:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
         ./format.sh --check
 
         python3 tools/check_puzzles_order.py
+
+        python3 tools/add_backend_tests.py --check
   rust-x86-latest:
     runs-on: ubuntu-latest
     steps:
