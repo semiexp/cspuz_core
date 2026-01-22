@@ -121,6 +121,7 @@ def main():
         action="store_true",
         help="Show all files including those with both test_solve and URL"
     )
+    parser.add_argument("--check", action="store_true", help="Check whether all files have test_solve functions")
     args = parser.parse_args()
 
     # Project root
@@ -200,6 +201,20 @@ def main():
         print(f"✅ Added test_solve() to {len(updates)} file(s):")
         for filename in updates:
             print(f"  - {filename}")
+
+    if args.check:
+        isok = True
+        for _, _, _, has_test, _ in results:
+            if not has_test:
+                isok = False
+                break
+
+        if isok:
+            print("\nAll backend puzzle files have test_solve() functions.")
+            exit(0)
+        else:
+            print("\nSome backend puzzle files are missing test_solve() functions.")
+            exit(1)
 
 
 if __name__ == "__main__":
