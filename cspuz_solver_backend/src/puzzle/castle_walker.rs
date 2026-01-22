@@ -1,15 +1,20 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::items::Arrow;
 use cspuz_rs_puzzles::puzzles::castle_walker::{self, CastleWalkerClue, CastleWalkerSquare};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = castle_walker::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = castle_walker::solve_castle_walker(&problem).ok_or("no answer")?;
+    let ans = castle_walker::solve_castle_walker(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -57,7 +62,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(ans) = &ans {
+        board.add_lines_irrefutable_facts(ans, "green", None);
+    }
 
     Ok(board)
 }
@@ -66,13 +73,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://opt-pan.github.io/penpa-edit/?m=solve&p=tZTPb5swFMfv/BWTzz6AIaTllnXNLiz7lamqEEJOQhtUEncG1spR+rf3+ZkKDOywaRPy0+PDw++L7S/Vz4bLnIZw+RfUpR5cLAxxeEGAw22vdVGXefSOLpp6LyQklH5eLukdL6vcSdqq1EmIRyhhMDySvqj4BYGfOif1LTqpLErSM1U/uvSiS79HJ4ir6ERYSKKE+Bm86unZUkr8uUaZ25EAi/o14YjMmSYsA0EGQQMP29y+tfEpMeuQxVD01mlEAx8oG1E9A8xs01kAdEZVjHehfrO7m+yJOgcURC5RKsO4hkWiysf4AaOLcYYxxpprjDcYrzAGGEOsmetldpyEMdxpc83+Pofdhn0llSizqpF3fJuTCM8DfAewY3PY5NJCpRCPZXG064r7o5B596iWTa88391PlW+E3A0mf+JlaQGzmBbaFnJb2qiWhXXPpRRPFjnwem+BDa/BDNW+eLRnyo+1LaDmtkT+wAfdDt1qnB3yTHDAOWPgQljgk7qM1IKqj3CKe8ai6ivY5lOkVto1CcFDBGcAixik1116g891dmWg50K+0rYwr91Cap1G9SVK1JwS3ec9vq1TchC/QKrRoe+34rCBj0lIbznMk6rZiYemrcWDvDBy4wm5fidXp0auzoZy2+/Rcs029uWu/5Xcy/RsNsL9o19W/7/yn4z73HpNyEm7AZ5wHNBJ07V85C7gIx/phmMrAZ1wE9ChoQCNPQVwZCtgv3GWnnVoLq1q6C/damQx3arvsiR1XgE=&a=RZBRCsRQCAPv0u/8rBo9TOn9r9HsxsdCwUEzedD7fnBfUQjic+FLWSYi2tSIMQ3SlHlyokoTkTZE5T4t1lCobGhwSTkbGrW5AU3MkxO139CCbhb1Xgm6RaOXBu2WjuOKJkzqsyuavfK4ovEbqhi3SNycTuOcxu+qP/j/nhc="),
             Board {
                 kind: BoardKind::Grid,
