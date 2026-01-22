@@ -1,13 +1,13 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::balloon;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (color, num) = balloon::deserialize_problem(url).ok_or("invalid url")?;
-    let has_line = balloon::solve_balloon(&color, &num).ok_or("no answer")?;
+    let has_line = balloon::solve_balloon(&color, &num);
     let height = num.len();
     let width = num[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&has_line));
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, has_line.as_ref().map_or(Uniqueness::NoAnswer, |h| is_unique(h)));
 
     for y in 0..height {
         for x in 0..width {
@@ -24,39 +24,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for y in 0..height {
-        for x in 0..width {
-            if y < height - 1 {
-                let mut need_default_edge = true;
+    if let Some(has_line) = &has_line {
+        for y in 0..height {
+            for x in 0..width {
+                if y < height - 1 {
+                    let mut need_default_edge = true;
 
-                if (color[y][x] ^ color[y + 1][x]) == 1 {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: ItemKind::BoldWall,
-                    });
-                    need_default_edge = false;
-                }
-
-                match (color[y][x], color[y + 1][x], has_line.vertical[y][x]) {
-                    (1, 1, Some(true)) | (0, 0, Some(false)) => {
-                        board.push(Item {
-                            y: y * 2 + 2,
-                            x: x * 2 + 1,
-                            color: "green",
-                            kind: ItemKind::Cross,
-                        });
-                    }
-                    (_, _, Some(true)) => {
-                        board.push(Item {
-                            y: y * 2 + 2,
-                            x: x * 2 + 1,
-                            color: "green",
-                            kind: ItemKind::Line,
-                        });
-                    }
-                    (1, 1, Some(false)) => {
+                    if (color[y][x] ^ color[y + 1][x]) == 1 {
                         board.push(Item {
                             y: y * 2 + 2,
                             x: x * 2 + 1,
@@ -65,49 +39,49 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         });
                         need_default_edge = false;
                     }
-                    _ => (),
-                }
 
-                if need_default_edge {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "#cccccc",
-                        kind: ItemKind::Wall,
-                    });
-                }
-            }
-            if x < width - 1 {
-                let mut need_default_edge = true;
+                    match (color[y][x], color[y + 1][x], has_line.vertical[y][x]) {
+                        (1, 1, Some(true)) | (0, 0, Some(false)) => {
+                            board.push(Item {
+                                y: y * 2 + 2,
+                                x: x * 2 + 1,
+                                color: "green",
+                                kind: ItemKind::Cross,
+                            });
+                        }
+                        (_, _, Some(true)) => {
+                            board.push(Item {
+                                y: y * 2 + 2,
+                                x: x * 2 + 1,
+                                color: "green",
+                                kind: ItemKind::Line,
+                            });
+                        }
+                        (1, 1, Some(false)) => {
+                            board.push(Item {
+                                y: y * 2 + 2,
+                                x: x * 2 + 1,
+                                color: "green",
+                                kind: ItemKind::BoldWall,
+                            });
+                            need_default_edge = false;
+                        }
+                        _ => (),
+                    }
 
-                if (color[y][x] ^ color[y][x + 1]) == 1 {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "green",
-                        kind: ItemKind::BoldWall,
-                    });
-                    need_default_edge = false;
-                }
-
-                match (color[y][x], color[y][x + 1], has_line.horizontal[y][x]) {
-                    (1, 1, Some(true)) | (0, 0, Some(false)) => {
+                    if need_default_edge {
                         board.push(Item {
-                            y: y * 2 + 1,
-                            x: x * 2 + 2,
-                            color: "green",
-                            kind: ItemKind::Cross,
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
                         });
                     }
-                    (_, _, Some(true)) => {
-                        board.push(Item {
-                            y: y * 2 + 1,
-                            x: x * 2 + 2,
-                            color: "green",
-                            kind: ItemKind::Line,
-                        });
-                    }
-                    (1, 1, Some(false)) => {
+                }
+                if x < width - 1 {
+                    let mut need_default_edge = true;
+
+                    if (color[y][x] ^ color[y][x + 1]) == 1 {
                         board.push(Item {
                             y: y * 2 + 1,
                             x: x * 2 + 2,
@@ -116,16 +90,44 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         });
                         need_default_edge = false;
                     }
-                    _ => (),
-                }
 
-                if need_default_edge {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "#cccccc",
-                        kind: ItemKind::Wall,
-                    });
+                    match (color[y][x], color[y][x + 1], has_line.horizontal[y][x]) {
+                        (1, 1, Some(true)) | (0, 0, Some(false)) => {
+                            board.push(Item {
+                                y: y * 2 + 1,
+                                x: x * 2 + 2,
+                                color: "green",
+                                kind: ItemKind::Cross,
+                            });
+                        }
+                        (_, _, Some(true)) => {
+                            board.push(Item {
+                                y: y * 2 + 1,
+                                x: x * 2 + 2,
+                                color: "green",
+                                kind: ItemKind::Line,
+                            });
+                        }
+                        (1, 1, Some(false)) => {
+                            board.push(Item {
+                                y: y * 2 + 1,
+                                x: x * 2 + 2,
+                                color: "green",
+                                kind: ItemKind::BoldWall,
+                            });
+                            need_default_edge = false;
+                        }
+                        _ => (),
+                    }
+
+                    if need_default_edge {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
+                        });
+                    }
                 }
             }
         }
