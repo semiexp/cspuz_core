@@ -372,11 +372,15 @@ impl Board {
         let uniqueness = match self.uniqueness {
             Uniqueness::Unique => ",\"isUnique\":true",
             Uniqueness::NonUnique => ",\"isUnique\":false",
-            Uniqueness::NotApplicable => "",
+            Uniqueness::NotApplicable | Uniqueness::NoAnswer => "",
+        };
+        let has_answer = match self.uniqueness {
+            Uniqueness::NoAnswer => false,
+            _ => true,
         };
         format!(
-            "{{\"kind\":\"{}\",\"height\":{},\"width\":{},\"defaultStyle\":\"{}\",\"data\":[{}]{}}}",
-            kind, height, width, default_style, data, uniqueness
+            "{{\"kind\":\"{}\",\"height\":{},\"width\":{},\"defaultStyle\":\"{}\",\"hasAnswer\":{},\"data\":[{}]{}}}",
+            kind, height, width, default_style, has_answer, data, uniqueness
         )
     }
 }
