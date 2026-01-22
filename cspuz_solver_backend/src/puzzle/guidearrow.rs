@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::guidearrow::{self, GuidearrowClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (ty, tx, clues) = guidearrow::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = guidearrow::solve_guidearrow(ty, tx, &clues).ok_or("no answer")?;
+    let ans = guidearrow::solve_guidearrow(ty, tx, &clues);
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
     board.push(Item::cell(ty, tx, "black", ItemKind::Circle));
     for y in 0..height {
         for x in 0..width {
@@ -24,18 +29,20 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    for y in 0..height {
-        for x in 0..width {
-            if clues[y][x].is_some() || (y, x) == (ty, tx) {
-                continue;
-            }
-            if let Some(b) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Fill } else { ItemKind::Dot },
-                ));
+    if let Some(ans) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if clues[y][x].is_some() || (y, x) == (ty, tx) {
+                    continue;
+                }
+                if let Some(b) = ans[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Fill } else { ItemKind::Dot },
+                    ));
+                }
             }
         }
     }
@@ -47,13 +54,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?guidearrow/7/6/31kecsdl.n"),
             Board {
                 kind: BoardKind::Grid,
