@@ -94,13 +94,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board_and_check_no_solution_case;
+    use crate::compare_board;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board_and_check_no_solution_case!(
+        compare_board!(
             solve("https://puzz.link/p?araf/6/6/h3j3j3p-1cj8j8h"),
             Board {
                 kind: BoardKind::OuterGrid,

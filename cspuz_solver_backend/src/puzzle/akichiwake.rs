@@ -7,8 +7,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = akichiwake::deserialize_problem(url).ok_or("invalid url")?;
     let is_black = akichiwake::solve_akichiwake(&borders, &clues);
 
-    let height = is_black.as_ref().map_or(0, |b| b.len());
-    let width = is_black.as_ref().map_or(0, |b| b[0].len());
+    // Get dimensions from borders: vertical has height rows, horizontal[0] has width elements
+    let height = borders.vertical.len();
+    let width = if height > 0 { borders.horizontal[0].len() } else { 0 };
     let mut board = Board::new(
         BoardKind::Grid,
         height,
