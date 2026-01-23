@@ -8,7 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let is_black = shimaguni::solve_shimaguni(&borders, &clues);
 
     let height = borders.vertical.len();
-    let width = borders.vertical[0].len();
+    let width = borders.vertical[0].len() + 1;
     let mut board = Board::new(
         BoardKind::Grid,
         height,

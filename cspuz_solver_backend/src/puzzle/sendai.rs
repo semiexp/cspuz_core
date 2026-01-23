@@ -104,13 +104,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board_and_check_no_solution_case;
+    use crate::compare_board;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board_and_check_no_solution_case!(
+        compare_board!(
             solve("https://pzprxs.vercel.app/p?sendai/5/5/dj7ej83g14i2g"),
             Board {
                 kind: BoardKind::OuterGrid,
