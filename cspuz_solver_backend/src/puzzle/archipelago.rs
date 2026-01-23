@@ -12,7 +12,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_black.as_ref().map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
     );
 
     for y in 0..height {

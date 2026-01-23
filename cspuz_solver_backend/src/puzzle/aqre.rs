@@ -9,12 +9,18 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     // Get dimensions from borders: vertical has height rows, horizontal[0] has width elements
     let height = borders.vertical.len();
-    let width = if height > 0 { borders.horizontal[0].len() } else { 0 };
+    let width = if height > 0 {
+        borders.horizontal[0].len()
+    } else {
+        0
+    };
     let mut board = Board::new(
         BoardKind::Grid,
         height,
         width,
-        is_black.as_ref().map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
     );
 
     board.add_borders(&borders, "black");

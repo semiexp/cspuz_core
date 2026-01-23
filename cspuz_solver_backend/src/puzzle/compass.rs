@@ -31,7 +31,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    
+
     for y in 0..height {
         for x in 0..width {
             if y < height - 1 {

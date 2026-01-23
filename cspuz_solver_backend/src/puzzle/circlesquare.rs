@@ -14,7 +14,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         width,
         ans.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
     );
-    
+
     for y in 0..height {
         for x in 0..width {
             match problem[y][x] {

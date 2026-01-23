@@ -26,7 +26,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    
+
     if let Some((is_line, fire_cell_mode)) = &answer {
         board.add_lines_irrefutable_facts(is_line, "green", None);
 
@@ -66,7 +66,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    
+
     for y in 0..height {
         for x in 0..width {
             if let Some(n) = num[y][x] {

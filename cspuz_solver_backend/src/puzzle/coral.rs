@@ -12,7 +12,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_black.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
+        is_black
+            .as_ref()
+            .map(is_unique)
+            .unwrap_or(Uniqueness::NoAnswer),
     );
 
     if let Some(is_black) = is_black {

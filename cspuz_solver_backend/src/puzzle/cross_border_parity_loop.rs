@@ -50,7 +50,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     ));
                 }
             }
-            
+
             match cells[y][x] {
                 CBPLCell::Empty => (),
                 CBPLCell::Blocked => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
@@ -72,7 +72,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     }
 
     board.add_borders(&borders, "black");
-    
+
     if let Some((is_line, _)) = result {
         board.add_lines_irrefutable_facts(&is_line, "green", Some(&is_skip));
     }

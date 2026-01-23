@@ -13,7 +13,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        is_line.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+        is_line
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
     );
 
     if let Some(is_line) = &is_line {

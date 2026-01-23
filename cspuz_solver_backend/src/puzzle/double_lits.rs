@@ -7,7 +7,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = double_lits::solve_double_lits(&borders);
 
     let height = borders.vertical.len();
-    let width = if height > 0 { borders.vertical[0].len() + 1 } else { 0 };
+    let width = if height > 0 {
+        borders.vertical[0].len() + 1
+    } else {
+        0
+    };
     let mut board = Board::new(
         BoardKind::Grid,
         height,

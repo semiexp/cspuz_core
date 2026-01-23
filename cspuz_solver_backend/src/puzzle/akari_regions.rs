@@ -13,7 +13,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        has_light.as_ref().map_or(Uniqueness::NoAnswer, |h| is_unique(h)),
+        has_light
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |h| is_unique(h)),
     );
 
     board.add_borders(&borders, "black");

@@ -12,7 +12,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        is_line.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
+        is_line
+            .as_ref()
+            .map(is_unique)
+            .unwrap_or(Uniqueness::NoAnswer),
     );
 
     if let Some(is_line) = is_line {
