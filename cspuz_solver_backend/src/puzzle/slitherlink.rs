@@ -4,11 +4,18 @@ use cspuz_rs_puzzles::puzzles::slitherlink;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = slitherlink::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = slitherlink::solve_slitherlink(&problem).ok_or("no answer")?;
+    let is_line = slitherlink::solve_slitherlink(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::DotGrid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::DotGrid,
+        height,
+        width,
+        is_line
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |l| is_unique(l)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -21,27 +28,29 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    for y in 0..height {
-        for x in 0..=width {
-            if let Some(b) = is_line.vertical[y][x] {
-                board.push(Item {
-                    y: y * 2 + 1,
-                    x: x * 2,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                })
+    if let Some(is_line) = &is_line {
+        for y in 0..height {
+            for x in 0..=width {
+                if let Some(b) = is_line.vertical[y][x] {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    })
+                }
             }
         }
-    }
-    for y in 0..=height {
-        for x in 0..width {
-            if let Some(b) = is_line.horizontal[y][x] {
-                board.push(Item {
-                    y: y * 2,
-                    x: x * 2 + 1,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                })
+        for y in 0..=height {
+            for x in 0..width {
+                if let Some(b) = is_line.horizontal[y][x] {
+                    board.push(Item {
+                        y: y * 2,
+                        x: x * 2 + 1,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    })
+                }
             }
         }
     }
@@ -134,13 +143,13 @@ pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?slither/4/4/dgdh2c71"),
             Board {
                 kind: BoardKind::DotGrid,
