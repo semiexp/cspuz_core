@@ -13,13 +13,13 @@ pub fn enumerate(
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?heyawake/6/6/aa66aapv0fu0g2i3k"),
             Board {
                 kind: BoardKind::Grid,
