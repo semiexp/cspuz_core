@@ -1,26 +1,35 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::sansaroad;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = sansaroad::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = sansaroad::solve_sansaroad(&problem).ok_or("no answer")?;
+    let is_black = sansaroad::solve_sansaroad(&problem);
     let height = (problem.len() + 1) / 2;
     let width = (problem[0].len() + 1) / 2;
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&is_black));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+    );
 
-    for y in 0..height {
-        for x in 0..width {
-            match is_black[y][x] {
-                Some(true) => {
-                    board.push(Item::cell(y, x, "green", ItemKind::Fill));
-                }
-                Some(false) => {
-                    if problem[y * 2][x * 2] == 0 {
-                        board.push(Item::cell(y, x, "green", ItemKind::Dot));
+    if let Some(is_black) = &is_black {
+        for y in 0..height {
+            for x in 0..width {
+                match is_black[y][x] {
+                    Some(true) => {
+                        board.push(Item::cell(y, x, "green", ItemKind::Fill));
                     }
+                    Some(false) => {
+                        if problem[y * 2][x * 2] == 0 {
+                            board.push(Item::cell(y, x, "green", ItemKind::Dot));
+                        }
+                    }
+                    None => {}
                 }
-                None => {}
             }
         }
     }
@@ -96,13 +105,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?sansaroad/6/6/h4w8n4m4h2z"),
             Board {
                 kind: BoardKind::OuterGrid,

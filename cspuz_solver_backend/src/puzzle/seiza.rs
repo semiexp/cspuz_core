@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::seiza;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (absent_cell, num, borders) = seiza::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_line, is_star) = seiza::solve_seiza(&absent_cell, &num, &borders).ok_or("no answer")?;
+    let ans = seiza::solve_seiza(&absent_cell, &num, &borders);
 
     let height = absent_cell.len();
     let width = absent_cell[0].len();
@@ -12,7 +12,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_unique(&(&is_line, &is_star)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |(is_line, is_star)| {
+                is_unique(&(is_line, is_star))
+            }),
     );
 
     board.add_borders(&borders, "black");
@@ -23,17 +26,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 board.push(Item::cell(y, x, "black", ItemKind::Fill));
                 continue;
             }
-            if let Some(b) = is_star[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b {
-                        ItemKind::FilledCircle
-                    } else {
-                        ItemKind::Dot
-                    },
-                ));
+            if let Some((_, is_star)) = &ans {
+                if let Some(b) = is_star[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b {
+                            ItemKind::FilledCircle
+                        } else {
+                            ItemKind::Dot
+                        },
+                    ));
+                }
             }
             if let Some(n) = num[y][x] {
                 board.push(Item::cell(y, x, "black", ItemKind::NumUpperLeft(n)));
@@ -41,7 +46,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", Some(&absent_cell));
+    if let Some((is_line, _)) = &ans {
+        board.add_lines_irrefutable_facts(is_line, "green", Some(&absent_cell));
+    }
 
     Ok(board)
 }
@@ -50,13 +57,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player.html?W=7x5&L=x9&L-N=(2)4(3)2(2)12&SIE=3RU5RRDD11RRD1URRRUU3DDLLDDD8URR8R&G=seiza"),
             Board {
                 kind: BoardKind::Grid,

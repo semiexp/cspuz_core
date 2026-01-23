@@ -1,13 +1,18 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::roma;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = roma::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = roma::solve_roma(&borders, &clues).ok_or("no answer")?;
-    let height = ans.len();
-    let width = ans[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let ans = roma::solve_roma(&borders, &clues);
+    let height = clues.len();
+    let width = clues[0].len();
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     board.add_borders(&borders, "black");
 
@@ -34,8 +39,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         for x in 0..width {
             if let Some(n) = clues[y][x] {
                 add_arrow(y, x, n, "black");
-            } else if let Some(n) = ans[y][x] {
-                add_arrow(y, x, n, "green");
+            } else if let Some(ans) = &ans {
+                if let Some(n) = ans[y][x] {
+                    add_arrow(y, x, n, "green");
+                }
             }
         }
     }
@@ -47,13 +54,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?roma/5/5/tvv2bi1vc4b3a522b2c13a4b4a"),
             Board {
                 kind: BoardKind::Grid,

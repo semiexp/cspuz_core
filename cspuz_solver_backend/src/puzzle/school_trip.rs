@@ -1,11 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::school_trip;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = school_trip::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_black, is_pillow, is_connected) =
-        school_trip::solve_school_trip(&problem).ok_or("no answer")?;
+    let ans = school_trip::solve_school_trip(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -13,7 +12,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::OuterGrid,
         height,
         width,
-        is_unique(&(&is_black, &is_pillow, &is_connected)),
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |(is_black, is_pillow, is_connected)| {
+            is_unique(&(is_black, is_pillow, is_connected))
+        }),
     );
     for y in 0..height {
         for x in 0..width {
@@ -22,7 +23,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 if clue >= 0 {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
                 }
-            } else {
+            } else if let Some((is_black, is_pillow, _)) = &ans {
                 if is_black[y][x] == Some(true) {
                     board.push(Item::cell(y, x, "green", ItemKind::Block));
                 } else if is_pillow[y][x] == Some(true) {
@@ -33,21 +34,22 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    for y in 0..height {
-        for x in 0..width {
-            if y < height - 1 {
-                if (is_black[y][x] == Some(false) && problem[y][x].is_none())
-                    || (is_black[y + 1][x] == Some(false) && problem[y + 1][x].is_none())
-                {
-                    // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: if is_connected.vertical[y][x].is_some() {
-                            "green"
-                        } else {
-                            "#cccccc"
-                        },
+    if let Some((is_black, _, is_connected)) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if y < height - 1 {
+                    if (is_black[y][x] == Some(false) && problem[y][x].is_none())
+                        || (is_black[y + 1][x] == Some(false) && problem[y + 1][x].is_none())
+                    {
+                        // If a cell is not black in the solution then either it is a number in the problem, or a futon. This checks which cells are futons
+                        board.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: if is_connected.vertical[y][x].is_some() {
+                                "green"
+                            } else {
+                                "#cccccc"
+                            },
                         kind: match is_connected.vertical[y][x] {
                             Some(true) => ItemKind::Cross,
                             Some(false) => ItemKind::BoldWall,
@@ -79,6 +81,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
+    }
 
     Ok(board)
 }
@@ -87,13 +90,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?shugaku/6/5/272d1d07090"),
             Board {
                 kind: BoardKind::OuterGrid,
