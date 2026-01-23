@@ -81,6 +81,27 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 }
             }
         }
+    } else {
+        for y in 0..(height - 1) {
+            for x in 0..width {
+                board.push(Item {
+                    y: y * 2 + 1,
+                    x: x * 2,
+                    color: "black",
+                    kind: ItemKind::DottedWall,
+                });
+            }
+        }
+        for y in 0..height {
+            for x in 0..(width - 1) {
+                board.push(Item {
+                    y: y * 2,
+                    x: x * 2 + 1,
+                    color: "black",
+                    kind: ItemKind::DottedWall,
+                });
+            }
+        }
     }
 
     for y in 0..height {
