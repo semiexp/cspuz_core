@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::Uniqueness;
 use cspuz_rs_puzzles::puzzles::doppelblock;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
