@@ -6,8 +6,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (vertical, horizontal) = nonogram::deserialize_problem(url).ok_or("invalid url")?;
     let ans = nonogram::solve_nonogram(&vertical, &horizontal);
 
-    let height = vertical[0].len();
-    let width = horizontal[0].len();
+    let height = vertical.len();
+    let width = horizontal.len();
     let mut board = Board::new(
         BoardKind::Grid,
         height,

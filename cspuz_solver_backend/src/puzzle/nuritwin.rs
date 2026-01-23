@@ -6,8 +6,8 @@ use cspuz_rs_puzzles::puzzles::nuritwin;
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = nuritwin::deserialize_problem(url).ok_or("invalid url")?;
     let ans = nuritwin::solve_nuritwin(&borders, &clues);
-    let height = borders.len();
-    let width = borders[0].len();
+    let height = borders.horizontal.len() + 1;
+    let width = borders.vertical[0].len() + 1;
     let mut board = Board::new(
         BoardKind::Grid,
         height,

@@ -1,4 +1,4 @@
-use crate::board::{Board, ItemKind};
+use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
 use std::fs;
 use std::io::Write;
@@ -150,12 +150,55 @@ pub fn expectation_mismatch(file: String, line: u32, column: u32, actual: Board,
 }
 
 pub fn expectation_no_solution(board: &Board) -> Board {
-    let filtered_data = board
+    let mut filtered_data: Vec<_> = board
         .data
         .iter()
         .filter(|item| item.color != "green")
         .cloned()
-        .collect::<Vec<_>>();
+        .collect();
+
+    // For OuterGrid boards, ensure all edges have #cccccc walls in the no-solution case
+    if board.kind == BoardKind::OuterGrid {
+        // Add #cccccc walls for all edges (including those that had green BoldWalls in the solution)
+        let height = board.height;
+        let width = board.width;
+        
+        for y in 0..height {
+            for x in 0..width {
+                // Horizontal edges
+                if y < height - 1 {
+                    let edge_y = y * 2 + 2;
+                    let edge_x = x * 2 + 1;
+                    
+                    // Check if this wall is already in the filtered data
+                    if !filtered_data.iter().any(|item| item.y == edge_y && item.x == edge_x && item.color == "#cccccc") {
+                        filtered_data.push(Item {
+                            y: edge_y,
+                            x: edge_x,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                }
+                
+                // Vertical edges
+                if x < width - 1 {
+                    let edge_y = y * 2 + 1;
+                    let edge_x = x * 2 + 2;
+                    
+                    // Check if this wall is already in the filtered data
+                    if !filtered_data.iter().any(|item| item.y == edge_y && item.x == edge_x && item.color == "#cccccc") {
+                        filtered_data.push(Item {
+                            y: edge_y,
+                            x: edge_x,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                }
+            }
+        }
+    }
 
     Board {
         kind: board.kind,

@@ -52,23 +52,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    if let Some((_, line, border)) = &ans {
-        for y in 0..height {
-            for x in 0..width {
-                if y < height - 1 {
+    for y in 0..height {
+        for x in 0..width {
+            if y < height - 1 {
+                let mut need_default_edge = true;
+                if let Some((_, line, border)) = &ans {
                     let kind = match (border.horizontal[y][x], line.vertical[y][x]) {
                         (Some(true), _) => Some(ItemKind::BoldWall),
                         (_, Some(true)) => Some(ItemKind::Line),
                         (Some(false), Some(false)) => Some(ItemKind::Cross),
                         _ => None,
                     };
-                    if kind != Some(ItemKind::BoldWall) {
-                        board.push(Item {
-                            y: y * 2 + 2,
-                            x: x * 2 + 1,
-                            color: "#cccccc",
-                            kind: ItemKind::Wall,
-                        });
+                    if kind == Some(ItemKind::BoldWall) {
+                        need_default_edge = false;
                     }
                     if let Some(kind) = kind {
                         board.push(Item {
@@ -79,20 +75,26 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         })
                     }
                 }
-                if x < width - 1 {
+                if need_default_edge {
+                    board.push(Item {
+                        y: y * 2 + 2,
+                        x: x * 2 + 1,
+                        color: "#cccccc",
+                        kind: ItemKind::Wall,
+                    });
+                }
+            }
+            if x < width - 1 {
+                let mut need_default_edge = true;
+                if let Some((_, line, border)) = &ans {
                     let kind = match (border.vertical[y][x], line.horizontal[y][x]) {
                         (Some(true), _) => Some(ItemKind::BoldWall),
                         (_, Some(true)) => Some(ItemKind::Line),
                         (Some(false), Some(false)) => Some(ItemKind::Cross),
                         _ => None,
                     };
-                    if kind != Some(ItemKind::BoldWall) {
-                        board.push(Item {
-                            y: y * 2 + 1,
-                            x: x * 2 + 2,
-                            color: "#cccccc",
-                            kind: ItemKind::Wall,
-                        });
+                    if kind == Some(ItemKind::BoldWall) {
+                        need_default_edge = false;
                     }
                     if let Some(kind) = kind {
                         board.push(Item {
@@ -102,6 +104,14 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                             kind,
                         })
                     }
+                }
+                if need_default_edge {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
+                        color: "#cccccc",
+                        kind: ItemKind::Wall,
+                    });
                 }
             }
         }
