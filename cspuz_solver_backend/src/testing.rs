@@ -150,12 +150,12 @@ pub fn expectation_mismatch(file: String, line: u32, column: u32, actual: Board,
 }
 
 pub fn expectation_no_solution(board: &Board) -> Board {
-    let filtered_data = board
+    let filtered_data: Vec<_> = board
         .data
         .iter()
         .filter(|item| item.color != "green")
         .cloned()
-        .collect::<Vec<_>>();
+        .collect();
 
     Board {
         kind: board.kind,

@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::koburin;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = koburin::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_line, is_black) = koburin::solve_koburin(&problem).ok_or("no answer")?;
+    let ans = koburin::solve_koburin(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -12,42 +12,62 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_unique(&(&is_line, &is_black)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1))),
     );
 
-    let mut skip_line = vec![];
-    for y in 0..height {
-        let mut row = vec![];
-        for x in 0..width {
-            row.push(problem[y][x].is_some() || is_black[y][x] == Some(true));
+    if let Some((is_line, is_black)) = &ans {
+        let mut skip_line = vec![];
+        for y in 0..height {
+            let mut row = vec![];
+            for x in 0..width {
+                row.push(problem[y][x].is_some() || is_black[y][x] == Some(true));
+            }
+            skip_line.push(row);
         }
-        skip_line.push(row);
-    }
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(clue) = problem[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "black",
-                    if clue >= 0 {
-                        ItemKind::Num(clue)
-                    } else {
-                        ItemKind::Text("?")
-                    },
-                ));
-            } else if let Some(b) = is_black[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Block } else { ItemKind::Dot },
-                ));
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(clue) = problem[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "black",
+                        if clue >= 0 {
+                            ItemKind::Num(clue)
+                        } else {
+                            ItemKind::Text("?")
+                        },
+                    ));
+                } else if let Some(b) = is_black[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
+            }
+        }
+
+        board.add_lines_irrefutable_facts(is_line, "green", Some(&skip_line));
+    } else {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(clue) = problem[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "black",
+                        if clue >= 0 {
+                            ItemKind::Num(clue)
+                        } else {
+                            ItemKind::Text("?")
+                        },
+                    ));
+                }
             }
         }
     }
-
-    board.add_lines_irrefutable_facts(&is_line, "green", Some(&skip_line));
 
     Ok(board)
 }
@@ -56,13 +76,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?koburin/6/5/j.hclbkai"),
             Board {
                 kind: BoardKind::Grid,

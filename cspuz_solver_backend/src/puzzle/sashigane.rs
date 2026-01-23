@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::sasahigane::{self, SashiganeClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = sasahigane::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = sasahigane::solve_sashigane(&problem).ok_or("no answer")?;
+    let ans = sasahigane::solve_sashigane(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
@@ -32,19 +37,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         for x in 0..width {
             if y < height - 1 {
                 let mut need_default_edge = true;
-                if let Some(b) = ans.horizontal[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                if let Some(ans) = &ans {
+                    if let Some(b) = ans.horizontal[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {
@@ -58,19 +65,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
             if x < width - 1 {
                 let mut need_default_edge = true;
-                if let Some(b) = ans.vertical[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                if let Some(ans) = &ans {
+                    if let Some(b) = ans.vertical[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {

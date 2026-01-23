@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::nanro;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = nanro::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = nanro::solve_nanro(&borders, &clues).ok_or("no answer")?;
+    let ans = nanro::solve_nanro(&borders, &clues);
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     board.add_borders(&borders, "black");
 
@@ -20,17 +25,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
                 }
-            } else if let Some(n) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if n == 0 {
-                        ItemKind::Dot
-                    } else {
-                        ItemKind::Num(n)
-                    },
-                ));
+            } else if let Some(ans) = &ans {
+                if let Some(n) = ans[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if n == 0 {
+                            ItemKind::Dot
+                        } else {
+                            ItemKind::Num(n)
+                        },
+                    ));
+                }
             }
         }
     }
@@ -42,13 +49,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?nanro/4/4/6r0s1oi13n1h"),
             Board {
                 kind: BoardKind::Grid,

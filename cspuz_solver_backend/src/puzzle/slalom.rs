@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::slalom;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -7,11 +7,18 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let problem = slalom::deserialize_problem_as_primitive(url).ok_or("invalid url")?;
     let (is_black, gates, origin) = slalom::parse_primitive_problem(&problem);
-    let is_line = slalom::solve_slalom(origin, &is_black, &gates).ok_or("no answer")?;
+    let is_line = slalom::solve_slalom(origin, &is_black, &gates);
 
     let height = is_black.len();
     let width = is_black[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        is_line
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |l| is_unique(l)),
+    );
 
     let (origin_y, origin_x) = origin;
     board.push(Item::cell(origin_y, origin_x, "black", ItemKind::Circle));
@@ -50,7 +57,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", Some(&is_black));
+    if let Some(is_line) = &is_line {
+        board.add_lines_irrefutable_facts(is_line, "green", Some(&is_black));
+    }
 
     Ok(board)
 }
@@ -59,13 +68,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj11314333h42g/51"),
             Board {
                 kind: BoardKind::Grid,

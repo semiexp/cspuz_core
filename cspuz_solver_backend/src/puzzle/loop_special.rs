@@ -1,16 +1,23 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::loop_special::{self, LoopSpecialClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = loop_special::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = loop_special::solve_loop_special(&problem).ok_or("no answer")?;
+    let ans = loop_special::solve_loop_special(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(is_line) = &ans {
+        board.add_lines_irrefutable_facts(is_line, "green", None);
+    }
 
     for y in 0..height {
         for x in 0..width {
@@ -77,13 +84,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?loopsp/6/7/1n2tln2qhomv1oku"),
             Board {
                 kind: BoardKind::Grid,

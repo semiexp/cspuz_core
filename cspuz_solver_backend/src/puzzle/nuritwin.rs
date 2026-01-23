@@ -1,26 +1,33 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::nuritwin;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = nuritwin::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = nuritwin::solve_nuritwin(&borders, &clues).ok_or("no answer")?;
-    let height = is_black.len();
-    let width = is_black[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_black));
+    let ans = nuritwin::solve_nuritwin(&borders, &clues);
+    let height = borders.horizontal.len() + 1;
+    let width = borders.vertical[0].len() + 1;
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     board.add_borders(&borders, "black");
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(b) = is_black[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Block } else { ItemKind::Dot },
-                ));
+    if let Some(is_black) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(b) = is_black[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
             }
         }
     }
@@ -44,13 +51,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?nuritwin/6/5/9kcq4ba2iu13j"),
             Board {
                 kind: BoardKind::Grid,

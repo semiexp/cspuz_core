@@ -1,15 +1,20 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::pyramid;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (is_shaded, clues, min_value, max_value) =
         pyramid::deserialize_problem(url).ok_or("invalid url")?;
-    let ans =
-        pyramid::solve_pyramid(&is_shaded, &clues, min_value, max_value).ok_or("no answer")?;
-    let size = ans.len();
+    let ans = pyramid::solve_pyramid(&is_shaded, &clues, min_value, max_value);
+    let size = clues.len();
 
-    let mut board = Board::new(BoardKind::Empty, size, size * 2, is_unique(&ans.concat()));
+    let mut board = Board::new(
+        BoardKind::Empty,
+        size,
+        size * 2,
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(&a.concat())),
+    );
 
     // Fills
     for y in 0..size {
@@ -65,13 +70,15 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     color: "black",
                     kind: ItemKind::Num(n),
                 });
-            } else if let Some(n) = ans[y][x] {
-                board.push(Item {
-                    y: 2 * y + 1,
-                    x: (size - y - 1 + 2 * x + 1) * 2,
-                    color: "green",
-                    kind: ItemKind::Num(n),
-                });
+            } else if let Some(ans) = &ans {
+                if let Some(n) = ans[y][x] {
+                    board.push(Item {
+                        y: 2 * y + 1,
+                        x: (size - y - 1 + 2 * x + 1) * 2,
+                        color: "green",
+                        kind: ItemKind::Num(n),
+                    });
+                }
             }
         }
     }
@@ -82,13 +89,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://opt-pan.github.io/penpa-edit/?m=solve&p=vVNNb5tAEL3zK6o5byUDBjd7c9O6l9T9chVFK2StbRKjgHEXaFws57dnZsC1F1ypl1ZoH4/HwDyWedtfRmfJSoR4BAMxEC4ePjJaXjDkRTods6RMY/lKjKtynRskQnyaTMS9TovYUW7kKHBBgIfLhei5nj6z4EXOvv4q9/Vcqugg6u8n+uZEv8k9DAOQvoBw2JzaqxBPWDDFgpEPUkEAaJJaCBhhqQL/TMCHuOtR8H0uUe7rUcRqCNTOlXvEO8YJo8c4Qzei9hnfMQ4YA8YbrnnPeMt4zThkDLlmRN/jOGoYiCvsR8sVI0baItwMKPJ0XlTmXi9jkLx9grVNlS1iA7I0Vaukeb5Nk41dljxschNfvEVivHq4VL/IzYpefnbjSaepJRQ/Km3sh5eJWaa2VJrEutbG5E+WkulybQkLXeLsFOtka78p3pS2gVLbFvWj7nTLTt98cGAHvJQnvFB4uMH7+krWY1F/aMbgOI2i/oKz9lHWUxo1BSB8/p/thNJP/U1v+T6x63aWBsinyEPkSO+QNvsyv2mUz1LVMwHU5y0/TRSy/CdabXzQ9TLPFvgxCui/7VqxqFb5Y3WcWprNcccpNWidkunWKdHGKbGu0/ZT/p3Tq+jQbP/gL9PdRPg/RG/XJiw3F0OG8jFntnoxUK3eyxTqvfRQw36AUL2QIVS7MUKpnyQUe2FC7Q95ord2I0WuuqmiVr1gUavzbKnIeQE=&a=RcvBCUAxDALQXTx7+kQ7TMj+a6T5ORSEh4iZxReEGCAU/Ab9eJt3s+nLMYV5VQM="),
             Board {
                 kind: BoardKind::Empty,
