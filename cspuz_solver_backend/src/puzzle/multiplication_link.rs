@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::multiplication_link;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = multiplication_link::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = multiplication_link::solve_multiplication_link(&problem).ok_or("no answer")?;
+    let ans = multiplication_link::solve_multiplication_link(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     let mut skip_line = vec![];
     for y in 0..height {
@@ -37,7 +42,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", Some(&skip_line));
+    if let Some(is_line) = &ans {
+        board.add_lines_irrefutable_facts(is_line, "green", Some(&skip_line));
+    }
 
     Ok(board)
 }
@@ -46,13 +53,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player?W=6x5&L=(20)4(6)4(4)13x4y3&G=multiplication-link"),
             Board {
                 kind: BoardKind::Grid,

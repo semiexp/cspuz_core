@@ -1,14 +1,19 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::kropki_pairs::{self, KropkiClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (walls, cells) = kropki_pairs::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = kropki_pairs::solve_kropki_pairs(&walls, &cells).ok_or("no answer")?;
+    let ans = kropki_pairs::solve_kropki_pairs(&walls, &cells);
 
-    let height = ans.len();
-    let width = ans[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let height = cells.len();
+    let width = cells[0].len();
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -18,8 +23,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Fill));
                 }
-            } else if let Some(n) = ans[y][x] {
-                board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
+            } else if let Some(ans) = &ans {
+                if let Some(n) = ans[y][x] {
+                    board.push(Item::cell(y, x, "green", ItemKind::Num(n)));
+                }
             }
             if y < height - 1 {
                 if walls.horizontal[y][x] == KropkiClue::White {
@@ -65,13 +72,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player.html?W=4x3&L=x2(3)3(1)6&L-E=w0b2b5b3w5&G=kropki-pairs"),
             Board {
                 kind: BoardKind::Grid,

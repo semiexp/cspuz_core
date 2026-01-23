@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::lapaz;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = lapaz::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_black, is_connected) = lapaz::solve_lapaz(&problem).ok_or("no answer")?;
+    let ans = lapaz::solve_lapaz(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -12,7 +12,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::OuterGrid,
         height,
         width,
-        is_unique(&(&is_black, &is_connected)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1))),
     );
     for y in 0..height {
         for x in 0..width {
@@ -22,7 +23,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
                 }
-            } else {
+            } else if let Some((is_black, _)) = &ans {
                 if is_black[y][x] == Some(true) {
                     board.push(Item::cell(y, x, "green", ItemKind::Block));
                 } else if is_black[y][x] == Some(false) {
@@ -31,40 +32,42 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    for y in 0..height {
-        for x in 0..width {
-            if y < height - 1 {
-                board.push(Item {
-                    y: y * 2 + 2,
-                    x: x * 2 + 1,
-                    color: if is_connected.vertical[y][x].is_some() {
-                        "green"
-                    } else {
-                        "#cccccc"
-                    },
-                    kind: match is_connected.vertical[y][x] {
-                        Some(true) => ItemKind::Cross,
-                        Some(false) => ItemKind::BoldWall,
-                        None => ItemKind::Wall,
-                    },
-                });
+    if let Some((_, is_connected)) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if y < height - 1 {
+                    board.push(Item {
+                        y: y * 2 + 2,
+                        x: x * 2 + 1,
+                        color: if is_connected.vertical[y][x].is_some() {
+                            "green"
+                        } else {
+                            "#cccccc"
+                        },
+                        kind: match is_connected.vertical[y][x] {
+                            Some(true) => ItemKind::Cross,
+                            Some(false) => ItemKind::BoldWall,
+                            None => ItemKind::Wall,
+                        },
+                    });
+                }
+                if x < width - 1 {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
+                        color: if is_connected.horizontal[y][x].is_some() {
+                            "green"
+                        } else {
+                            "#cccccc"
+                        },
+                        kind: match is_connected.horizontal[y][x] {
+                            Some(true) => ItemKind::Cross,
+                            Some(false) => ItemKind::BoldWall,
+                            None => ItemKind::Wall,
+                        },
+                    })
+                };
             }
-            if x < width - 1 {
-                board.push(Item {
-                    y: y * 2 + 1,
-                    x: x * 2 + 2,
-                    color: if is_connected.horizontal[y][x].is_some() {
-                        "green"
-                    } else {
-                        "#cccccc"
-                    },
-                    kind: match is_connected.horizontal[y][x] {
-                        Some(true) => ItemKind::Cross,
-                        Some(false) => ItemKind::BoldWall,
-                        None => ItemKind::Wall,
-                    },
-                })
-            };
         }
     }
 
@@ -75,13 +78,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?lapaz/5/4/2j1m.k1"),
             Board {
                 kind: BoardKind::OuterGrid,
