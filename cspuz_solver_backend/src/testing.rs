@@ -1,4 +1,4 @@
-use crate::board::{Board, BoardKind, Item, ItemKind};
+use crate::board::{Board, ItemKind};
 use crate::uniqueness::Uniqueness;
 use std::fs;
 use std::io::Write;
@@ -150,7 +150,7 @@ pub fn expectation_mismatch(file: String, line: u32, column: u32, actual: Board,
 }
 
 pub fn expectation_no_solution(board: &Board) -> Board {
-    let mut filtered_data: Vec<_> = board
+    let filtered_data: Vec<_> = board
         .data
         .iter()
         .filter(|item| item.color != "green")

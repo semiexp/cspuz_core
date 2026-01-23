@@ -16,7 +16,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1))),
     );
 
-    if let Some((is_line, is_black)) = &ans {
+    if let Some((_, is_black)) = &ans {
         for y in 0..height {
             for x in 0..width {
                 match is_black[y][x] {
