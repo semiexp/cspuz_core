@@ -7,7 +7,18 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let has_line = balloon::solve_balloon(&color, &num);
     let height = num.len();
     let width = num[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, has_line.as_ref().map_or(Uniqueness::NoAnswer, |h| is_unique(h)));
+    let mut board = Board::new(
+        if has_line.is_some() {
+            BoardKind::OuterGrid
+        } else {
+            BoardKind::Grid
+        },
+        height,
+        width,
+        has_line
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |h| is_unique(h)),
+    );
 
     for y in 0..height {
         for x in 0..width {
