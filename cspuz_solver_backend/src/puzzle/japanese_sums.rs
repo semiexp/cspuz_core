@@ -1,16 +1,20 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::japanese_sums;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (k, (vertical, horizontal), given_numbers) =
         japanese_sums::deserialize_problem(url).ok_or("invalid url")?;
-    let num = japanese_sums::solve_japanese_sums(k, &vertical, &horizontal, &given_numbers)
-        .ok_or("no answer")?;
+    let num = japanese_sums::solve_japanese_sums(k, &vertical, &horizontal, &given_numbers);
 
-    let height = num.len();
-    let width = num[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&num));
+    let height = horizontal.len();
+    let width = vertical.len();
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        num.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -20,17 +24,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     continue;
                 }
             }
-            if let Some(n) = num[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if n == 0 {
-                        ItemKind::Block
-                    } else {
-                        ItemKind::Num(n)
-                    },
-                ));
+            if let Some(num) = &num {
+                if let Some(n) = num[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if n == 0 {
+                            ItemKind::Block
+                        } else {
+                            ItemKind::Num(n)
+                        },
+                    ));
+                }
             }
         }
     }
@@ -42,13 +48,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?japanesesums/6/5/4/...ah5.j.1g.4g352...4.j.8go4z"),
             Board {
                 kind: BoardKind::Grid,
