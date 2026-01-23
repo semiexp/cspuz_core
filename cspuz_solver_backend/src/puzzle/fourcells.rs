@@ -1,14 +1,21 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::n_cells;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = n_cells::deserialize_fourcells_problem(url).ok_or("invalid url")?;
-    let border = n_cells::solve_fourcells(&problem).ok_or("no answer")?;
+    let border = n_cells::solve_fourcells(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&border));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        border
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -34,19 +41,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         kind: ItemKind::BoldWall,
                     });
                     need_default_edge = false;
-                } else if let Some(b) = border.horizontal[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                } else if let Some(border) = &border {
+                    if let Some(b) = border.horizontal[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {
@@ -68,19 +77,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         kind: ItemKind::BoldWall,
                     });
                     need_default_edge = false;
-                } else if let Some(b) = border.vertical[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                } else if let Some(border) = &border {
+                    if let Some(b) = border.vertical[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {

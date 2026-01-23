@@ -1,15 +1,23 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::country_road;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = country_road::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = country_road::solve_country_road(&borders, &clues).ok_or("no answer")?;
+    let is_line = country_road::solve_country_road(&borders, &clues);
 
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_line));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        is_line
+            .as_ref()
+            .map(is_unique)
+            .unwrap_or(Uniqueness::NoAnswer),
+    );
     board.add_borders(&borders, "black");
 
     let rooms = graph::borders_to_rooms(&borders);
@@ -24,7 +32,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             }
         }
     }
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(is_line) = is_line {
+        board.add_lines_irrefutable_facts(&is_line, "green", None);
+    }
 
     Ok(board)
 }
@@ -33,13 +43,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?country/6/6/eemdee0cvv603h2l14"),
             Board {
                 kind: BoardKind::Grid,

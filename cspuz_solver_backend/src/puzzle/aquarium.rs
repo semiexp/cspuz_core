@@ -1,12 +1,11 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::aquarium;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (region_aware, (borders, (clues_up, clues_left))) =
         aquarium::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = aquarium::solve_aquarium(region_aware, &borders, &clues_up, &clues_left)
-        .ok_or("no answer")?;
+    let is_black = aquarium::solve_aquarium(region_aware, &borders, &clues_up, &clues_left);
 
     let height = clues_left.len();
     let width = clues_up.len();
@@ -15,7 +14,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height + 1,
         width + 1,
-        is_unique(&is_black),
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
     );
 
     for y in 0..height {
@@ -31,10 +32,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
-            if is_black[y][x] == Some(true) {
-                board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Fill));
-            } else if is_black[y][x] == Some(false) {
-                board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
+            if let Some(is_black) = &is_black {
+                if is_black[y][x] == Some(true) {
+                    board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Fill));
+                } else if is_black[y][x] == Some(false) {
+                    board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
+                }
             }
         }
     }
@@ -69,13 +72,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?aquarium/5/4/9lqgfk4/3h12h13"),
             Board {
                 kind: BoardKind::Empty,

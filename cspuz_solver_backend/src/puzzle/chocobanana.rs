@@ -1,24 +1,33 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::chocobanana;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = chocobanana::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = chocobanana::solve_chocobanana(&clues).ok_or("no answer")?;
+    let is_black = chocobanana::solve_chocobanana(&clues);
 
-    let height = is_black.len();
-    let width = is_black[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_black));
+    let height = is_black.as_ref().map_or(clues.len(), |b| b.len());
+    let width = is_black.as_ref().map_or(clues[0].len(), |b| b[0].len());
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |ans| is_unique(ans)),
+    );
 
     for y in 0..height {
         for x in 0..width {
-            if let Some(b) = is_black[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Block } else { ItemKind::Dot },
-                ));
+            if let Some(is_black) = &is_black {
+                if let Some(b) = is_black[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
             }
             if let Some(clue) = clues[y][x] {
                 if clue > 0 {
@@ -37,13 +46,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?cbanana/6/6/31h2n66l8t"),
             Board {
                 kind: BoardKind::Grid,

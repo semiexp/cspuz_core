@@ -6,13 +6,13 @@ pub fn solve(url: &str) -> Result<crate::board::Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?ayeheya/6/6/dddaae0c1s1sg1n"),
             Board {
                 kind: BoardKind::Grid,

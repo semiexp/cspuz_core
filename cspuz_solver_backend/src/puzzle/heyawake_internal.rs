@@ -15,29 +15,43 @@ pub fn solve(url: &str, is_ayeheya: bool) -> Result<Board, &'static str> {
         if !ayeheya::all_room_symmetry(&borders) {
             return Err("asymmetry room");
         }
-        is_black = ayeheya::solve_ayeheya(&borders, &clues).ok_or("no answer")?;
+        is_black = ayeheya::solve_ayeheya(&borders, &clues);
     } else {
         let problem = heyawake::deserialize_problem(url).ok_or("invalid url")?;
         borders = problem.0;
         clues = problem.1;
-        is_black = heyawake::solve_heyawake(&borders, &clues).ok_or("no answer")?;
+        is_black = heyawake::solve_heyawake(&borders, &clues);
     }
 
-    let height = is_black.len();
-    let width = is_black[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&is_black));
+    // Get dimensions from borders: vertical has height rows, horizontal[0] has width elements
+    let height = borders.vertical.len();
+    let width = if height > 0 {
+        borders.horizontal[0].len()
+    } else {
+        0
+    };
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        is_black
+            .as_ref()
+            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+    );
 
     board.add_borders(&borders, "black");
 
     for y in 0..height {
         for x in 0..width {
-            if let Some(b) = is_black[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Block } else { ItemKind::Dot },
-                ));
+            if let Some(is_black) = &is_black {
+                if let Some(b) = is_black[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
             }
         }
     }
