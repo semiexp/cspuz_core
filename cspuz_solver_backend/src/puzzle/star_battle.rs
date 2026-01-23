@@ -1,30 +1,37 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::star_battle;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (star_amount, borders) = star_battle::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = star_battle::solve_star_battle(star_amount, &borders).ok_or("no answer")?;
+    let ans = star_battle::solve_star_battle(star_amount, &borders);
 
-    let height = ans.len();
-    let width = ans[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let height = borders.horizontal.len() + 1;
+    let width = borders.horizontal[0].len();
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     board.add_borders(&borders, "black");
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(b) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b {
-                        ItemKind::FilledCircle
-                    } else {
-                        ItemKind::Dot
-                    },
-                ));
+    if let Some(ans) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(b) = ans[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b {
+                            ItemKind::FilledCircle
+                        } else {
+                            ItemKind::Dot
+                        },
+                    ));
+                }
             }
         }
     }
@@ -36,13 +43,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?starbattle/6/6/1/2u9gn9c9jpmk"),
             Board {
                 kind: BoardKind::Grid,
