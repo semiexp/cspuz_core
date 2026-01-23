@@ -9,7 +9,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let height = problem.len();
     let width = problem[0].len();
     let mut board = Board::new(
-        if ans.is_some() { BoardKind::OuterGrid } else { BoardKind::Grid },
+        if ans.is_some() {
+            BoardKind::OuterGrid
+        } else {
+            BoardKind::Grid
+        },
         height,
         width,
         ans.as_ref()
