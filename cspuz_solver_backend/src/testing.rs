@@ -157,49 +157,6 @@ pub fn expectation_no_solution(board: &Board) -> Board {
         .cloned()
         .collect();
 
-    // For OuterGrid boards, ensure all edges have #cccccc walls in the no-solution case
-    if board.kind == BoardKind::OuterGrid {
-        // Add #cccccc walls for all edges (including those that had green BoldWalls in the solution)
-        let height = board.height;
-        let width = board.width;
-        
-        for y in 0..height {
-            for x in 0..width {
-                // Horizontal edges
-                if y < height - 1 {
-                    let edge_y = y * 2 + 2;
-                    let edge_x = x * 2 + 1;
-                    
-                    // Check if this wall is already in the filtered data
-                    if !filtered_data.iter().any(|item| item.y == edge_y && item.x == edge_x && item.color == "#cccccc") {
-                        filtered_data.push(Item {
-                            y: edge_y,
-                            x: edge_x,
-                            color: "#cccccc",
-                            kind: ItemKind::Wall,
-                        });
-                    }
-                }
-                
-                // Vertical edges
-                if x < width - 1 {
-                    let edge_y = y * 2 + 1;
-                    let edge_x = x * 2 + 2;
-                    
-                    // Check if this wall is already in the filtered data
-                    if !filtered_data.iter().any(|item| item.y == edge_y && item.x == edge_x && item.color == "#cccccc") {
-                        filtered_data.push(Item {
-                            y: edge_y,
-                            x: edge_x,
-                            color: "#cccccc",
-                            kind: ItemKind::Wall,
-                        });
-                    }
-                }
-            }
-        }
-    }
-
     Board {
         kind: board.kind,
         height: board.height,
