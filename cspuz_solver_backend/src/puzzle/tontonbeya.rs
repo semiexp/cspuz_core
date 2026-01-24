@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::tontonbeya;
 
 fn num_to_item(n: i32) -> ItemKind {
@@ -13,19 +13,26 @@ fn num_to_item(n: i32) -> ItemKind {
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = tontonbeya::deserialize_problem(url).ok_or("invalid url")?;
-    let answer = tontonbeya::solve_tontonbeya(&borders, &clues).ok_or("no answer")?;
+    let ans = tontonbeya::solve_tontonbeya(&borders, &clues);
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&answer));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
     board.add_borders(&borders, "black");
 
     for y in 0..height {
         for x in 0..width {
             if let Some(n) = clues[y][x] {
                 board.push(Item::cell(y, x, "black", num_to_item(n)));
-            } else if let Some(n) = answer[y][x] {
-                board.push(Item::cell(y, x, "green", num_to_item(n)));
+            } else if let Some(ref ans) = ans {
+                if let Some(n) = ans[y][x] {
+                    board.push(Item::cell(y, x, "green", num_to_item(n)));
+                }
             }
         }
     }
@@ -37,13 +44,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?tontonbeya/6/5/aiqm28351oa1e3d2h1h"),
             Board {
                 kind: BoardKind::Grid,
