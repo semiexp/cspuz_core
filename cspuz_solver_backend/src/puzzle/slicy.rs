@@ -1,20 +1,22 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::slicy;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let borders = slicy::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = slicy::solve_slicy(&borders).ok_or("no answer")?;
+    let ans = slicy::solve_slicy(&borders);
 
-    let (a, b, c, d) = ans.dims();
+    let (a, b, c, d) = borders.dims;
     let mut board = Board::new(
         BoardKind::Empty,
         (a + c - 1) * 2,
         a + b * 2 + d - 2,
-        is_unique(&ans.flatten().to_vec()),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(&a.flatten().to_vec())),
     );
 
-    for &(y, x) in ans.cells() {
+    // Use borders.to_right to get cells, as it's available whether or not there's a solution
+    for &(y, x) in borders.to_right.cells() {
         let ty = y * 2;
         let tx = if y >= a - 1 {
             x * 2 - (y - (a - 1))
@@ -22,13 +24,25 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             x * 2 + (a - 1 - y)
         };
 
+        // Render cell fills
         for dy in 0..2 {
             for dx in 0..2 {
-                if let Some(b) = ans[(y, x)] {
+                if let Some(ref ans) = ans {
+                    // If we have a solution, render based on the solution
+                    if let Some(b) = ans[(y, x)] {
+                        board.push(Item {
+                            y: ty * 2 + 1 + dy * 2,
+                            x: tx * 2 + 1 + dx * 2,
+                            color: if b { "green" } else { "#cccccc" },
+                            kind: ItemKind::Fill,
+                        });
+                    }
+                } else {
+                    // If no solution, render all cells as gray
                     board.push(Item {
                         y: ty * 2 + 1 + dy * 2,
                         x: tx * 2 + 1 + dx * 2,
-                        color: if b { "green" } else { "#cccccc" },
+                        color: "#cccccc",
                         kind: ItemKind::Fill,
                     });
                 }
@@ -36,7 +50,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for &(y, x) in ans.cells() {
+    // Render walls - always shown whether or not there's a solution
+    for &(y, x) in borders.to_right.cells() {
         let ty = y * 2;
         let tx = if y >= a - 1 {
             x * 2 - (y - (a - 1))
@@ -44,11 +59,19 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             x * 2 + (a - 1 - y)
         };
 
+        let is_valid_coord_offset = |coord: (usize, usize), offset: (i32, i32)| -> bool {
+            if let Some(ref ans) = ans {
+                ans.is_valid_coord_offset(coord, offset)
+            } else {
+                borders.to_right.is_valid_coord_offset(coord, offset)
+            }
+        };
+
         board.push(Item {
             y: ty * 2,
             x: tx * 2 + 1,
             color: "black",
-            kind: if !ans.is_valid_coord_offset((y, x), (-1, -1))
+            kind: if !is_valid_coord_offset((y, x), (-1, -1))
                 || borders.to_bottom_right[(y - 1, x - 1)]
             {
                 ItemKind::BoldWall
@@ -60,7 +83,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             y: ty * 2 + 4,
             x: tx * 2 + 3,
             color: "black",
-            kind: if !ans.is_valid_coord_offset((y, x), (1, 1)) || borders.to_bottom_right[(y, x)] {
+            kind: if !is_valid_coord_offset((y, x), (1, 1)) || borders.to_bottom_right[(y, x)] {
                 ItemKind::BoldWall
             } else {
                 ItemKind::DottedWall
@@ -70,9 +93,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             y: ty * 2,
             x: tx * 2 + 3,
             color: "black",
-            kind: if !ans.is_valid_coord_offset((y, x), (-1, 0))
-                || borders.to_bottom_left[(y - 1, x)]
-            {
+            kind: if !is_valid_coord_offset((y, x), (-1, 0)) || borders.to_bottom_left[(y - 1, x)] {
                 ItemKind::BoldWall
             } else {
                 ItemKind::DottedWall
@@ -82,7 +103,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             y: ty * 2 + 4,
             x: tx * 2 + 1,
             color: "black",
-            kind: if !ans.is_valid_coord_offset((y, x), (1, 0)) || borders.to_bottom_left[(y, x)] {
+            kind: if !is_valid_coord_offset((y, x), (1, 0)) || borders.to_bottom_left[(y, x)] {
                 ItemKind::BoldWall
             } else {
                 ItemKind::DottedWall
@@ -93,8 +114,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 y: ty * 2 + t,
                 x: tx * 2,
                 color: "black",
-                kind: if !ans.is_valid_coord_offset((y, x), (0, -1)) || borders.to_right[(y, x - 1)]
-                {
+                kind: if !is_valid_coord_offset((y, x), (0, -1)) || borders.to_right[(y, x - 1)] {
                     ItemKind::BoldWall
                 } else {
                     ItemKind::DottedWall
@@ -104,7 +124,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 y: ty * 2 + t,
                 x: tx * 2 + 4,
                 color: "black",
-                kind: if !ans.is_valid_coord_offset((y, x), (0, 1)) || borders.to_right[(y, x)] {
+                kind: if !is_valid_coord_offset((y, x), (0, 1)) || borders.to_right[(y, x)] {
                     ItemKind::BoldWall
                 } else {
                     ItemKind::DottedWall
