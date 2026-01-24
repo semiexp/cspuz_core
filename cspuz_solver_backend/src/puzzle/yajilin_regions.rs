@@ -1,46 +1,65 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::yajilin_regions;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = yajilin_regions::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_line, is_black) =
-        yajilin_regions::solve_yajilin_regions(&borders, &clues).ok_or("no answer")?;
+    let ans = yajilin_regions::solve_yajilin_regions(&borders, &clues);
 
-    let height = is_black.len();
-    let width = is_black[0].len();
+    let (height, width) = if let Some((ref _is_line, ref is_black)) = ans {
+        (is_black.len(), is_black[0].len())
+    } else {
+        // Calculate from borders: horizontal has height+1 rows, vertical has height rows
+        let h = if borders.vertical.is_empty() {
+            0
+        } else {
+            borders.vertical.len()
+        };
+        let w = if h > 0 && !borders.vertical[0].is_empty() {
+            borders.vertical[0].len() + 1
+        } else {
+            0
+        };
+        (h, w)
+    };
+
     let mut board = Board::new(
         BoardKind::Grid,
         height,
         width,
-        is_unique(&(&is_line, &is_black)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |(is_line, is_black)| {
+                is_unique(&(is_line, is_black))
+            }),
     );
 
     board.add_borders(&borders, "black");
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(b) = is_black[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b { ItemKind::Block } else { ItemKind::Dot },
-                ));
+    if let Some((ref is_line, ref is_black)) = ans {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(b) = is_black[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
             }
         }
-    }
 
-    let mut skip_line = vec![];
-    for y in 0..height {
-        let mut row = vec![];
-        for x in 0..width {
-            row.push(is_black[y][x].unwrap_or(false));
+        let mut skip_line = vec![];
+        for y in 0..height {
+            let mut row = vec![];
+            for x in 0..width {
+                row.push(is_black[y][x].unwrap_or(false));
+            }
+            skip_line.push(row);
         }
-        skip_line.push(row);
+        board.add_lines_irrefutable_facts(is_line, "green", Some(&skip_line));
     }
-    board.add_lines_irrefutable_facts(&is_line, "green", Some(&skip_line));
 
     let rooms = graph::borders_to_rooms(&borders);
     assert_eq!(rooms.len(), clues.len());
@@ -62,13 +81,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?yajilin-regions/6/6/ii02q2070d0gg221"),
             Board {
                 kind: BoardKind::Grid,
