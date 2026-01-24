@@ -42,7 +42,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     board.push(Item {
                         y: ty * 2 + 1 + dy * 2,
                         x: tx * 2 + 1 + dx * 2,
-                        color: "#cccccc",
+                        color: "white",
                         kind: ItemKind::Fill,
                     });
                 }

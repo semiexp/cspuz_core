@@ -9,7 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (height, width) = if let Some(ref ans) = ans {
         (ans.vertical.len(), ans.vertical[0].len() + 1)
     } else {
-        (problem.vertical.len(), problem.vertical[0].len() + 1)
+        (problem.vertical.len(), problem.vertical[0].len() - 1)
     };
 
     let mut board = Board::new(
