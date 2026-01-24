@@ -1,26 +1,33 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::tetrochain_k;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = tetrochain_k::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = tetrochain_k::solve_tetrochain_k(&problem).ok_or("no answer")?;
+    let ans = tetrochain_k::solve_tetrochain_k(&problem);
     let height = (problem.len() + 1) / 2;
     let width = (problem[0].len() + 1) / 2;
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&is_black));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
-            match is_black[y][x] {
-                Some(true) => {
-                    board.push(Item::cell(y, x, "green", ItemKind::Fill));
-                }
-                Some(false) => {
-                    if problem[y * 2][x * 2] == 0 {
-                        board.push(Item::cell(y, x, "green", ItemKind::Dot));
+            if let Some(ref ans) = ans {
+                match ans[y][x] {
+                    Some(true) => {
+                        board.push(Item::cell(y, x, "green", ItemKind::Fill));
                     }
+                    Some(false) => {
+                        if problem[y * 2][x * 2] == 0 {
+                            board.push(Item::cell(y, x, "green", ItemKind::Dot));
+                        }
+                    }
+                    None => {}
                 }
-                None => {}
             }
         }
     }
@@ -89,13 +96,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?tetrochaink/7/5/m4hcg4m4g42t8h3j1j4m"),
             Board {
                 kind: BoardKind::OuterGrid,

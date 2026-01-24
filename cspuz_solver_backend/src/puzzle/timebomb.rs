@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::timebomb;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = timebomb::deserialize_problem(url).ok_or("invalid url")?;
-    let (has_number, num) = timebomb::solve_timebomb(&problem).ok_or("no answer")?;
+    let ans = timebomb::solve_timebomb(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -12,7 +12,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_unique(&(&has_number, &num)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |(h, n)| is_unique(&(h, n))),
     );
     for y in 0..height {
         for x in 0..width {
@@ -26,19 +27,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 } else if clue == -2 {
                     board.push(Item::cell(y, x, "black", ItemKind::FilledCircle));
                 }
-            } else if let Some(n) = num[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if n == -1 {
-                        ItemKind::Dot
-                    } else {
-                        ItemKind::Num(n)
-                    },
-                ));
-            } else if has_number[y][x] == Some(true) {
-                board.push(Item::cell(y, x, "green", ItemKind::Text("?")));
+            } else if let Some((ref has_number, ref num)) = ans {
+                if let Some(n) = num[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if n == -1 {
+                            ItemKind::Dot
+                        } else {
+                            ItemKind::Num(n)
+                        },
+                    ));
+                } else if has_number[y][x] == Some(true) {
+                    board.push(Item::cell(y, x, "green", ItemKind::Text("?")));
+                }
             }
         }
     }
@@ -50,13 +53,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?timebomb/6/5/5j0h0h0.k0g01g2g0j"),
             Board {
                 kind: BoardKind::Grid,

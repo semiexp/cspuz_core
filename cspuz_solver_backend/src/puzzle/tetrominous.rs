@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs::graph::InnerGridEdges;
 use cspuz_rs_puzzles::puzzles::polyominous;
 
@@ -8,11 +8,16 @@ const TETROMINO_NAMES: [&str; 5] = ["I", "L", "O", "S", "T"];
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (clues, default_borders) =
         polyominous::deserialize_tetrominous_problem(url).ok_or("invalid url")?;
-    let border = polyominous::solve_tetrominous(&clues, &default_borders).ok_or("no answer")?;
+    let ans = polyominous::solve_tetrominous(&clues, &default_borders);
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(BoardKind::OuterGrid, height, width, is_unique(&border));
+    let mut board = Board::new(
+        BoardKind::OuterGrid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -49,19 +54,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         kind: ItemKind::BoldWall,
                     });
                     need_default_edge = false;
-                } else if let Some(b) = border.horizontal[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                } else if let Some(ref border) = ans {
+                    if let Some(b) = border.horizontal[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {
@@ -83,19 +90,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         kind: ItemKind::BoldWall,
                     });
                     need_default_edge = false;
-                } else if let Some(b) = border.vertical[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "green",
-                        kind: if b {
-                            ItemKind::BoldWall
-                        } else {
-                            ItemKind::Cross
-                        },
-                    });
-                    if b {
-                        need_default_edge = false;
+                } else if let Some(ref border) = ans {
+                    if let Some(b) = border.vertical[y][x] {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color: "green",
+                            kind: if b {
+                                ItemKind::BoldWall
+                            } else {
+                                ItemKind::Cross
+                            },
+                        });
+                        if b {
+                            need_default_edge = false;
+                        }
                     }
                 }
                 if need_default_edge {
