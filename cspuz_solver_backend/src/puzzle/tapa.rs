@@ -1,25 +1,32 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::tapa;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = tapa::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = tapa::solve_tapa(&problem).ok_or("no answer")?;
+    let ans = tapa::solve_tapa(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
                 board.push(Item::cell(y, x, "black", ItemKind::TapaClue(clue)));
-            } else if let Some(a) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if a { ItemKind::Block } else { ItemKind::Dot },
-                ));
+            } else if let Some(ref ans) = ans {
+                if let Some(a) = ans[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if a { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
             }
         }
     }
@@ -31,13 +38,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?tapa/6/8/q2g9g.qb0pa0ccn"),
             Board {
                 kind: BoardKind::Grid,
