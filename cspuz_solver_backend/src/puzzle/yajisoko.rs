@@ -1,12 +1,12 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::yajisoko::{self, YajisokoCell};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     use cspuz_rs::items::Arrow;
 
     let problem = yajisoko::deserialize_problem(url).ok_or("invalid url")?;
-    let (is_line, is_block) = yajisoko::solve_yajisoko(&problem).ok_or("no answer")?;
+    let ans = yajisoko::solve_yajisoko(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -14,7 +14,10 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_unique(&(&is_line, &is_block)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |(is_line, is_block)| {
+                is_unique(&(is_line, is_block))
+            }),
     );
 
     for y in 0..height {
@@ -48,18 +51,22 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 }
                 _ => (),
             }
-            if is_block[y][x] == Some(true) {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "rgba(192, 255, 192, 0.8)",
-                    ItemKind::Block,
-                ));
+            if let Some(ref ans) = ans {
+                if ans.1[y][x] == Some(true) {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "rgba(192, 255, 192, 0.8)",
+                        ItemKind::Block,
+                    ));
+                }
             }
         }
     }
 
-    board.add_lines_irrefutable_facts(&is_line, "green", None);
+    if let Some(ref ans) = ans {
+        board.add_lines_irrefutable_facts(&ans.0, "green", None);
+    }
 
     Ok(board)
 }
