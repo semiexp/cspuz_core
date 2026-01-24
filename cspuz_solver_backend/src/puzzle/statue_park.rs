@@ -1,29 +1,46 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::statue_park::{self, StatueParkClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (problem, pieces) = statue_park::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = statue_park::solve_statue_park(&problem, &pieces).ok_or("no answer")?;
+    let ans = statue_park::solve_statue_park(&problem, &pieces);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
-    for y in 0..height {
-        for x in 0..width {
-            match problem[y][x] {
-                StatueParkClue::None => {
-                    if let Some(a) = ans[y][x] {
-                        board.push(Item::cell(
-                            y,
-                            x,
-                            "green",
-                            if a { ItemKind::Block } else { ItemKind::Dot },
-                        ));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
+    if let Some(ans) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                match problem[y][x] {
+                    StatueParkClue::None => {
+                        if let Some(a) = ans[y][x] {
+                            board.push(Item::cell(
+                                y,
+                                x,
+                                "green",
+                                if a { ItemKind::Block } else { ItemKind::Dot },
+                            ));
+                        }
                     }
+                    StatueParkClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
+                    StatueParkClue::Black => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
                 }
-                StatueParkClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
-                StatueParkClue::Black => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
+            }
+        }
+    } else {
+        for y in 0..height {
+            for x in 0..width {
+                match problem[y][x] {
+                    StatueParkClue::None => {}
+                    StatueParkClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
+                    StatueParkClue::Black => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
+                }
             }
         }
     }
@@ -35,13 +52,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?statuepark/6/5/0000591i00/2/23lg/22u"),
             Board {
                 kind: BoardKind::Grid,

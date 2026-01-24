@@ -1,10 +1,10 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::spokes;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let clues = spokes::deserialize_problem(url).ok_or("invalid url")?;
-    let (lines, lines_dr, lines_dl) = spokes::solve_spokes(&clues).ok_or("no answer")?;
+    let ans = spokes::solve_spokes(&clues);
 
     let height = clues.len();
     let width = clues[0].len();
@@ -12,94 +12,97 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height - 1,
         width - 1,
-        is_unique(&(&lines, &lines_dr, &lines_dl)),
+        ans.as_ref()
+            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1, &a.2))),
     );
 
-    for y in 0..height {
-        for x in 0..(width - 1) {
-            match lines.horizontal[y][x] {
-                Some(true) => {
-                    board.push(Item {
-                        y: y * 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: ItemKind::Wall,
-                    });
-                }
-                Some(false) => (),
-                None => {
-                    board.push(Item {
-                        y: y * 2,
-                        x: x * 2 + 1,
-                        color: "black",
-                        kind: ItemKind::DottedWall,
-                    });
-                }
-            }
-        }
-    }
-    for y in 0..(height - 1) {
-        for x in 0..width {
-            match lines.vertical[y][x] {
-                Some(true) => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2,
-                        color: "green",
-                        kind: ItemKind::Wall,
-                    });
-                }
-                Some(false) => (),
-                None => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2,
-                        color: "black",
-                        kind: ItemKind::DottedWall,
-                    });
+    if let Some((lines, lines_dr, lines_dl)) = &ans {
+        for y in 0..height {
+            for x in 0..(width - 1) {
+                match lines.horizontal[y][x] {
+                    Some(true) => {
+                        board.push(Item {
+                            y: y * 2,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                    Some(false) => (),
+                    None => {
+                        board.push(Item {
+                            y: y * 2,
+                            x: x * 2 + 1,
+                            color: "black",
+                            kind: ItemKind::DottedWall,
+                        });
+                    }
                 }
             }
         }
-    }
-    for y in 0..(height - 1) {
-        for x in 0..(width - 1) {
-            match lines_dr[y][x] {
-                Some(true) => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: ItemKind::Backslash,
-                    });
-                }
-                Some(false) => (),
-                None => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 1,
-                        color: "black",
-                        kind: ItemKind::DottedBackslash,
-                    });
+        for y in 0..(height - 1) {
+            for x in 0..width {
+                match lines.vertical[y][x] {
+                    Some(true) => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2,
+                            color: "green",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                    Some(false) => (),
+                    None => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2,
+                            color: "black",
+                            kind: ItemKind::DottedWall,
+                        });
+                    }
                 }
             }
+        }
+        for y in 0..(height - 1) {
+            for x in 0..(width - 1) {
+                match lines_dr[y][x] {
+                    Some(true) => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: ItemKind::Backslash,
+                        });
+                    }
+                    Some(false) => (),
+                    None => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 1,
+                            color: "black",
+                            kind: ItemKind::DottedBackslash,
+                        });
+                    }
+                }
 
-            match lines_dl[y][x] {
-                Some(true) => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: ItemKind::Slash,
-                    });
-                }
-                Some(false) => (),
-                None => {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 1,
-                        color: "black",
-                        kind: ItemKind::DottedSlash,
-                    });
+                match lines_dl[y][x] {
+                    Some(true) => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 1,
+                            color: "green",
+                            kind: ItemKind::Slash,
+                        });
+                    }
+                    Some(false) => (),
+                    None => {
+                        board.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 1,
+                            color: "black",
+                            kind: ItemKind::DottedSlash,
+                        });
+                    }
                 }
             }
         }
@@ -140,13 +143,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player?W=5x4&L=(3)0(2)1(2)1x1x1x1(1)1(1)2(3)1(1)1(2)1(4)1(2)1(1)1(1)2x3&G=spokes"),
             Board {
                 kind: BoardKind::Empty,

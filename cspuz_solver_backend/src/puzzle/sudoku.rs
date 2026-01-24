@@ -4,19 +4,24 @@ use cspuz_rs_puzzles::puzzles::sudoku;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = sudoku::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = sudoku::solve_sudoku_as_cands(&problem).ok_or("no answer")?;
+    let ans = sudoku::solve_sudoku_as_cands(&problem);
 
-    let height = ans.len();
-    let width = ans[0].len();
+    let height = problem.len();
+    let width = problem[0].len();
 
-    let mut is_unique = Uniqueness::Unique;
-    for y in 0..height {
-        for x in 0..width {
-            if ans[y][x].iter().filter(|&&b| b).count() != 1 {
-                is_unique = Uniqueness::NonUnique;
+    let is_unique = if let Some(ans) = &ans {
+        let mut uniqueness = Uniqueness::Unique;
+        for y in 0..height {
+            for x in 0..width {
+                if ans[y][x].iter().filter(|&&b| b).count() != 1 {
+                    uniqueness = Uniqueness::NonUnique;
+                }
             }
         }
-    }
+        uniqueness
+    } else {
+        Uniqueness::NoAnswer
+    };
     let mut board = Board::new(BoardKind::Grid, height, width, is_unique);
 
     let (bh, bw) = match height {
@@ -28,26 +33,36 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         _ => return Err("invalid size"),
     };
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(n) = problem[y][x] {
-                board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
-            } else {
-                let mut cands = vec![];
-                for i in 0..height {
-                    if ans[y][x][i] {
-                        cands.push(i as i32 + 1);
+    if let Some(ans) = &ans {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(n) = problem[y][x] {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
+                } else {
+                    let mut cands = vec![];
+                    for i in 0..height {
+                        if ans[y][x][i] {
+                            cands.push(i as i32 + 1);
+                        }
+                    }
+                    if cands.len() == 1 {
+                        board.push(Item::cell(y, x, "green", ItemKind::Num(cands[0])));
+                    } else {
+                        board.push(Item::cell(
+                            y,
+                            x,
+                            "green",
+                            ItemKind::SudokuCandidateSet(bw as i32, cands),
+                        ));
                     }
                 }
-                if cands.len() == 1 {
-                    board.push(Item::cell(y, x, "green", ItemKind::Num(cands[0])));
-                } else {
-                    board.push(Item::cell(
-                        y,
-                        x,
-                        "green",
-                        ItemKind::SudokuCandidateSet(bw as i32, cands),
-                    ));
+            }
+        }
+    } else {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(n) = problem[y][x] {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(n)));
                 }
             }
         }
@@ -80,13 +95,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?sudoku/9/9/k8g1g7i2i99o2g3h75q19h5g4o83i4i6g4g5k"),
             Board {
                 kind: BoardKind::Grid,
