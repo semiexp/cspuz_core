@@ -1,14 +1,23 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::the_longest;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = the_longest::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = the_longest::solve_the_longest(&problem).ok_or("no answer")?;
+    let ans = the_longest::solve_the_longest(&problem);
 
-    let height = ans.vertical.len();
-    let width = ans.vertical[0].len() + 1;
-    let mut board = Board::new(BoardKind::DotGrid, height, width, is_unique(&ans));
+    let (height, width) = if let Some(ref ans) = ans {
+        (ans.vertical.len(), ans.vertical[0].len() + 1)
+    } else {
+        (problem.vertical.len(), problem.vertical[0].len() + 1)
+    };
+
+    let mut board = Board::new(
+        BoardKind::DotGrid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..=height {
         for x in 0..width {
@@ -32,13 +41,15 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 continue;
             }
 
-            if let Some(b) = ans.horizontal[y - 1][x] {
-                board.push(Item {
-                    y: y * 2,
-                    x: x * 2 + 1,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                });
+            if let Some(ref ans) = ans {
+                if let Some(b) = ans.horizontal[y - 1][x] {
+                    board.push(Item {
+                        y: y * 2,
+                        x: x * 2 + 1,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    });
+                }
             }
         }
     }
@@ -64,13 +75,15 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 continue;
             }
 
-            if let Some(b) = ans.vertical[y][x - 1] {
-                board.push(Item {
-                    y: y * 2 + 1,
-                    x: x * 2,
-                    color: "green",
-                    kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                });
+            if let Some(ref ans) = ans {
+                if let Some(b) = ans.vertical[y][x - 1] {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2,
+                        color: "green",
+                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
+                    });
+                }
             }
         }
     }
