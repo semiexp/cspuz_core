@@ -1,16 +1,21 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::is_unique;
+use crate::uniqueness::{is_unique, Uniqueness};
 use cspuz_rs_puzzles::puzzles::yinyang;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     use yinyang::YinYangClue;
 
     let problem = yinyang::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = yinyang::solve_yinyang(&problem).ok_or("no answer")?;
+    let ans = yinyang::solve_yinyang(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(BoardKind::Grid, height, width, is_unique(&ans));
+    let mut board = Board::new(
+        BoardKind::Grid,
+        height,
+        width,
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+    );
 
     for y in 0..height {
         for x in 0..width {
@@ -22,19 +27,21 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(b) = ans[y][x] {
-                board.push(Item::cell(
-                    y,
-                    x,
-                    "green",
-                    if b {
-                        ItemKind::FilledCircle
-                    } else {
-                        ItemKind::Circle
-                    },
-                ));
+    if let Some(ref ans) = ans {
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(b) = ans[y][x] {
+                    board.push(Item::cell(
+                        y,
+                        x,
+                        "green",
+                        if b {
+                            ItemKind::FilledCircle
+                        } else {
+                            ItemKind::Circle
+                        },
+                    ));
+                }
             }
         }
     }
@@ -46,13 +53,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?yinyang/6/6/6a166b230900"),
             Board {
                 kind: BoardKind::Grid,
