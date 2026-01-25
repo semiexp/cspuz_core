@@ -4,7 +4,7 @@ use cspuz_rs_puzzles::puzzles::kouchoku;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let problem = kouchoku::deserialize_problem(url).ok_or("invalid url")?;
-    let (fixed_lines, undet_lines) = kouchoku::solve_kouchoku(&problem).ok_or("no answer")?;
+    let ans = kouchoku::solve_kouchoku(&problem);
 
     let height = problem.len();
     let width = problem[0].len();
@@ -12,10 +12,14 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        if undet_lines.is_empty() {
-            Uniqueness::Unique
+        if let Some((_, undet_lines)) = &ans {
+            if undet_lines.is_empty() {
+                Uniqueness::Unique
+            } else {
+                Uniqueness::NonUnique
+            }
         } else {
-            Uniqueness::NonUnique
+            Uniqueness::NoAnswer
         },
     );
     for y in 0..height {
@@ -52,21 +56,23 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    for ((x1, y1), (x2, y2)) in fixed_lines {
-        board.push(Item {
-            y: y1 * 2 + 1,
-            x: x1 * 2 + 1,
-            color: "green",
-            kind: ItemKind::LineTo(y2 as i32 * 2 + 1, x2 as i32 * 2 + 1),
-        });
-    }
-    for ((x1, y1), (x2, y2)) in undet_lines {
-        board.push(Item {
-            y: y1 * 2 + 1,
-            x: x1 * 2 + 1,
-            color: "#888888",
-            kind: ItemKind::LineTo(y2 as i32 * 2 + 1, x2 as i32 * 2 + 1),
-        });
+    if let Some((fixed_lines, undet_lines)) = ans {
+        for ((x1, y1), (x2, y2)) in fixed_lines {
+            board.push(Item {
+                y: y1 * 2 + 1,
+                x: x1 * 2 + 1,
+                color: "green",
+                kind: ItemKind::LineTo(y2 as i32 * 2 + 1, x2 as i32 * 2 + 1),
+            });
+        }
+        for ((x1, y1), (x2, y2)) in undet_lines {
+            board.push(Item {
+                y: y1 * 2 + 1,
+                x: x1 * 2 + 1,
+                color: "#888888",
+                kind: ItemKind::LineTo(y2 as i32 * 2 + 1, x2 as i32 * 2 + 1),
+            });
+        }
     }
 
     Ok(board)
