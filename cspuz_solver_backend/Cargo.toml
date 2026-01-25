@@ -11,6 +11,9 @@ crate-type = ["cdylib", "lib"]
 cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_rs_puzzles = { path = "../cspuz_rs_puzzles", default-features = false }
 
+[dev-dependencies]
+cspuz_rs = { path = "../cspuz_rs", default-features = false, features = ["test-support"] }
+
 [lints.clippy]
 # For better readability, allow loops like `for y in 0..height`
 needless_range_loop = "allow"

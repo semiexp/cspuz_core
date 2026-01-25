@@ -9,6 +9,7 @@ edition = "2021"
 default = ["csp-extra-constraints", "generator"]
 csp-extra-constraints = ["cspuz_core/csp-extra-constraints"]
 generator = ["rand"]
+test-support = []
 
 [dependencies]
 cspuz_core = { path = "../cspuz_core", default-features = false }
