@@ -20,6 +20,14 @@ macro_rules! compare_board {
                 $expected,
             );
         }
+
+        // If we force the solver to fail, the result should still be Ok(_)
+        cspuz_rs::solver::set_force_solver_fail(true);
+        let actual = $actual;
+        cspuz_rs::solver::set_force_solver_fail(false);
+        if actual.is_err() {
+            panic!("Expected Ok(_), but got Err({})", actual.err().unwrap());
+        }
     };
 }
 
