@@ -480,7 +480,7 @@ impl<'a> Solver<'a> {
     /// // Note that `z` is not included in the answer key, so the value of `z` is not considered.
     /// assert_eq!(count, 3);
     /// ```
-    #[allow(unused_mut)]
+    #[cfg_attr(not(any(test, feature = "test-support")), allow(unused_mut))]
     pub fn answer_iter(mut self) -> impl Iterator<Item = OwnedPartialModel> + 'a {
         #[cfg(any(test, feature = "test-support"))]
         if FORCE_SOLVER_FAIL.with(|cell| cell.get()) {
