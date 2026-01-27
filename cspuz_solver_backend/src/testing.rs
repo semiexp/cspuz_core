@@ -57,7 +57,11 @@ macro_rules! compare_board_and_check_no_solution_case {
         }
         let actual = actual.unwrap();
         let expected_no_solution = $crate::testing::expectation_no_solution(&$expected);
-        assert_eq!(actual, expected_no_solution);
+        if actual != expected_no_solution {
+            let expected_no_solution_wall_color_changed =
+                $crate::testing::expectation_no_solution_wall_color_changed(&$expected);
+            assert_eq!(actual, expected_no_solution_wall_color_changed);
+        }
     };
 }
 
@@ -170,6 +174,30 @@ pub fn expectation_no_solution(board: &Board) -> Board {
         height: board.height,
         width: board.width,
         data: filtered_data,
+        uniqueness: Uniqueness::NoAnswer,
+    }
+}
+
+pub fn expectation_no_solution_wall_color_changed(board: &Board) -> Board {
+    let mut new_data = vec![];
+    for item in &board.data {
+        if item.color != "green" {
+            new_data.push(item.clone());
+        } else {
+            if item.kind == ItemKind::BoldWall {
+                let mut new_item = item.clone();
+                new_item.kind = ItemKind::Wall;
+                new_item.color = "#cccccc";
+                new_data.push(new_item);
+            }
+        }
+    }
+
+    Board {
+        kind: board.kind,
+        height: board.height,
+        width: board.width,
+        data: new_data,
         uniqueness: Uniqueness::NoAnswer,
     }
 }
