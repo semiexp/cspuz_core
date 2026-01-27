@@ -105,13 +105,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pedros.works/paper-puzzle-player?W=6x5&L=y0e4e1p1p1c1x1e5y1e2e1c4x1y4y1y1&G=tamago-town"),
             Board {
                 kind: BoardKind::OuterGrid,
