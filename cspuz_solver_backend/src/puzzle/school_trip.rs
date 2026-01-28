@@ -9,11 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let height = problem.len();
     let width = problem[0].len();
     let mut board = Board::new(
-        if ans.is_some() {
-            BoardKind::OuterGrid
-        } else {
-            BoardKind::Grid
-        },
+        BoardKind::OuterGrid,
         height,
         width,
         ans.as_ref().map_or(
@@ -95,13 +91,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?shugaku/6/5/272d1d07090"),
             Board {
                 kind: BoardKind::OuterGrid,

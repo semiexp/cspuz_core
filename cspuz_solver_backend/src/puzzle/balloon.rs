@@ -8,11 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let height = num.len();
     let width = num[0].len();
     let mut board = Board::new(
-        if has_line.is_some() {
-            BoardKind::OuterGrid
-        } else {
-            BoardKind::Grid
-        },
+        BoardKind::OuterGrid,
         height,
         width,
         has_line
@@ -142,6 +138,28 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 }
             }
         }
+    } else {
+        // Add only gray walls when there's no solution
+        for y in 0..height {
+            for x in 0..width {
+                if y < height - 1 {
+                    board.push(Item {
+                        y: y * 2 + 2,
+                        x: x * 2 + 1,
+                        color: "#cccccc",
+                        kind: ItemKind::Wall,
+                    });
+                }
+                if x < width - 1 {
+                    board.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2 + 2,
+                        color: "#cccccc",
+                        kind: ItemKind::Wall,
+                    });
+                }
+            }
+        }
     }
 
     Ok(board)
@@ -151,13 +169,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 mod tests {
     use super::solve;
     use crate::board::*;
-    use crate::compare_board;
+    use crate::compare_board_and_check_no_solution_case;
     use crate::uniqueness::Uniqueness;
 
     #[test]
     #[rustfmt::skip]
     fn test_solve() {
-        compare_board!(
+        compare_board_and_check_no_solution_case!(
             solve("https://pzprxs.vercel.app/p?balloon/a/6/5/0e7ivgj.k6n2m14g"),
             Board {
                 kind: BoardKind::OuterGrid,
