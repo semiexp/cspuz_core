@@ -90,9 +90,10 @@ pub fn expectation_mismatch(file: String, line: u32, column: u32, actual: Board,
     let lines: Vec<&str> = content.lines().collect();
     let target_line = (line - 1) as usize; // line numbers are 1-indexed
 
-    assert_eq!(
-        &lines[target_line][(column - 1) as usize..],
-        "compare_board!("
+    assert!(
+        &lines[target_line][(column - 1) as usize..] == "compare_board!("
+            || &lines[target_line][(column - 1) as usize..]
+                == "compare_board_and_check_no_solution_case!("
     );
 
     // Find the start of Board { ... } and parse until the matching closing brace
