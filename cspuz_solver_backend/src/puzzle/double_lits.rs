@@ -21,8 +21,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     board.add_borders(&borders, "black");
 
-    if let Some(is_black) = ans {
-        board.add_block_dot_answer(&is_black, "green");
+    if let Some(is_black) = &ans {
+        board.add_block_dot_answer(is_black, "green");
     }
 
     Ok(board)

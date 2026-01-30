@@ -28,8 +28,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
 
-    if let Some(is_line) = ans {
-        board.add_grid_edges(&is_line, "green", ItemKind::Wall, ItemKind::Cross);
+    if let Some(is_line) = &ans {
+        board.add_grid_edges(is_line, "green", ItemKind::Wall, ItemKind::Cross);
     }
 
     Ok(board)
