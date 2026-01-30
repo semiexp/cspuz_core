@@ -311,6 +311,74 @@ impl Board {
         }
     }
 
+    pub fn add_borders_as_answer(
+        &mut self,
+        borders: Option<&graph::BoolInnerGridEdgesIrrefutableFacts>,
+    ) {
+        let height = self.height;
+        let width = self.width;
+        for y in 0..height {
+            for x in 0..width {
+                if y < height - 1 {
+                    let mut need_default_edge = true;
+                    if let Some(ref border) = borders {
+                        if let Some(b) = border.horizontal[y][x] {
+                            self.push(Item {
+                                y: y * 2 + 2,
+                                x: x * 2 + 1,
+                                color: "green",
+                                kind: if b {
+                                    ItemKind::BoldWall
+                                } else {
+                                    ItemKind::Cross
+                                },
+                            });
+                            if b {
+                                need_default_edge = false;
+                            }
+                        }
+                    }
+                    if need_default_edge {
+                        self.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                }
+                if x < width - 1 {
+                    let mut need_default_edge = true;
+                    if let Some(ref border) = borders {
+                        if let Some(b) = border.vertical[y][x] {
+                            self.push(Item {
+                                y: y * 2 + 1,
+                                x: x * 2 + 2,
+                                color: "green",
+                                kind: if b {
+                                    ItemKind::BoldWall
+                                } else {
+                                    ItemKind::Cross
+                                },
+                            });
+                            if b {
+                                need_default_edge = false;
+                            }
+                        }
+                    }
+                    if need_default_edge {
+                        self.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color: "#cccccc",
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     pub fn add_lines_irrefutable_facts(
         &mut self,
         lines: &graph::BoolGridEdgesIrrefutableFacts,
