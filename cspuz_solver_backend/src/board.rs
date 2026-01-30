@@ -471,6 +471,36 @@ impl Board {
         }
     }
 
+    /// Renders Block/Dot items based on boolean answer grid (for region-based puzzles).
+    ///
+    /// This helper function adds Block or Dot items to the board for cells that have
+    /// determined values in the answer grid.
+    ///
+    /// # Arguments
+    /// * `is_black` - Answer grid with Option<bool> values
+    /// * `color` - Color to use for the rendered items
+    pub fn add_block_dot_answer(
+        &mut self,
+        is_black: &Vec<Vec<Option<bool>>>,
+        color: &'static str,
+    ) {
+        let height = self.height;
+        let width = self.width;
+
+        for y in 0..height {
+            for x in 0..width {
+                if let Some(b) = is_black[y][x] {
+                    self.push(Item::cell(
+                        y,
+                        x,
+                        color,
+                        if b { ItemKind::Block } else { ItemKind::Dot },
+                    ));
+                }
+            }
+        }
+    }
+
     pub fn to_json(&self) -> String {
         let kind = "grid";
         let height = self.height;
