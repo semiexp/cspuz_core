@@ -421,6 +421,56 @@ impl Board {
         }
     }
 
+    /// Renders grid edges (for puzzles like Slitherlink, Litherslink, Crosswall).
+    ///
+    /// This helper function adds edge items to the board based on a GridEdges structure.
+    /// - Vertical edges are rendered at positions (y * 2 + 1, x * 2)
+    /// - Horizontal edges are rendered at positions (y * 2, x * 2 + 1)
+    ///
+    /// # Arguments
+    /// * `edges` - The grid edges to render (with .vertical and .horizontal fields)
+    /// * `color` - Color to use for the rendered edges
+    /// * `true_kind` - ItemKind to use when edge value is true
+    /// * `false_kind` - ItemKind to use when edge value is false
+    pub fn add_grid_edges(
+        &mut self,
+        edges: &graph::GridEdges<Vec<Vec<Option<bool>>>>,
+        color: &'static str,
+        true_kind: ItemKind,
+        false_kind: ItemKind,
+    ) {
+        let height = self.height;
+        let width = self.width;
+
+        // Render vertical edges
+        for y in 0..height {
+            for x in 0..=width {
+                if let Some(b) = edges.vertical[y][x] {
+                    self.push(Item {
+                        y: y * 2 + 1,
+                        x: x * 2,
+                        color,
+                        kind: if b { true_kind.clone() } else { false_kind.clone() },
+                    });
+                }
+            }
+        }
+
+        // Render horizontal edges
+        for y in 0..=height {
+            for x in 0..width {
+                if let Some(b) = edges.horizontal[y][x] {
+                    self.push(Item {
+                        y: y * 2,
+                        x: x * 2 + 1,
+                        color,
+                        kind: if b { true_kind.clone() } else { false_kind.clone() },
+                    });
+                }
+            }
+        }
+    }
+
     pub fn to_json(&self) -> String {
         let kind = "grid";
         let height = self.height;
