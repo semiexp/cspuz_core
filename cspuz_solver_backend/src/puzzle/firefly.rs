@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, FireflyDir, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::items::Arrow;
 use cspuz_rs_puzzles::puzzles::firefly;
 
@@ -13,9 +13,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        is_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+        check_uniqueness(&is_line),
     );
 
     if let Some(is_line) = &is_line {

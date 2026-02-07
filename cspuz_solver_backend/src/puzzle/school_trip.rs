@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::school_trip;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -14,7 +14,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         width,
         ans.as_ref().map_or(
             Uniqueness::NoAnswer,
-            |(is_black, is_pillow, is_connected)| is_unique(&(is_black, is_pillow, is_connected)),
+            |(is_black, is_pillow, is_connected)| if (is_black, is_pillow, is_connected).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique },
         ),
     );
     for y in 0..height {

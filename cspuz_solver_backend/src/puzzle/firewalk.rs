@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::firewalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -15,7 +15,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         answer
             .as_ref()
             .map_or(Uniqueness::NoAnswer, |(is_line, fire_cell_mode)| {
-                is_unique(&(is_line, fire_cell_mode))
+                if (is_line, fire_cell_mode).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }
             }),
     );
 

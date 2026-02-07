@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::slicy;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,7 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         (a + c - 1) * 2,
         a + b * 2 + d - 2,
         ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(&a.flatten().to_vec())),
+            .map_or(Uniqueness::NoAnswer, |a| if a.flatten().to_vec().is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
     );
 
     // Use borders.to_right to get cells, as it's available whether or not there's a solution

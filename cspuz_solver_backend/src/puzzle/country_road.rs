@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::country_road;
 
@@ -13,10 +13,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_line
-            .as_ref()
-            .map(is_unique)
-            .unwrap_or(Uniqueness::NoAnswer),
+        check_uniqueness(&is_line),
     );
     board.add_borders(&borders, "black");
 

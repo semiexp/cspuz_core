@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::hashi;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,9 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        num_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |n| is_unique(n)),
+        check_uniqueness(&num_line),
     );
 
     if let Some(num_line) = &num_line {

@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{check_uniqueness, Uniqueness};
 use cspuz_rs_puzzles::puzzles::slitherlink;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,9 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::DotGrid,
         height,
         width,
-        is_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |l| is_unique(l)),
+        check_uniqueness(&is_line),
     );
 
     for y in 0..height {

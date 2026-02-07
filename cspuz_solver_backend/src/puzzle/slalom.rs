@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::slalom;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -15,9 +15,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |l| is_unique(l)),
+        check_uniqueness(&is_line),
     );
 
     let (origin_y, origin_x) = origin;

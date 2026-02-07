@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{check_uniqueness, Uniqueness};
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::{ayeheya, heyawake};
 
@@ -34,9 +34,7 @@ pub fn solve(url: &str, is_ayeheya: bool) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        is_black
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+        check_uniqueness(&is_black),
     );
 
     board.add_borders(&borders, "black");

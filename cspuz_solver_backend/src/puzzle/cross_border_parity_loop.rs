@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::cross_border_parity_loop::{self, CBPLCell};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -20,7 +20,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         width,
         result
             .as_ref()
-            .map(|(is_line, cell_state)| is_unique(&(is_line, cell_state)))
+            .map(|(is_line, cell_state)| if (is_line, cell_state).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique })
             .unwrap_or(Uniqueness::NoAnswer),
     );
 

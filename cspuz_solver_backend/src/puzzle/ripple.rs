@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::ripple;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,7 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
+        check_uniqueness(&ans),
     );
 
     board.add_borders(&borders, "black");

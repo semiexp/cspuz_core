@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::fillomino;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -13,7 +13,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         height,
         width,
         ans.as_ref().map_or(Uniqueness::NoAnswer, |(num, border)| {
-            is_unique(&(num, border))
+            if (num, border).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }
         }),
     );
 

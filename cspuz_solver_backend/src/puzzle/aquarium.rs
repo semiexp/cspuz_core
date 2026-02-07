@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::aquarium;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -14,9 +14,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height + 1,
         width + 1,
-        is_black
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |b| is_unique(b)),
+        check_uniqueness(&is_black),
     );
 
     for y in 0..height {

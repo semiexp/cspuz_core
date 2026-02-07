@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::spokes;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -13,7 +13,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         height - 1,
         width - 1,
         ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1, &a.2))),
+            .map_or(Uniqueness::NoAnswer, |a| if (&a.0, &a.1, &a.2).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
     );
 
     if let Some((lines, lines_dr, lines_dl)) = &ans {

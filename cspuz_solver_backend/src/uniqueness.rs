@@ -50,13 +50,15 @@ impl<T: UniquenessCheckable> UniquenessCheckable for InnerGridEdges<T> {
     }
 }
 
-pub fn is_unique<T>(x: &T) -> Uniqueness
+pub fn check_uniqueness<T>(x: &Option<T>) -> Uniqueness
 where
     T: UniquenessCheckable,
 {
-    if x.is_unique() {
-        Uniqueness::Unique
-    } else {
-        Uniqueness::NonUnique
-    }
+    x.as_ref().map_or(Uniqueness::NoAnswer, |v| {
+        if v.is_unique() {
+            Uniqueness::Unique
+        } else {
+            Uniqueness::NonUnique
+        }
+    })
 }
