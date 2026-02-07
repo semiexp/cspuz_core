@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{Uniqueness, UniquenessCheckable};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::firewalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,11 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        answer
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, fire_cell_mode)| {
-                if (is_line, fire_cell_mode).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }
-            }),
+        check_uniqueness(&answer),
     );
 
     for y in 0..height {

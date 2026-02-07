@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{Uniqueness, UniquenessCheckable};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::cross_border_parity_loop::{self, CBPLCell};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -18,10 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        result
-            .as_ref()
-            .map(|(is_line, cell_state)| if (is_line, cell_state).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique })
-            .unwrap_or(Uniqueness::NoAnswer),
+        check_uniqueness(&result),
     );
 
     let mut is_skip = vec![vec![false; width]; height];

@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{Uniqueness, UniquenessCheckable};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::items::Arrow;
 use cspuz_rs_puzzles::puzzles::sniping_arrow;
 
@@ -23,8 +23,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| if (&a.0, &a.1).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
+        check_uniqueness(&ans),
     );
 
     for y in 0..height {

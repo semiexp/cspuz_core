@@ -24,14 +24,14 @@ impl<T: UniquenessCheckable> UniquenessCheckable for Vec<T> {
     }
 }
 
-impl<U: UniquenessCheckable, V: UniquenessCheckable> UniquenessCheckable for (&U, &V) {
+impl<U: UniquenessCheckable, V: UniquenessCheckable> UniquenessCheckable for (U, V) {
     fn is_unique(&self) -> bool {
         self.0.is_unique() && self.1.is_unique()
     }
 }
 
 impl<U: UniquenessCheckable, V: UniquenessCheckable, W: UniquenessCheckable> UniquenessCheckable
-    for (&U, &V, &W)
+    for (U, V, W)
 {
     fn is_unique(&self) -> bool {
         self.0.is_unique() && self.1.is_unique() && self.2.is_unique()

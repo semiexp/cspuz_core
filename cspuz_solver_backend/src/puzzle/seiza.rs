@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{Uniqueness, UniquenessCheckable};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::seiza;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,10 +12,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Grid,
         height,
         width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, is_star)| {
-                if (is_line, is_star).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }
-            }),
+        check_uniqueness(&ans),
     );
 
     board.add_borders(&borders, "black");

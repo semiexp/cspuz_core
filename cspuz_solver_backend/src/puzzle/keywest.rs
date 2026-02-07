@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{Uniqueness, UniquenessCheckable};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::keywest;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -11,8 +11,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         height,
         width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| if (&a.0, &a.1).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
+        check_uniqueness(&ans),
     );
 
     if let Some((num, has_line)) = &ans {
