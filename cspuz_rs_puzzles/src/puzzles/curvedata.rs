@@ -8,6 +8,7 @@ use cspuz_rs::solver::{IntVarArray2D, Solver};
 type AdjacencyEntry = Option<(usize, usize)>;
 
 struct Adjacency {
+    question: bool,
     up: AdjacencyEntry,
     down: AdjacencyEntry,
     left: AdjacencyEntry,
@@ -17,6 +18,17 @@ struct Adjacency {
 impl Adjacency {
     fn new() -> Adjacency {
         Adjacency {
+            question: false,
+            up: None,
+            down: None,
+            left: None,
+            right: None,
+        }
+    }
+
+    fn question() -> Adjacency {
+        Adjacency {
+            question: true,
             up: None,
             down: None,
             left: None,
@@ -29,6 +41,7 @@ impl Adjacency {
 pub enum PieceId {
     None,
     Block,
+    Question,
     Piece(usize),
 }
 
@@ -105,6 +118,14 @@ pub fn add_constraints(
                 PieceId::None => (),
                 PieceId::Block => {
                     idx_constraints.push((y, x, 0, 1));
+                }
+                PieceId::Question => {
+                    let idx = cell_kind.len();
+                    cell_kind.push(Adjacency::question());
+                    is_endpoint.push(false);
+                    idx_constraints.push((y, x, idx, idx + 1));
+
+                    solver.add_expr(is_line.vertex_neighbors((y, x)).any());
                 }
                 PieceId::Piece(id) => {
                     let piece = &pieces[id];
@@ -230,12 +251,48 @@ pub fn add_constraints(
             }
             for i in 0..cell_kind.len() {
                 let desc = &cell_kind[i];
+                if desc.question {
+                    continue;
+                }
                 let i = i as i32;
                 add_constraints_sub(solver, cell_kind_val, is_line, y, x, -1, 0, i, desc.up);
                 add_constraints_sub(solver, cell_kind_val, is_line, y, x, 1, 0, i, desc.down);
                 add_constraints_sub(solver, cell_kind_val, is_line, y, x, 0, -1, i, desc.left);
                 add_constraints_sub(solver, cell_kind_val, is_line, y, x, 0, 1, i, desc.right);
             }
+        }
+    }
+
+    {
+        let (is_line_flat, g) = is_line.representation();
+        for i in 0..cell_kind.len() {
+            if !cell_kind[i].question {
+                continue;
+            }
+
+            solver.add_expr(
+                is_line.horizontal.imp(
+                    cell_kind_val
+                        .slice((.., ..(w - 1)))
+                        .eq(i as i32)
+                        .iff(cell_kind_val.slice((.., 1..)).eq(i as i32)),
+                ),
+            );
+            solver.add_expr(
+                is_line.vertical.imp(
+                    cell_kind_val
+                        .slice((..(h - 1), ..))
+                        .eq(i as i32)
+                        .iff(cell_kind_val.slice((1.., ..)).eq(i as i32)),
+                ),
+            );
+
+            graph::active_vertices_connected_via_active_edges(
+                solver,
+                cell_kind_val.eq(i as i32),
+                &is_line_flat,
+                &g,
+            );
         }
     }
 }
@@ -265,6 +322,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
             |x| Some(PieceId::Piece(x as usize)),
         )),
         Box::new(Spaces::new(PieceId::None, 'g')),
+        Box::new(Dict::new(PieceId::Question, ".")),
         Box::new(Dict::new(PieceId::Block, "=")),
     ]));
     let (_, mut piece_id) =
@@ -275,10 +333,9 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     // TODO: consider problems with borders
     let borders;
     let offset;
-    if toks[4].as_bytes()[0] == b'b' {
-        let mut tmp = Rooms
-            .deserialize(&Context::sized(h, w), &toks[4].as_bytes()[1..])?
-            .1;
+    let toks4 = toks[4].as_bytes();
+    if toks4.len() > 0 && toks4[0] == b'b' {
+        let mut tmp = Rooms.deserialize(&Context::sized(h, w), &toks4[1..])?.1;
         assert_eq!(tmp.len(), 1);
         borders = Some(tmp.swap_remove(0));
         offset = 5;
@@ -402,6 +459,28 @@ mod tests {
         (piece_id, borders, pieces)
     }
 
+    #[rustfmt::skip]
+    fn problem_for_tests_question() -> Problem {
+        let piece_id = vec![
+            vec![PieceId::None, PieceId::None, PieceId::None],
+            vec![PieceId::None, PieceId::Piece(0), PieceId::None],
+            vec![PieceId::Question, PieceId::None, PieceId::None],
+        ];
+        let borders = None;
+        let pieces = vec![
+            graph::GridEdges {
+                horizontal: vec![
+                    vec![true],
+                    vec![false],
+                ],
+                vertical: vec![
+                    vec![true, false],
+                ],
+            },
+        ];
+        (piece_id, borders, pieces)
+    }
+
     #[test]
     fn test_curvedata_problem() {
         let (piece_id, borders, pieces) = problem_for_tests();
@@ -428,9 +507,42 @@ mod tests {
     }
 
     #[test]
+    fn test_curvedata_problem_question() {
+        let (piece_id, borders, pieces) = problem_for_tests_question();
+        let ans = solve_curvedata(&piece_id, &borders, &pieces);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = graph::BoolGridEdgesIrrefutableFacts {
+            horizontal: crate::util::tests::to_option_bool_2d([[0, 1], [0, 0], [1, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 1, 0], [1, 0, 1]]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_curvedata_problem_question_only() {
+        let piece_id = vec![
+            vec![PieceId::None, PieceId::None, PieceId::None],
+            vec![PieceId::None, PieceId::None, PieceId::None],
+            vec![PieceId::Question, PieceId::None, PieceId::None],
+        ];
+        let borders = None;
+        let pieces = vec![];
+
+        let ans = solve_curvedata(&piece_id, &borders, &pieces);
+        assert!(ans.is_some());
+    }
+
+    #[test]
     fn test_curvedata_serializer() {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?curvedata/4/5/=n01o/b0100000/3/3/ec24/2/3/ba1";
+        let deserialized = deserialize_problem(url).unwrap();
+        assert_eq!(problem, deserialized);
+
+        let problem = problem_for_tests_question();
+        let url = "https://puzz.link/p?curvedata/3/3/j0g.h/2/2/30";
         let deserialized = deserialize_problem(url).unwrap();
         assert_eq!(problem, deserialized);
     }

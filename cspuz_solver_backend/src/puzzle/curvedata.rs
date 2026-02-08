@@ -21,6 +21,9 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                 curvedata::PieceId::Block => {
                     board.push(Item::cell(y, x, "black", ItemKind::Fill));
                 }
+                curvedata::PieceId::Question => {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
+                }
                 curvedata::PieceId::Piece(_) => {
                     board.push(Item::cell(y, x, "black", ItemKind::Circle));
                 }
@@ -56,6 +59,9 @@ pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>
                 curvedata::PieceId::None => (),
                 curvedata::PieceId::Block => {
                     board_common.push(Item::cell(y, x, "black", ItemKind::Fill));
+                }
+                curvedata::PieceId::Question => {
+                    board_common.push(Item::cell(y, x, "black", ItemKind::Text("?")));
                 }
                 curvedata::PieceId::Piece(_) => {
                     board_common.push(Item::cell(y, x, "black", ItemKind::Circle));
