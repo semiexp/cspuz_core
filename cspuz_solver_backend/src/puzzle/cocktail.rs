@@ -9,12 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&is_black),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_black));
 
     board.add_borders(&borders, "black");
 

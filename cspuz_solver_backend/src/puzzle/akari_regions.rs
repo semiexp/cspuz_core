@@ -9,12 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&has_light),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&has_light));
 
     board.add_borders(&borders, "black");
 

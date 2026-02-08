@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len() - 1;
     let width = problem[0].len() - 1;
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&ans));
     if let Some(ans) = ans {
         for y in 0..height {
             for x in 0..width {

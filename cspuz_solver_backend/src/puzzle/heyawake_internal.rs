@@ -30,12 +30,7 @@ pub fn solve(url: &str, is_ayeheya: bool) -> Result<Board, &'static str> {
     } else {
         0
     };
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&is_black),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_black));
 
     board.add_borders(&borders, "black");
 

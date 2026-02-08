@@ -10,12 +10,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     if let Some(ref ans) = ans {
         let mut skip_line = vec![];

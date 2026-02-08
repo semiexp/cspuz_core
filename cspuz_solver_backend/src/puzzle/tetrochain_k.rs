@@ -7,12 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = tetrochain_k::solve_tetrochain_k(&problem);
     let height = (problem.len() + 1) / 2;
     let width = (problem[0].len() + 1) / 2;
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {

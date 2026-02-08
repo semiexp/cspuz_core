@@ -7,12 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = numcity::solve_numcity(&borders, &clues);
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
 

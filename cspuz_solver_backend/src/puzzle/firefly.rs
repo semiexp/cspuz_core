@@ -9,12 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        check_uniqueness(&is_line),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&is_line));
 
     if let Some(is_line) = &is_line {
         for y in 0..(height - 1) {

@@ -14,12 +14,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = cells.len();
     let width = cells[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&result),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&result));
 
     let mut is_skip = vec![vec![false; width]; height];
     for y in 0..height {

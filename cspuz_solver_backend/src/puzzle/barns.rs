@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = icebarn.len();
     let width = icebarn[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&is_line),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_line));
 
     board.add_borders(&borders, "black");
     for y in 0..height {

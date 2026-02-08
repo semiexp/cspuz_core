@@ -17,12 +17,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
     board.add_borders(&borders, "black");
 
     for y in 0..height {

@@ -11,12 +11,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = is_black.len();
     let width = is_black[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&is_line),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_line));
 
     let (origin_y, origin_x) = origin;
     board.push(Item::cell(origin_y, origin_x, "black", ItemKind::Circle));

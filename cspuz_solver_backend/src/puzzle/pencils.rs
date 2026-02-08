@@ -14,7 +14,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         width,
         ans.as_ref()
             .map_or(Uniqueness::NoAnswer, |(cell, line, _)| {
-                if (cell, line).is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }
+                if (cell, line).is_unique() {
+                    Uniqueness::Unique
+                } else {
+                    Uniqueness::NonUnique
+                }
             }),
     );
 

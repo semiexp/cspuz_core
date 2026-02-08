@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = sendai::solve_sendai(&borders, &clues);
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
 

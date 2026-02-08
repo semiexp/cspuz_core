@@ -7,12 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = tamago_town::solve_tamago_town(&problem);
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {

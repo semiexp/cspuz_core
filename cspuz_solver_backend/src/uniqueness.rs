@@ -24,6 +24,12 @@ impl<T: UniquenessCheckable> UniquenessCheckable for Vec<T> {
     }
 }
 
+impl<T: UniquenessCheckable> UniquenessCheckable for &T {
+    fn is_unique(&self) -> bool {
+        (*self).is_unique()
+    }
+}
+
 impl<U: UniquenessCheckable, V: UniquenessCheckable> UniquenessCheckable for (U, V) {
     fn is_unique(&self) -> bool {
         self.0.is_unique() && self.1.is_unique()

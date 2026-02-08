@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = fire_cell.len();
     let width = fire_cell[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        check_uniqueness(&answer),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&answer));
 
     for y in 0..height {
         for x in 0..width {

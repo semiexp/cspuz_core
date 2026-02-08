@@ -7,12 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = keywest::solve_keywest(&clues);
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&ans));
 
     if let Some((num, has_line)) = &ans {
         for y in 0..height {

@@ -12,8 +12,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         size,
         size * 2,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| if a.concat().is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| {
+            if a.concat().is_unique() {
+                Uniqueness::Unique
+            } else {
+                Uniqueness::NonUnique
+            }
+        }),
     );
 
     // Fills

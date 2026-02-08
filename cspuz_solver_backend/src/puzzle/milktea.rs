@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        check_uniqueness(&ans),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&ans));
 
     if let Some(is_line) = &ans {
         board.add_lines_irrefutable_facts(is_line, "green", None);

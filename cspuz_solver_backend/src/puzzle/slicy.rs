@@ -11,8 +11,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         (a + c - 1) * 2,
         a + b * 2 + d - 2,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| if a.flatten().to_vec().is_unique() { Uniqueness::Unique } else { Uniqueness::NonUnique }),
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| {
+            if a.flatten().to_vec().is_unique() {
+                Uniqueness::Unique
+            } else {
+                Uniqueness::NonUnique
+            }
+        }),
     );
 
     // Use borders.to_right to get cells, as it's available whether or not there's a solution
