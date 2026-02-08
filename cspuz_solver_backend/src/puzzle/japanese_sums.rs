@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::japanese_sums;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -9,12 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = horizontal.len();
     let width = vertical.len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        num.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&num));
 
     for y in 0..height {
         for x in 0..width {

@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::keywest;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -7,13 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = keywest::solve_keywest(&clues);
     let height = clues.len();
     let width = clues[0].len();
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1))),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&ans));
 
     if let Some((num, has_line)) = &ans {
         for y in 0..height {

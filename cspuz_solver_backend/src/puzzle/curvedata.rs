@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{check_uniqueness, Uniqueness};
 use cspuz_rs_puzzles::puzzles::curvedata;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = piece_id.len();
     let width = piece_id[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     if let Some(borders) = borders {
         board.add_borders(&borders, "black");

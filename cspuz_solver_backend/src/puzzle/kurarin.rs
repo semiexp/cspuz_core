@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::kurarin;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,13 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = (problem.len() + 1) / 2;
     let width = (problem[0].len() + 1) / 2;
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(&(&a.0, &a.1))),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     if let Some((_, is_black)) = &ans {
         for y in 0..height {

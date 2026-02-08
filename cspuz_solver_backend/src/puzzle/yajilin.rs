@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::yajilin;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -10,15 +10,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, is_black)| {
-                is_unique(&(is_line, is_black))
-            }),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     if let Some(ref ans) = ans {
         let mut skip_line = vec![];

@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::reflect::{self, ReflectLinkClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,14 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        is_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |l| is_unique(l)),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_line));
 
     if let Some(is_line) = &is_line {
         board.add_lines_irrefutable_facts(is_line, "green", None);

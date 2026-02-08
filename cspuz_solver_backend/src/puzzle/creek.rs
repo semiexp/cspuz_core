@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::creek;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = problem.len() - 1;
     let width = problem[0].len() - 1;
-    let mut board = Board::new(
-        BoardKind::Empty,
-        height,
-        width,
-        ans.as_ref().map(is_unique).unwrap_or(Uniqueness::NoAnswer),
-    );
+    let mut board = Board::new(BoardKind::Empty, height, width, check_uniqueness(&ans));
     if let Some(ans) = ans {
         for y in 0..height {
             for x in 0..width {

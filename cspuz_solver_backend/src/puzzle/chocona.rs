@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::chocona;
 
@@ -13,14 +13,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     } else {
         0
     };
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        is_black
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |ans| is_unique(ans)),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&is_black));
 
     board.add_borders(&borders, "black");
 

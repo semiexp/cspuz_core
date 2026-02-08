@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::pencils::{self, PencilsAnswer, PencilsClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -14,7 +14,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         width,
         ans.as_ref()
             .map_or(Uniqueness::NoAnswer, |(cell, line, _)| {
-                is_unique(&(cell, line))
+                if (cell, line).is_unique() {
+                    Uniqueness::Unique
+                } else {
+                    Uniqueness::NonUnique
+                }
             }),
     );
 

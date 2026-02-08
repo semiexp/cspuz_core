@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::balloon;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -11,9 +11,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::OuterGrid,
         height,
         width,
-        has_line
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |h| is_unique(h)),
+        check_uniqueness(&has_line),
     );
 
     for y in 0..height {

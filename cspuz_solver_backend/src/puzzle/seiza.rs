@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::seiza;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,15 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = absent_cell.len();
     let width = absent_cell[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, is_star)| {
-                is_unique(&(is_line, is_star))
-            }),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
 

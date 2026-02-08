@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::firewalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -8,16 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     let height = fire_cell.len();
     let width = fire_cell[0].len();
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        answer
-            .as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, fire_cell_mode)| {
-                is_unique(&(is_line, fire_cell_mode))
-            }),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&answer));
 
     for y in 0..height {
         for x in 0..width {

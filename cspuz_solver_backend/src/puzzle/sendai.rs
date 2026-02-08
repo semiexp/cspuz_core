@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::sendai;
 
@@ -8,12 +8,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = sendai::solve_sendai(&borders, &clues);
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
 

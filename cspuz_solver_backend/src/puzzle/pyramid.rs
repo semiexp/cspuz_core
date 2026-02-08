@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::{Uniqueness, UniquenessCheckable};
 use cspuz_rs_puzzles::puzzles::pyramid;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -12,8 +12,13 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         BoardKind::Empty,
         size,
         size * 2,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |a| is_unique(&a.concat())),
+        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| {
+            if a.concat().is_unique() {
+                Uniqueness::Unique
+            } else {
+                Uniqueness::NonUnique
+            }
+        }),
     );
 
     // Fills

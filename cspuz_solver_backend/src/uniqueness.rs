@@ -24,14 +24,20 @@ impl<T: UniquenessCheckable> UniquenessCheckable for Vec<T> {
     }
 }
 
-impl<U: UniquenessCheckable, V: UniquenessCheckable> UniquenessCheckable for (&U, &V) {
+impl<T: UniquenessCheckable> UniquenessCheckable for &T {
+    fn is_unique(&self) -> bool {
+        (*self).is_unique()
+    }
+}
+
+impl<U: UniquenessCheckable, V: UniquenessCheckable> UniquenessCheckable for (U, V) {
     fn is_unique(&self) -> bool {
         self.0.is_unique() && self.1.is_unique()
     }
 }
 
 impl<U: UniquenessCheckable, V: UniquenessCheckable, W: UniquenessCheckable> UniquenessCheckable
-    for (&U, &V, &W)
+    for (U, V, W)
 {
     fn is_unique(&self) -> bool {
         self.0.is_unique() && self.1.is_unique() && self.2.is_unique()
@@ -50,13 +56,15 @@ impl<T: UniquenessCheckable> UniquenessCheckable for InnerGridEdges<T> {
     }
 }
 
-pub fn is_unique<T>(x: &T) -> Uniqueness
+pub fn check_uniqueness<T>(x: &Option<T>) -> Uniqueness
 where
     T: UniquenessCheckable,
 {
-    if x.is_unique() {
-        Uniqueness::Unique
-    } else {
-        Uniqueness::NonUnique
-    }
+    x.as_ref().map_or(Uniqueness::NoAnswer, |v| {
+        if v.is_unique() {
+            Uniqueness::Unique
+        } else {
+            Uniqueness::NonUnique
+        }
+    })
 }

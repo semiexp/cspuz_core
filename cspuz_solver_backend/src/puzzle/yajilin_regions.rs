@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::yajilin_regions;
 
@@ -24,15 +24,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         (h, w)
     };
 
-    let mut board = Board::new(
-        BoardKind::Grid,
-        height,
-        width,
-        ans.as_ref()
-            .map_or(Uniqueness::NoAnswer, |(is_line, is_black)| {
-                is_unique(&(is_line, is_black))
-            }),
-    );
+    let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
 

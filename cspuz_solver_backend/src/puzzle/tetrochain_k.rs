@@ -1,5 +1,5 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
-use crate::uniqueness::{is_unique, Uniqueness};
+use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::tetrochain_k;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
@@ -7,12 +7,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let ans = tetrochain_k::solve_tetrochain_k(&problem);
     let height = (problem.len() + 1) / 2;
     let width = (problem[0].len() + 1) / 2;
-    let mut board = Board::new(
-        BoardKind::OuterGrid,
-        height,
-        width,
-        ans.as_ref().map_or(Uniqueness::NoAnswer, |a| is_unique(a)),
-    );
+    let mut board = Board::new(BoardKind::OuterGrid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {
