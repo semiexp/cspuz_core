@@ -94,7 +94,12 @@ pub fn solve_tapa(clues: &[Vec<Option<[i32; 4]>>]) -> Option<Vec<Vec<Option<bool
                 for s in 0..8 {
                     unit_count.push(&neighbors[s] & !&neighbors[(s + 1) % 8]);
                 }
-                solver.add_expr(count_true(unit_count).eq(total_clue_counts));
+
+                if clue == [-2, -1, -1, -1] {
+                    solver.add_expr(count_true(unit_count).le(1));
+                } else {
+                    solver.add_expr(count_true(unit_count).eq(total_clue_counts));
+                }
             }
         }
     }
