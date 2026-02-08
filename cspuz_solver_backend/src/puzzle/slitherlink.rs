@@ -18,7 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for y in 0..height {
         for x in 0..width {
             if let Some(clue) = problem[y][x] {
-                if clue > 0 {
+                if clue >= 0 {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
