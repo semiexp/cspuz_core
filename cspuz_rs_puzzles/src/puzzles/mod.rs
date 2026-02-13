@@ -9,6 +9,7 @@ pub mod araf;
 pub mod archipelago;
 pub mod ayeheya;
 pub mod balloon;
+pub mod battleship;
 pub mod barns;
 pub mod bdwalk;
 pub mod bosanowa;
