@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::battleship::{self, BattleshipClue};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (clues, grid, pieces) = battleship::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = statue_park::solve_statue_park(&clues, &grid, &pieces);
+    let ((vertical, horizontal), grid, pieces) = battleship::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = battleship::solve_battleship(&vertical, &horizontal, &grid, &pieces);
 
     let height = grid.len();
     let width = grid[0].len();
