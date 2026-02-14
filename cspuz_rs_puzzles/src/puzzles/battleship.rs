@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid, DecInt,
-    Dict, HexInt, Map, MultiDigit, Seq, Sequencer, Size, Spaces, Tuple2,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
+    DecInt, Dict, HexInt, Map, MultiDigit, Optionalize, Seq, Sequencer, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{any, bool_constant, count_true, Solver};
 
@@ -27,7 +27,7 @@ pub fn solve_battleship(
     clue_horizontal: &[Option<i32>],
     board: &[Vec<BattleshipClue>],
     pieces: &[Vec<Vec<bool>>],
-) -> Option<Vec<Vec<Option<bool>>>>  {
+) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(board);
     let (pieces_merged, cnts) = normalize_and_merge_pieces(pieces);
 
@@ -74,20 +74,20 @@ pub fn solve_battleship(
     let cell_state = &solver.int_var_2d((h, w), 0, id - 1);
     solver.add_answer_key_bool(is_ship);
 
-    for i in 1..id-1 {
+    for i in 1..id - 1 {
         graph::active_vertices_connected_2d(&mut solver, cell_state.eq(i));
     }
 
     for y in 0..h {
-        if let Some(n) = &clue_vertical[y]  {
+        if let Some(n) = &clue_horizontal[y] {
             let row = is_ship.slice_fixed_y((y, ..));
-            solver.add_expr(row.count_true().eq(n));
+            solver.add_expr(row.count_true().eq(*n));
         }
     }
     for x in 0..w {
-        if let Some(n) = &clue_horizontal[x]  {
+        if let Some(n) = &clue_vertical[x] {
             let col = is_ship.slice_fixed_x((.., x));
-            solver.add_expr(col.count_true().eq(n));
+            solver.add_expr(col.count_true().eq(*n));
         }
     }
 
@@ -108,7 +108,16 @@ pub fn solve_battleship(
                                     continue;
                                 }
 
-                                for (dy, dx) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
+                                for (dy, dx) in [
+                                    (1, 0),
+                                    (0, 1),
+                                    (-1, 0),
+                                    (0, -1),
+                                    (-1, -1),
+                                    (-1, 1),
+                                    (1, 1),
+                                    (1, -1),
+                                ] {
                                     let pyi = py as i32;
                                     let pxi = px as i32;
 
@@ -165,16 +174,16 @@ pub fn solve_battleship(
         for x in 0..w {
             match board[y][x] {
                 BattleshipClue::Water => solver.add_expr(!is_ship.at((y, x))),
-                BattleshipClue::ShipSquare | 
-                BattleshipClue::ShipUp | 
-                BattleshipClue::ShipDown | 
-                BattleshipClue::ShipLeft | 
-                BattleshipClue::ShipRight | 
-                BattleshipClue::ShipCircle |
-                BattleshipClue::ShipUpLeft |
-                BattleshipClue::ShipUpRight |
-                BattleshipClue::ShipDownLeft |
-                BattleshipClue::ShipDownRight => solver.add_expr(is_ship.at((y, x))),
+                BattleshipClue::ShipSquare
+                | BattleshipClue::ShipUp
+                | BattleshipClue::ShipDown
+                | BattleshipClue::ShipLeft
+                | BattleshipClue::ShipRight
+                | BattleshipClue::ShipCircle
+                | BattleshipClue::ShipUpLeft
+                | BattleshipClue::ShipUpRight
+                | BattleshipClue::ShipDownLeft
+                | BattleshipClue::ShipDownRight => solver.add_expr(is_ship.at((y, x))),
                 _ => (),
             }
         }
@@ -183,39 +192,80 @@ pub fn solve_battleship(
     for y in 0..h {
         for x in 0..w {
             match board[y][x] {
-                BattleshipClue::ShipUp | BattleshipClue::ShipDown | BattleshipClue::ShipLeft | BattleshipClue::ShipRight => solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(1)),
-                BattleshipClue::ShipUpLeft | BattleshipClue::ShipUpRight | BattleshipClue::ShipDownLeft | BattleshipClue::ShipDownRight => solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(2)),
+                BattleshipClue::ShipUp
+                | BattleshipClue::ShipDown
+                | BattleshipClue::ShipLeft
+                | BattleshipClue::ShipRight => {
+                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(1))
+                }
+                BattleshipClue::ShipUpLeft
+                | BattleshipClue::ShipUpRight
+                | BattleshipClue::ShipDownLeft
+                | BattleshipClue::ShipDownRight => {
+                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(2))
+                }
+                BattleshipClue::ShipSquare => {
+                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().ge(2))
+                }
                 BattleshipClue::ShipCircle => solver.add_expr(!is_ship.four_neighbors((y, x))),
                 _ => (),
             }
             match board[y][x] {
-                BattleshipClue::ShipUp if y < h => solver.add_expr(is_ship.at((y + 1, x))),
+                BattleshipClue::ShipUp if y < (h - 1) => solver.add_expr(is_ship.at((y + 1, x))),
                 BattleshipClue::ShipDown if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
-                BattleshipClue::ShipLeft if x < w => solver.add_expr(is_ship.at((y, x + 1))),
+                BattleshipClue::ShipLeft if x < (w - 1) => solver.add_expr(is_ship.at((y, x + 1))),
                 BattleshipClue::ShipRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
-                BattleshipClue::ShipUp | BattleshipClue::ShipDown | BattleshipClue::ShipLeft | BattleshipClue::ShipRight => solver.add_expr(bool_constant(false)),
+                BattleshipClue::ShipSquare if (y > 0 && y < (h - 1) && x > 0 && x < (w - 1)) => {
+                    solver.add_expr(
+                        (is_ship.at((y, x - 1)) & (is_ship.at((y, x + 1))))
+                            | (is_ship.at((y - 1, x)) & is_ship.at((y + 1, x))),
+                    )
+                }
+                BattleshipClue::ShipSquare if (x > 0 && x < (w - 1)) => {
+                    solver.add_expr(is_ship.at((y, x - 1)) & (is_ship.at((y, x + 1))))
+                }
+                BattleshipClue::ShipSquare if (y > 0 && y < (h - 1)) => {
+                    solver.add_expr(is_ship.at((y - 1, x)) & (is_ship.at((y + 1, x))))
+                }
+                BattleshipClue::ShipUp
+                | BattleshipClue::ShipDown
+                | BattleshipClue::ShipLeft
+                | BattleshipClue::ShipRight
+                | BattleshipClue::ShipSquare => solver.add_expr(bool_constant(false)),
                 _ => (),
             }
             match board[y][x] {
-                BattleshipClue::ShipUpLeft | BattleshipClue::ShipUpRight if y < h => solver.add_expr(is_ship.at((y + 1, x))),
-                BattleshipClue::ShipDownLeft | BattleshipClue::ShipDownRight if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
-                BattleshipClue::ShipUpLeft | BattleshipClue::ShipUpRight | BattleshipClue::ShipDownLeft | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
+                BattleshipClue::ShipUpLeft if y < (h - 1) => {
+                    solver.add_expr(is_ship.at((y + 1, x)))
+                }
+                BattleshipClue::ShipUpRight if y < (h - 1) => {
+                    solver.add_expr(is_ship.at((y + 1, x)))
+                }
+                BattleshipClue::ShipDownLeft if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
+                BattleshipClue::ShipDownRight if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
+                BattleshipClue::ShipUpLeft
+                | BattleshipClue::ShipUpRight
+                | BattleshipClue::ShipDownLeft
+                | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
                 _ => (),
             }
-                match board[y][x] {
-                BattleshipClue::ShipUpLeft | BattleshipClue::ShipDownLeft if x < w => solver.add_expr(is_ship.at((y, x + 1))),
-                BattleshipClue::ShipUpRight | BattleshipClue::ShipDownRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
-                BattleshipClue::ShipUpLeft | BattleshipClue::ShipUpRight | BattleshipClue::ShipDownLeft | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
+            match board[y][x] {
+                BattleshipClue::ShipUpLeft if x < (w - 1) => {
+                    solver.add_expr(is_ship.at((y, x + 1)))
+                }
+                BattleshipClue::ShipDownLeft if x < (w - 1) => {
+                    solver.add_expr(is_ship.at((y, x + 1)))
+                }
+                BattleshipClue::ShipUpRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
+                BattleshipClue::ShipDownRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
+                BattleshipClue::ShipUpLeft
+                | BattleshipClue::ShipUpRight
+                | BattleshipClue::ShipDownLeft
+                | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
                 _ => (),
             }
-
         }
     }
-
-    solver
-        .add_expr((is_ship.slice((..(w - 1), ..(h - 1))) & is_ship.slice((1.., 1..))).imp(cell_state.slice((..(w - 1), ..(h - 1))).eq(cell_state.slice((1.., 1..)))));
-    solver
-        .add_expr((is_ship.slice((..(w - 1), 1..)) & is_ship.slice((1.., ..(h - 1)))).imp(cell_state.slice((..(w - 1), ..(h - 1))).eq(cell_state.slice((1.., ..(h - 1))))));
 
     solver.irrefutable_facts().map(|f| f.get(is_ship))
 }
@@ -522,7 +572,7 @@ impl Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator {
         if sequencer.deserialize(ctx, Dict::new(0, "//c")).is_some() {
             return Some((sequencer.n_read(), vec![size3()]));
         }
-         if sequencer.deserialize(ctx, Dict::new(0, "//d")).is_some() {
+        if sequencer.deserialize(ctx, Dict::new(0, "//d")).is_some() {
             return Some((sequencer.n_read(), vec![size4()]));
         }
         if sequencer.deserialize(ctx, Dict::new(0, "//e")).is_some() {
@@ -553,69 +603,61 @@ impl Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator {
     }
 }
 
-type Problem = (
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
-    Vec<Vec<BattleshipClue>>, 
-    Vec<Vec<Vec<bool>>>
-);
+pub type Grid = (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<BattleshipClue>>);
 
-type Internal = ( 
-    Vec<Vec<BattleshipClue>>, 
-    Vec<Vec<Vec<bool>>>
-);
+pub type Problem = (Grid, Vec<Vec<Vec<bool>>>);
 
-fn internal_combinator() -> impl Combinator<Internal> {
-    Tuple2::new(
-        Choice::new(vec![
-                Box::new(Spaces::new(BattleshipClue::None, 'g')),
-                Box::new(
-                    Map::new(
-                        HexInt,
-                        |x: BattleshipClue| {
-                            match x {
-                                BattleshipClue::Water => Some(0),
-                                BattleshipClue::ShipUp => Some(1),
-                                BattleshipClue::ShipDown => Some(2),
-                                BattleshipClue::ShipLeft => Some(3),
-                                BattleshipClue::ShipRight => Some(4),
-                                BattleshipClue::ShipSquare => Some(5),
-                                BattleshipClue::ShipCircle => Some(6),
-                                BattleshipClue::ShipUpLeft => Some(7),
-                                BattleshipClue::ShipUpRight => Some(8),
-                                BattleshipClue::ShipDownLeft => Some(9),
-                                BattleshipClue::ShipDownRight => Some(10),
-                                _ => None,
-                            }
-                        },
-                        |n: i32| match n {
-                            0 => Some(BattleshipClue::Water),
-                            1 => Some(BattleshipClue::ShipUp),
-                            2 => Some(BattleshipClue::ShipDown),
-                            3 => Some(BattleshipClue::ShipLeft),
-                            4 => Some(BattleshipClue::ShipRight),
-                            5 => Some(BattleshipClue::ShipSquare),
-                            6 => Some(BattleshipClue::ShipCircle),
-                            7 => Some(BattleshipClue::ShipUpLeft),
-                            8 => Some(BattleshipClue::ShipUpRight),
-                            9 => Some(BattleshipClue::ShipDownLeft),
-                            10 => Some(BattleshipClue::ShipDownRight),
-                            _ => Some(BattleshipClue::None),
-                        },
-                    )
-                ),
-            ]),
-        PiecesCombinator,
-    )
+fn external_combinator() -> impl Combinator<Option<i32>> {
+    Choice::new(vec![
+        Box::new(Optionalize::new(HexInt)),
+        Box::new(Spaces::new(None, 'g')),
+    ])
 }
 
-pub struct BattleshipCombinator;
+fn grid_combinator() -> impl Combinator<BattleshipClue> {
+    Choice::new(vec![
+        Box::new(Spaces::new(BattleshipClue::None, 'g')),
+        Box::new(Map::new(
+            HexInt,
+            |x: BattleshipClue| match x {
+                BattleshipClue::Water => Some(0),
+                BattleshipClue::ShipUp => Some(1),
+                BattleshipClue::ShipDown => Some(2),
+                BattleshipClue::ShipLeft => Some(3),
+                BattleshipClue::ShipRight => Some(4),
+                BattleshipClue::ShipSquare => Some(5),
+                BattleshipClue::ShipCircle => Some(6),
+                BattleshipClue::ShipUpLeft => Some(7),
+                BattleshipClue::ShipUpRight => Some(8),
+                BattleshipClue::ShipDownLeft => Some(9),
+                BattleshipClue::ShipDownRight => Some(10),
+                _ => None,
+            },
+            |n: i32| match n {
+                0 => Some(BattleshipClue::Water),
+                1 => Some(BattleshipClue::ShipUp),
+                2 => Some(BattleshipClue::ShipDown),
+                3 => Some(BattleshipClue::ShipLeft),
+                4 => Some(BattleshipClue::ShipRight),
+                5 => Some(BattleshipClue::ShipSquare),
+                6 => Some(BattleshipClue::ShipCircle),
+                7 => Some(BattleshipClue::ShipUpLeft),
+                8 => Some(BattleshipClue::ShipUpRight),
+                9 => Some(BattleshipClue::ShipDownLeft),
+                10 => Some(BattleshipClue::ShipDownRight),
+                _ => Some(BattleshipClue::None),
+            },
+        )),
+    ])
+}
 
-impl Combinator<Problem> for BattleshipCombinator {
+pub struct GridCombinator;
+
+impl Combinator<Grid> for GridCombinator {
     fn serialize(
         &self,
         ctx: &cspuz_rs::serializer::Context,
-        input: &[Problem],
+        input: &[Grid],
     ) -> Option<(usize, Vec<u8>)> {
         if input.is_empty() {
             return None;
@@ -627,17 +669,17 @@ impl Combinator<Problem> for BattleshipCombinator {
         let problem = &input[0];
 
         let surrounding = [&problem.0[..], &problem.1[..]].concat();
-        let mut ret = Seq::new(internal_combinator(), width + height)
+        let mut ret = Seq::new(external_combinator(), width + height)
             .serialize(ctx, &[surrounding])?
             .1;
 
-        if let Some(cells) = &problem.2 {
-            ret.extend(
-                ContextBasedGrid::new(internal_combinator())
-                    .serialize(ctx, &[cells.clone()])?
-                    .1,
-            );
-        }
+        let cells = &problem.2;
+
+        ret.extend(
+            ContextBasedGrid::new(grid_combinator())
+                .serialize(ctx, &[cells.clone()])?
+                .1,
+        );
 
         Some((1, ret))
     }
@@ -646,14 +688,14 @@ impl Combinator<Problem> for BattleshipCombinator {
         &self,
         ctx: &cspuz_rs::serializer::Context,
         input: &[u8],
-    ) -> Option<(usize, Vec<Problem>)> {
+    ) -> Option<(usize, Vec<Grid>)> {
         let mut sequencer = Sequencer::new(input);
 
         let height = ctx.height?;
         let width = ctx.width?;
 
         let surrounding =
-            sequencer.deserialize(ctx, Seq::new(internal_combinator(), width + height))?;
+            sequencer.deserialize(ctx, Seq::new(external_combinator(), width + height))?;
         if surrounding.len() != 1 {
             return None;
         }
@@ -662,29 +704,22 @@ impl Combinator<Problem> for BattleshipCombinator {
         let clues_up = surrounding[..width].to_vec();
         let clues_left = surrounding[width..].to_vec();
 
-        if sequencer.n_remaining() > 0 {
-            let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(internal_combinator()))?;
-            if cells.len() != 1 {
-                return None;
-            }
-            let cells = cells.into_iter().next().unwrap();
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_left, Some(cells))],
-            ))
-        } else {
-            Some((sequencer.n_read(), vec![(clues_up, clues_left, None)]))
+        let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(grid_combinator()))?;
+        if cells.len() != 1 {
+            return None;
         }
+        let cells = cells.into_iter().next().unwrap();
+        Some((sequencer.n_read(), vec![(clues_up, clues_left, cells)]))
     }
 }
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(BattleshipCombinator)
+    Size::new(Tuple2::new(GridCombinator, PiecesCombinator))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.1.len();
-    let width = problem.0.len();
+    let height = problem.0 .1.len();
+    let width = problem.0 .0.len();
 
     problem_to_url_with_context(
         combinator(),
@@ -702,20 +737,79 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<BattleshipClue>>, Vec<Vec<Vec<bool>>>) {
-        // https://pzprxs.vercel.app/p?battleship/6/6/g12h2g30g3gk0r3w//c
+    // Generic problem testing
+    fn problem_for_tests1() -> (Grid, Vec<Vec<Vec<bool>>>) {
+        // https://puzz.link/p?battleship/6/6/g12h2g30g3gk0r3w//c
         let mut ret = vec![vec![BattleshipClue::None; 6]; 6];
         ret[3][0] = BattleshipClue::ShipLeft;
         ret[0][5] = BattleshipClue::Water;
 
+        let grid = (
+            vec![None, Some(1), Some(2), None, None, Some(2)],
+            vec![None, Some(3), Some(0), None, Some(3), None],
+            ret,
+        );
 
-        (vec![None, Some(3), Some(0), None, Some(3), None],vec![None, Some(1), Some(2), None, None, Some(2)], ret, size3())
+        (grid, size3())
+    }
+
+    // Corner ship testing
+    fn problem_for_tests2() -> (Grid, Vec<Vec<Vec<bool>>>) {
+        // https://puzz.link/p?battleship/2/5/m7hai89g/2/22u/22u
+        let mut ret = vec![vec![BattleshipClue::None; 2]; 5];
+        ret[0][0] = BattleshipClue::ShipUpLeft;
+        ret[1][1] = BattleshipClue::ShipDownRight;
+        ret[3][1] = BattleshipClue::ShipUpRight;
+        ret[4][0] = BattleshipClue::ShipDownLeft;
+
+        let grid = (vec![None, None], vec![None, None, None, None, None], ret);
+
+        let pieces = vec![
+            vec![vec![true, true], vec![true, true]],
+            vec![vec![true, true], vec![true, true]],
+        ];
+
+        (grid, pieces)
+    }
+
+    // Ends and squares on border testing
+    fn problem_for_tests3() -> (Grid, Vec<Vec<Vec<bool>>>) {
+        // https://puzz.link/p?battleship/7/7/ti5s1i5g3g4g5i2s5i/5/31s/31s/31s/31s/33bk
+        let mut ret = vec![vec![BattleshipClue::None; 7]; 7];
+        ret[0][3] = BattleshipClue::ShipSquare;
+        ret[3][0] = BattleshipClue::ShipSquare;
+        ret[3][6] = BattleshipClue::ShipSquare;
+        ret[6][3] = BattleshipClue::ShipSquare;
+        ret[2][3] = BattleshipClue::ShipUp;
+        ret[3][2] = BattleshipClue::ShipLeft;
+        ret[3][4] = BattleshipClue::ShipRight;
+        ret[4][3] = BattleshipClue::ShipDown;
+
+        let grid = (
+            vec![None, None, None, None, None, None, None],
+            vec![None, None, None, None, None, None, None],
+            ret,
+        );
+
+        let pieces = vec![
+            vec![vec![true, true, true]],
+            vec![vec![true, true, true]],
+            vec![vec![true, true, true]],
+            vec![vec![true, true, true]],
+            vec![
+                vec![false, true, false],
+                vec![true, true, true],
+                vec![false, true, false],
+            ],
+        ];
+
+        (grid, pieces)
     }
 
     #[test]
-    fn test_battleship_problem() {
-        let (vertical, horizontal, board, pieces) = problem_for_tests();
-        let ans = solve_battleship(&vertical, &horizontal, &board, &pieces);
+    fn test_battleship_problem1() {
+        let (grid, pieces) = problem_for_tests1();
+        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -730,17 +824,56 @@ mod tests {
         assert_eq!(ans, expected);
     }
 
+    #[test]
+    fn test_battleship_problem2() {
+        let (grid, pieces) = problem_for_tests2();
+        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
 
+        let expected =
+            crate::util::tests::to_option_bool_2d([[1, 1], [1, 1], [0, 0], [1, 1], [1, 1]]);
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_battleship_problem3() {
+        let (grid, pieces) = problem_for_tests3();
+        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = crate::util::tests::to_option_bool_2d([
+            [0, 0, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 1, 0, 0, 1],
+            [1, 0, 1, 1, 1, 0, 1],
+            [1, 0, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0],
+        ]);
+        assert_eq!(ans, expected);
+    }
 
     #[test]
     fn test_battleship_serializer() {
         {
-            let problem = problem_for_tests();
-            let url = "https://pzprxs.vercel.app/p?battleship/6/6/g12h2g30g3gk0r3w//c";
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?battleship/6/6/g12h2g30g3gk0r3w//c";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?battleship/2/5/m7hai89g/2/22u/22u";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
 
+        {
+            let problem = problem_for_tests3();
+            let url =
+                "https://puzz.link/p?battleship/7/7/ti5s1i5g3g4g5i2s5i/5/31s/31s/31s/31s/33bk";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
-
