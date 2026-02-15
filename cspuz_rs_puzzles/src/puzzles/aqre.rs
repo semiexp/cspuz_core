@@ -34,15 +34,15 @@ pub fn solve_aqre(
 
     if border_exactly_once {
         for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 && borders.horizontal[y][x] {
-                solver.add_expr(is_black.at((y, x)) ^ is_black.at((y + 1, x)));
-            }
-            if x < w - 1 && borders.vertical[y][x] {
-                solver.add_expr(is_black.at((y, x)) ^ is_black.at((y, x + 1)));
+            for x in 0..w {
+                if y < h - 1 && borders.horizontal[y][x] {
+                    solver.add_expr(is_black.at((y, x)) ^ is_black.at((y + 1, x)));
+                }
+                if x < w - 1 && borders.vertical[y][x] {
+                    solver.add_expr(is_black.at((y, x)) ^ is_black.at((y, x + 1)));
+                }
             }
         }
-    }
     }
 
     for i in 0..rooms.len() {
@@ -60,25 +60,28 @@ pub fn solve_aqre(
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
-type Problem = (bool, (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>));
+type Problem = (
+    bool,
+    (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>),
+);
 
 fn combinator() -> impl Combinator<Problem> {
-     Tuple2::new(
+    Tuple2::new(
         Choice::new(vec![
             Box::new(Dict::new(true, "b/")),
             Box::new(Dict::new(false, "")),
         ]),
         Size::new(RoomsWithValues::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ])))
-    )   
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
+        ]))),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.1.0.vertical.len();
-    let width = problem.1.0.vertical[0].len() + 1;
+    let height = problem.1 .0.vertical.len();
+    let width = problem.1 .0.vertical[0].len() + 1;
     problem_to_url_with_context(
         combinator(),
         "aqre",
@@ -117,17 +120,10 @@ mod tests {
         (false, (borders, clues))
     }
 
-        fn problem_for_tests2() -> Problem {
+    fn problem_for_tests2() -> Problem {
         let borders = graph::InnerGridEdges {
-            horizontal: crate::util::tests::to_bool_2d([
-                [0, 0, 0],
-                [0, 0, 0],
-            ]),
-            vertical: crate::util::tests::to_bool_2d([
-                [1, 1],
-                [1, 1],
-                [1, 1],
-            ]),
+            horizontal: crate::util::tests::to_bool_2d([[0, 0, 0], [0, 0, 0]]),
+            vertical: crate::util::tests::to_bool_2d([[1, 1], [1, 1], [1, 1]]),
         };
         let clues = vec![None, None, None];
         (true, (borders, clues))
@@ -158,29 +154,32 @@ mod tests {
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
-        let expected = crate::util::tests::to_option_bool_2d([
-            [0, 1, 0],
-            [0, 1, 0],
-            [0, 1, 0],
-        ]);
+        let expected = crate::util::tests::to_option_bool_2d([[0, 1, 0], [0, 1, 0], [0, 1, 0]]);
         assert_eq!(ans, expected);
     }
 
-
-
     #[test]
-    fn test_aqre_serializer1() { 
+    fn test_aqre_serializer1() {
         {
             let problem = problem_for_tests1();
             let url = "https://puzz.link/p?aqre/6/6/8a41dd1t0re00g300g";
-            crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+            crate::util::tests::serializer_test(
+                problem,
+                url,
+                serialize_problem,
+                deserialize_problem,
+            );
         }
 
         {
             let problem = problem_for_tests2();
             let url = "https://puzz.link/p?aqre/b/3/3/vg00i";
-            crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+            crate::util::tests::serializer_test(
+                problem,
+                url,
+                serialize_problem,
+                deserialize_problem,
+            );
         }
     }
-
 }
