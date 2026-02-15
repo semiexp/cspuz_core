@@ -4,8 +4,8 @@ use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::aqre;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = aqre::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = aqre::solve_aqre(&borders, &clues);
+    let (border_exactly_once, (borders, clues)) = aqre::deserialize_problem(url).ok_or("invalid url")?;
+    let is_black = aqre::solve_aqre(border_exactly_once, &borders, &clues);
 
     // Get dimensions from borders: vertical has height rows, horizontal[0] has width elements
     let height = borders.vertical.len();
