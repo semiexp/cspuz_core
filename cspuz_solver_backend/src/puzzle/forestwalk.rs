@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::forestwalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (forest, num) = forestwalk::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = forestwalk::solve_forestwalk(&forest, &num);
+    let (full, (forest, num)) = forestwalk::deserialize_problem(url).ok_or("invalid url")?;
+    let is_line = forestwalk::solve_forestwalk(full, &forest, &num);
 
     let height = forest.len();
     let width = forest[0].len();

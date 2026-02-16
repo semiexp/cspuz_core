@@ -3,15 +3,15 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::morningwalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (forest, num) = morningwalk::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = morningwalk::solve_morningwalk(&forest, &num);
-    let height = forest.len();
-    let width = forest[0].len();
+    let (full, (colored, num)) = morningwalk::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = morningwalk::solve_morningwalk(full, &colored, &num);
+    let height = colored.len();
+    let width = colored[0].len();
     let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {
-            if forest[y][x] {
+            if colored[y][x] {
                 board.push(Item::cell(y, x, "#e0d0ff", ItemKind::Fill));
             }
             if let Some(n) = num[y][x] {

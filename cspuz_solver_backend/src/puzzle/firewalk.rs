@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::firewalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (fire_cell, num) = firewalk::deserialize_problem(url).ok_or("invalid url")?;
-    let answer = firewalk::solve_firewalk(&fire_cell, &num);
+    let (full, (fire_cell, num)) = firewalk::deserialize_problem(url).ok_or("invalid url")?;
+    let answer = firewalk::solve_firewalk(full, &fire_cell, &num);
 
     let height = fire_cell.len();
     let width = fire_cell[0].len();

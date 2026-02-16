@@ -1,8 +1,10 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::solver::Solver;
 
 pub fn walk_not_passing_colored_cell(
+    full: bool,
     colored_cell: &[Vec<bool>],
     num: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -15,6 +17,10 @@ pub fn walk_not_passing_colored_cell(
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, &is_line);
     solver.add_expr(is_passed.any());
+
+    if full {
+        add_full_loop_constraints(&mut solver, is_line, h - 1, w - 1);
+    }
 
     let mut num_lines = None;
     for y in 0..h {

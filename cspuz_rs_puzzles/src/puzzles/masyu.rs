@@ -62,7 +62,7 @@ pub fn solve_masyu(
     }
 
     if full {
-        add_full_loop_constraints(solver, is_line, h, w);
+        add_full_loop_constraints(&mut solver, is_line, h - 1, w - 1);
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_line))

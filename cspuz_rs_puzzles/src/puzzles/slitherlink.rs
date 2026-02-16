@@ -65,7 +65,7 @@ fn add_constraints(
     }
 
     if full {
-        add_full_loop_constraints(solver, is_line, h + 1, w + 1);
+        add_full_loop_constraints(solver, is_line, h, w);
     }
 }
 

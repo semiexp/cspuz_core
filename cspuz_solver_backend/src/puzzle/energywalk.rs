@@ -3,15 +3,15 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::energywalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (forest, num) = energywalk::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = energywalk::solve_energywalk(&forest, &num);
-    let height = forest.len();
-    let width = forest[0].len();
+    let (full, (colored, num)) = energywalk::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = energywalk::solve_energywalk(full, &colored, &num);
+    let height = colored.len();
+    let width = colored[0].len();
     let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {
-            if forest[y][x] {
+            if colored[y][x] {
                 board.push(Item::cell(y, x, "#f9f9d0", ItemKind::Fill));
             }
             if let Some(n) = num[y][x] {

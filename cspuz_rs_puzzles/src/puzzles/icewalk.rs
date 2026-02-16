@@ -1,3 +1,4 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::puzzles::walk_common::{merge_walk_answers, walk_not_passing_colored_cell};
 use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
@@ -9,6 +10,7 @@ use cspuz_rs::serializer::{
 use cspuz_rs::solver::Solver;
 
 pub fn solve_icewalk(
+    full: bool,
     icebarn: &[Vec<bool>],
     num: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -57,6 +59,10 @@ pub fn solve_icewalk(
         }
     }
 
+    if full {
+        add_full_loop_constraints(&mut solver, is_line, h - 1, w - 1);
+    }
+
     let line_size = &walk_line_size(&mut solver, &is_line, icebarn, false);
 
     for y in 0..h {
@@ -70,29 +76,35 @@ pub fn solve_icewalk(
     }
 
     let ans1 = solver.irrefutable_facts().map(|f| f.get(is_line));
-    let ans2 = walk_not_passing_colored_cell(icebarn, num);
+    let ans2 = walk_not_passing_colored_cell(full, icebarn, num);
     merge_walk_answers(ans1, ans2)
 }
 
-type Problem = (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>);
+type Problem = (bool, (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>));
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        ContextBasedGrid::new(Map::new(
-            MultiDigit::new(2, 5),
-            |x| Some(if x { 1 } else { 0 }),
-            |x| Some(x == 1),
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "f/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(Tuple2::new(
+            ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x| Some(if x { 1 } else { 0 }),
+                |x| Some(x == 1),
+            )),
+            ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Spaces::new(None, 'g')),
+                Box::new(Dict::new(Some(-1), ".")),
+            ])),
         )),
-        ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Optionalize::new(HexInt)),
-            Box::new(Spaces::new(None, 'g')),
-            Box::new(Dict::new(Some(-1), ".")),
-        ])),
-    ))
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem.0);
+    let (h, w) = util::infer_shape(&problem.1 .0);
     problem_to_url_with_context(
         combinator(),
         "icewalk",
@@ -109,33 +121,46 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         (
-            crate::util::tests::to_bool_2d([
-                [1, 0, 0, 0, 0, 0],
-                [0, 1, 1, 0, 0, 0],
-                [0, 1, 1, 0, 1, 0],
-                [0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 1, 0, 1],
-                [1, 1, 0, 1, 0, 1],
-                [0, 0, 0, 0, 0, 0],
-            ]),
-            vec![
-                vec![None, None, None, None, None, None],
-                vec![Some(2), None, None, Some(2), None, None],
-                vec![None, None, None, Some(3), None, None],
-                vec![None, None, None, None, None, None],
-                vec![None, None, Some(5), None, Some(1), None],
-                vec![None, None, None, None, Some(3), None],
-                vec![None, None, None, None, None, Some(3)],
-            ],
+            false,
+            (
+                crate::util::tests::to_bool_2d([
+                    [1, 0, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0, 0],
+                    [0, 1, 1, 0, 1, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 1, 0, 1],
+                    [1, 1, 0, 1, 0, 1],
+                    [0, 0, 0, 0, 0, 0],
+                ]),
+                vec![
+                    vec![None, None, None, None, None, None],
+                    vec![Some(2), None, None, Some(2), None, None],
+                    vec![None, None, None, Some(3), None, None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, None, Some(5), None, Some(1), None],
+                    vec![None, None, None, None, Some(3), None],
+                    vec![None, None, None, None, None, Some(3)],
+                ],
+            ),
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            true,
+            (
+                crate::util::tests::to_bool_2d([[0, 0, 0], [0, 0, 0]]),
+                vec![vec![None, None, None], vec![None, None, None]],
+            ),
         )
     }
 
     #[test]
-    fn test_icewalk_problem() {
-        let (icebarn, num) = problem_for_tests();
-        let ans = solve_icewalk(&icebarn, &num);
+    fn test_icewalk_problem1() {
+        let (full, (icebarn, num)) = problem_for_tests1();
+        let ans = solve_icewalk(full, &icebarn, &num);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -162,9 +187,31 @@ mod tests {
     }
 
     #[test]
+    fn test_icerwalk_problem2() {
+        let (full, (ice, num)) = problem_for_tests2();
+        let ans = solve_icewalk(full, &ice, &num);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = graph::GridEdges {
+            horizontal: crate::util::tests::to_option_bool_2d([[1, 1], [1, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 0, 1]]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_icewalk_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?icewalk/6/7/g63845qg0l2h2k3p5g1k3l3";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?icewalk/6/7/g63845qg0l2h2k3p5g1k3l3";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?icewalk/f/3/2/00l";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }

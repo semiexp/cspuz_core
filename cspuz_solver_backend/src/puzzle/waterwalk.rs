@@ -3,15 +3,15 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::waterwalk;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (forest, num) = waterwalk::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = waterwalk::solve_waterwalk(&forest, &num);
-    let height = forest.len();
-    let width = forest[0].len();
+    let (full, (water, num)) = waterwalk::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = waterwalk::solve_waterwalk(full, &water, &num);
+    let height = water.len();
+    let width = water[0].len();
     let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     for y in 0..height {
         for x in 0..width {
-            if forest[y][x] {
+            if water[y][x] {
                 board.push(Item::cell(y, x, "#d0e0ff", ItemKind::Fill));
             }
             if let Some(n) = num[y][x] {
