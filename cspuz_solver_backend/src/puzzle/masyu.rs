@@ -5,8 +5,8 @@ use cspuz_rs_puzzles::puzzles::masyu;
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     use masyu::MasyuClue;
 
-    let problem = masyu::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = masyu::solve_masyu(&problem);
+    let (full, problem) = masyu::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = masyu::solve_masyu(full, &problem);
 
     let height = problem.len();
     let width = problem[0].len();
