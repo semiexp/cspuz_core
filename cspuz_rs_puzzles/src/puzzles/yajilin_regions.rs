@@ -1,11 +1,13 @@
+use crate::puzzles::loop_common::force_shaded_outside;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
-    Optionalize, RoomsWithValues, Size, Spaces,
+    Optionalize, RoomsWithValues, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_yajilin_regions(
+    outside: bool,
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
     clues: &[Option<i32>],
 ) -> Option<(graph::BoolGridEdgesIrrefutableFacts, Vec<Vec<Option<bool>>>)> {
@@ -18,6 +20,9 @@ pub fn solve_yajilin_regions(
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
     let is_black = &solver.bool_var_2d((h, w));
+    if outside {
+        force_shaded_outside(&mut solver, is_black, is_line, h, w);
+    }
     solver.add_answer_key_bool(is_black);
     solver.add_expr(is_passed ^ is_black);
     solver.add_expr(!(is_black.slice((..(h - 1), ..)) & is_black.slice((1.., ..))));
@@ -44,19 +49,28 @@ pub fn solve_yajilin_regions(
         .map(|f| (f.get(is_line), f.get(is_black)))
 }
 
-type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>);
+type Problem = (
+    bool,
+    (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>),
+);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(RoomsWithValues::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ])))
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "o/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(RoomsWithValues::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
+        ]))),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.0.vertical.len();
-    let width = problem.0.vertical[0].len() + 1;
+    let height = problem.1 .0.vertical.len();
+    let width = problem.1 .0.vertical[0].len() + 1;
     problem_to_url_with_context(
         combinator(),
         "yajilin-regions",
@@ -74,7 +88,7 @@ mod tests {
     use super::*;
     use crate::util;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         let borders = graph::InnerGridEdges {
             horizontal: vec![
                 vec![false, false, false, false, false, false],
@@ -93,13 +107,22 @@ mod tests {
             ],
         };
         let clues = vec![None, Some(2), Some(2), Some(1)];
-        (borders, clues)
+        (false, (borders, clues))
+    }
+
+    fn problem_for_tests2() -> Problem {
+        let borders = graph::InnerGridEdges {
+            horizontal: vec![vec![false; 4]; 3],
+            vertical: vec![vec![false; 3]; 4],
+        };
+        let clues = vec![Some(4)];
+        (true, (borders, clues))
     }
 
     #[test]
-    fn test_yajilin_regions_problem() {
-        let (borders, clues) = problem_for_tests();
-        let ans = solve_yajilin_regions(&borders, &clues);
+    fn test_yajilin_regions_problem1() {
+        let (outside, (borders, clues)) = problem_for_tests1();
+        let ans = solve_yajilin_regions(outside, &borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -115,9 +138,33 @@ mod tests {
     }
 
     #[test]
+    fn test_yajilin_regions_problem2() {
+        let (outside, (borders, clues)) = problem_for_tests2();
+        let ans = solve_yajilin_regions(outside, &borders, &clues);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = crate::util::tests::to_option_bool_2d([
+            [1, 0, 0, 1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 0, 0, 1],
+        ]);
+        assert_eq!(ans.1, expected);
+    }
+
+    #[test]
     fn test_yajilin_regions_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?yajilin-regions/6/6/ii02q2070d0gg221";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?yajilin-regions/6/6/ii02q2070d0gg221";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?yajilin-regions/o/4/4/0000004";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
