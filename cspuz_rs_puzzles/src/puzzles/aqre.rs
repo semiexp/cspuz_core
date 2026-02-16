@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_aqre_serializer1() {
+    fn test_aqre_serializer() {
         {
             let problem = problem_for_tests1();
             let url = "https://puzz.link/p?aqre/6/6/8a41dd1t0re00g300g";
