@@ -257,7 +257,7 @@ mod tests {
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?country/e/5/5/vvuebrvb1q1j";
+            let url = "https://puzz.link/p?country/e/5/5/vvuebrvb1q1j"; // Credits to Rook
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }
