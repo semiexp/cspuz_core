@@ -3,8 +3,9 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::koburin;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = koburin::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = koburin::solve_koburin(&problem);
+    let ((outside, minesweeper), problem) =
+        koburin::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = koburin::solve_koburin(outside, minesweeper, &problem);
 
     let height = problem.len();
     let width = problem[0].len();

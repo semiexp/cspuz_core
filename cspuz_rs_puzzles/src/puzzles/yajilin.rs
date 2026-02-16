@@ -55,8 +55,8 @@ type Problem = (bool, Vec<Vec<Option<NumberedArrow>>>);
 fn combinator() -> impl Combinator<Problem> {
     Tuple2::new(
         Choice::new(vec![
-            Box::new(Dict::new(true, "ob/")),
             Box::new(Dict::new(true, "o/")),
+            Box::new(Dict::new(true, "ob/")),
             Box::new(Dict::new(false, "")),
         ]),
         MaybeSkip::new(
@@ -164,7 +164,7 @@ mod tests {
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?yajilin/ob/7/7/210.40zq120.31";
+            let url = "https://puzz.link/p?yajilin/o/7/7/210.40zq120.31"; //
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }
