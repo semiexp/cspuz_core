@@ -2,11 +2,12 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
-    ContextBasedGrid, Dict, HexInt, MultiDigit, Optionalize, PrefixAndSuffix, Size, Spaces, Tuple2,
+    ContextBasedGrid, Dict, HexInt, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, IntVarArray1D, Solver};
 
 pub fn solve_balloon(
+    loopback: bool,
     color: &[Vec<i32>],
     num: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -149,6 +150,12 @@ pub fn solve_balloon(
     for y in 0..h {
         for x in 0..w {
             if y < h - 1 {
+                if !loopback && color[y][x] == 0 && color[y + 1][x] == 0 {
+                    solver.add_expr(
+                        (region_id.at((y, x)).eq(region_id.at((y + 1, x))))
+                            .imp(has_line.vertical.at((y, x))),
+                    );
+                }
                 solver.add_expr(
                     has_line
                         .vertical
@@ -157,6 +164,12 @@ pub fn solve_balloon(
                 );
             }
             if x < w - 1 {
+                if !loopback && color[y][x] == 0 && color[y][x + 1] == 0 {
+                    solver.add_expr(
+                        (region_id.at((y, x)).eq(region_id.at((y, x + 1))))
+                            .imp(has_line.horizontal.at((y, x))),
+                    );
+                }
                 solver.add_expr(
                     has_line
                         .horizontal
@@ -170,11 +183,14 @@ pub fn solve_balloon(
     solver.irrefutable_facts().map(|f| f.get(has_line))
 }
 
-type Problem = (Vec<Vec<i32>>, Vec<Vec<Option<i32>>>);
+type Problem = (bool, (Vec<Vec<i32>>, Vec<Vec<Option<i32>>>));
 
 fn combinator() -> impl Combinator<Problem> {
-    PrefixAndSuffix::new(
-        "a/",
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "a/")),
+            Box::new(Dict::new(false, "")),
+        ]),
         Size::new(Tuple2::new(
             ContextBasedGrid::new(MultiDigit::new(2, 5)),
             ContextBasedGrid::new(Choice::new(vec![
@@ -183,12 +199,11 @@ fn combinator() -> impl Combinator<Problem> {
                 Box::new(Spaces::new(None, 'g')),
             ])),
         )),
-        "",
     )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem.0);
+    let (h, w) = util::infer_shape(&problem.1 .0);
     problem_to_url_with_context_and_site(
         combinator(),
         "balloon",
@@ -206,29 +221,46 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         (
-            vec![
-                vec![0, 0, 0, 0, 0, 0],
-                vec![1, 1, 1, 0, 0, 0],
-                vec![1, 1, 1, 1, 0, 0],
-                vec![1, 0, 1, 1, 1, 1],
-                vec![1, 1, 0, 0, 0, 0],
-            ],
-            vec![
-                vec![None, None, None, None, Some(-1), None],
-                vec![None, None, None, None, Some(6), None],
-                vec![None, None, None, None, None, None],
-                vec![None, Some(2), None, None, None, None],
-                vec![None, None, None, Some(1), Some(4), None],
-            ],
+            true,
+            (
+                vec![
+                    vec![0, 0, 0, 0, 0, 0],
+                    vec![1, 1, 1, 0, 0, 0],
+                    vec![1, 1, 1, 1, 0, 0],
+                    vec![1, 0, 1, 1, 1, 1],
+                    vec![1, 1, 0, 0, 0, 0],
+                ],
+                vec![
+                    vec![None, None, None, None, Some(-1), None],
+                    vec![None, None, None, None, Some(6), None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, Some(2), None, None, None, None],
+                    vec![None, None, None, Some(1), Some(4), None],
+                ],
+            ),
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            false,
+            (
+                vec![vec![0, 0, 0, 0], vec![0, 0, 1, 0], vec![0, 1, 0, 0]],
+                vec![
+                    vec![None, None, None, None],
+                    vec![None, Some(1), None, None],
+                    vec![None, None, Some(1), None],
+                ],
+            ),
         )
     }
 
     #[test]
-    fn test_balloon_problem() {
-        let (color, num) = problem_for_tests();
-        let ans = solve_balloon(&color, &num);
+    fn test_balloon_problem1() {
+        let (loopback, (color, num)) = problem_for_tests1();
+        let ans = solve_balloon(loopback, &color, &num);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -251,9 +283,31 @@ mod tests {
     }
 
     #[test]
+    fn test_balloon_problem2() {
+        let (loopback, (color, num)) = problem_for_tests2();
+        let ans = solve_balloon(loopback, &color, &num);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = graph::GridEdges {
+            horizontal: crate::util::tests::to_option_bool_2d([[1, 1, 1], [0, 1, 0], [1, 0, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 0, 0, 1], [1, 0, 0, 1]]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_balloon_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?balloon/a/6/5/0e7ivgj.k6n2m14g";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://pzprxs.vercel.app/p?balloon/a/6/5/0e7ivgj.k6n2m14g";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://pzprxs.vercel.app/p?balloon/4/3/090k1j1g";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
