@@ -1,3 +1,4 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
@@ -64,12 +65,7 @@ fn add_constraints(
     }
 
     if full {
-        let is_passed = &graph::single_cycle_grid_edges(solver, is_line);
-        for y in 0..h + 1 {
-            for x in 0..w + 1 {
-                solver.add_expr(is_passed.at((y, x)));
-            }
-        }
+        add_full_loop_constraints(solver, is_line, h + 1, w + 1);
     }
 }
 

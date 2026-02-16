@@ -1,3 +1,4 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
@@ -61,12 +62,7 @@ pub fn solve_masyu(
     }
 
     if full {
-        let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
-        for y in 0..h {
-            for x in 0..w {
-                solver.add_expr(is_passed.at((y, x)));
-            }
-        }
+        add_full_loop_constraints(solver, is_line, h, w);
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
