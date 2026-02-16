@@ -1,11 +1,12 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
-    Optionalize, RoomsWithValues, Size, Spaces,
+    Optionalize, RoomsWithValues, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_country_road(
+    empty: bool,
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
     clues: &[Option<i32>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -42,7 +43,15 @@ pub fn solve_country_road(
 
     for i in 0..rooms.len() {
         // Check every room is entered only once
-        solver.add_expr(count_true(&room_entrance[i]).eq(2));
+        if empty {
+            // With empty rooms
+            solver.add_expr(
+                count_true(&room_entrance[i]).eq(0) | count_true(&room_entrance[i]).eq(2),
+            );
+        } else {
+            // Without
+            solver.add_expr(count_true(&room_entrance[i]).eq(2));
+        }
     }
 
     for y in 0..h {
@@ -72,19 +81,28 @@ pub fn solve_country_road(
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
 
-type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>);
+type Problem = (
+    bool,
+    (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>),
+);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(RoomsWithValues::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ])))
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "e/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(RoomsWithValues::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
+        ]))),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.0.vertical.len();
-    let width = problem.0.vertical[0].len() + 1;
+    let height = problem.1 .0.vertical.len();
+    let width = problem.1 .0.vertical[0].len() + 1;
     problem_to_url_with_context(
         combinator(),
         "country",
@@ -102,7 +120,7 @@ mod tests {
     use super::*;
     use crate::util;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         let borders = graph::InnerGridEdges {
             horizontal: crate::util::tests::to_bool_2d([
                 [0, 0, 0, 0, 0, 0],
@@ -134,13 +152,51 @@ mod tests {
             Some(1),
             Some(4),
         ];
-        (borders, clues)
+        (false, (borders, clues))
+    }
+
+    fn problem_for_tests2() -> Problem {
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([
+                [0, 1, 0, 1, 1],
+                [1, 1, 0, 1, 1],
+                [1, 1, 1, 1, 1],
+                [0, 1, 0, 1, 1],
+            ]),
+            vertical: crate::util::tests::to_bool_2d([
+                [1, 1, 1, 1],
+                [1, 1, 1, 1],
+                [1, 1, 1, 1],
+                [1, 1, 0, 0],
+                [1, 1, 1, 0],
+            ]),
+        };
+        let clues = vec![
+            Some(1),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(1),
+            None,
+            None,
+            None,
+            None,
+        ];
+        (true, (borders, clues))
     }
 
     #[test]
-    fn test_country_road_problem() {
-        let (borders, clues) = problem_for_tests();
-        let ans = solve_country_road(&borders, &clues);
+    fn test_country_road_problem1() {
+        let (empty, (borders, clues)) = problem_for_tests1();
+        let ans = solve_country_road(empty, &borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -164,10 +220,45 @@ mod tests {
         };
         assert_eq!(ans, expected);
     }
+
+    #[test]
+    fn test_country_road_problem2() {
+        let (empty, (borders, clues)) = problem_for_tests2();
+        let ans = solve_country_road(empty, &borders, &clues);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        #[rustfmt::skip]
+        let expected = graph::BoolGridEdgesIrrefutableFacts {
+            horizontal: crate::util::tests::to_option_bool_2d([
+                [0, 1, 0, 1],
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [1, 0, 1, 1],
+                [0, 1, 0, 0],
+            ]),
+            vertical: crate::util::tests::to_option_bool_2d([
+                [0, 1, 1, 1, 1],
+                [1, 0, 1, 1, 1],
+                [1, 0, 0, 0, 1],
+                [0, 1, 1, 0, 0],
+            ]),
+        };
+        assert_eq!(ans, expected);
+    }
+
     #[test]
     fn test_country_road_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?country/6/6/eemdee0cvv603h2l14";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?country/6/6/eemdee0cvv603h2l14";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?country/e/5/5/vvuebrvb1q1j";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }

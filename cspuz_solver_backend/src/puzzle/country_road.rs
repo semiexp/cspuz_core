@@ -4,8 +4,8 @@ use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::country_road;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = country_road::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = country_road::solve_country_road(&borders, &clues);
+    let (empty, (borders, clues)) = country_road::deserialize_problem(url).ok_or("invalid url")?;
+    let is_line = country_road::solve_country_road(empty, &borders, &clues);
 
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
