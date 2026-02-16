@@ -4,8 +4,8 @@ use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::akichiwake;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = akichiwake::deserialize_problem(url).ok_or("invalid url")?;
-    let is_black = akichiwake::solve_akichiwake(&borders, &clues);
+    let (reduced, (borders, clues)) = akichiwake::deserialize_problem(url).ok_or("invalid url")?;
+    let is_black = akichiwake::solve_akichiwake(reduced, &borders, &clues);
 
     // Get dimensions from borders: vertical has height rows, horizontal[0] has width elements
     let height = borders.vertical.len();
