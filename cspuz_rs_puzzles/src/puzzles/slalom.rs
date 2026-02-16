@@ -6,6 +6,7 @@ use cspuz_rs::serializer::{
 };
 use cspuz_rs::solver::{count_true, Solver};
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum GateDir {
     Horizontal,
     Vertical,
@@ -14,6 +15,7 @@ pub enum GateDir {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Gate {
     cells: Vec<(usize, usize)>,
+    dir: GateDir,
     ord: Option<i32>,
 }
 
@@ -40,6 +42,22 @@ pub fn solve_slalom(
             assert!(gate_id[y][x].is_none());
             gate_id[y][x] = Some(i);
             cells.push(passed.at((y, x)));
+
+            if gate.dir == GateDir::Horizontal {
+                if x > 0 {
+                    solver.add_expr(!line.horizontal.at((y, x - 1)));
+                }
+                if x + 1 < w {
+                    solver.add_expr(!line.horizontal.at((y, x)));
+                }
+            } else {
+                if y > 0 {
+                    solver.add_expr(!line.vertical.at((y - 1, x)));
+                }
+                if y + 1 < h {
+                    solver.add_expr(!line.vertical.at((y, x)));
+                }
+            }
         }
         solver.add_expr(count_true(cells).eq(1));
     }
@@ -276,18 +294,41 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
                     y2 += 1;
                 }
                 let mut ord = None;
+                let mut upper = None;
+                let mut lower = None;
                 if y > 0 {
                     if let SlalomCell::Black(SlalomBlackCellDir::Down, n) = cell[y - 1][x] {
                         ord = Some(n);
+                    }
+                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y - 1][x] {
+                        upper = Some(n);
                     }
                 }
                 if y2 < height {
                     if let SlalomCell::Black(SlalomBlackCellDir::Up, n) = cell[y2][x] {
                         ord = Some(n);
                     }
+                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y2][x] {
+                        lower = Some(n);
+                    }
+                }
+                match (upper, lower) {
+                    (Some(u), Some(l)) => {
+                        if u == l {
+                            ord = Some(u);
+                        }
+                    }
+                    (Some(u), None) => {
+                        ord = Some(u);
+                    }
+                    (None, Some(l)) => {
+                        ord = Some(l);
+                    }
+                    (None, None) => {}
                 }
                 gates.push(Gate {
                     cells: (y..y2).map(|y| (y, x)).collect(),
+                    dir: GateDir::Vertical,
                     ord,
                 });
             } else if cell[y][x] == SlalomCell::Horizontal {
@@ -300,18 +341,41 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
                     x2 += 1;
                 }
                 let mut ord = None;
+                let mut left = None;
+                let mut right = None;
                 if x > 0 {
                     if let SlalomCell::Black(SlalomBlackCellDir::Right, n) = cell[y][x - 1] {
                         ord = Some(n);
+                    }
+                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y][x - 1] {
+                        left = Some(n);
                     }
                 }
                 if x2 < width {
                     if let SlalomCell::Black(SlalomBlackCellDir::Left, n) = cell[y][x2] {
                         ord = Some(n);
                     }
+                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y][x2] {
+                        right = Some(n);
+                    }
+                }
+                match (left, right) {
+                    (Some(l), Some(r)) => {
+                        if l == r {
+                            ord = Some(l);
+                        }
+                    }
+                    (Some(l), None) => {
+                        ord = Some(l);
+                    }
+                    (None, Some(r)) => {
+                        ord = Some(r);
+                    }
+                    (None, None) => {}
                 }
                 gates.push(Gate {
                     cells: (x..x2).map(|x| (y, x)).collect(),
+                    dir: GateDir::Horizontal,
                     ord,
                 });
             }
@@ -343,26 +407,32 @@ mod tests {
         let gates = vec![
             Gate {
                 cells: vec![(1, 5), (1, 6), (1, 7)],
+                dir: GateDir::Horizontal,
                 ord: None,
             },
             Gate {
                 cells: vec![(2, 3)],
+                dir: GateDir::Horizontal,
                 ord: None,
             },
             Gate {
                 cells: vec![(3, 8)],
+                dir: GateDir::Horizontal,
                 ord: Some(1),
             },
             Gate {
                 cells: vec![(6, 3), (6, 4), (6, 5), (6, 6)],
+                dir: GateDir::Horizontal,
                 ord: Some(3),
             },
             Gate {
                 cells: vec![(7, 1)],
+                dir: GateDir::Horizontal,
                 ord: None,
             },
             Gate {
                 cells: vec![(8, 6), (8, 7), (8, 8), (8, 9)],
+                dir: GateDir::Horizontal,
                 ord: Some(2),
             },
         ];
