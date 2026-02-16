@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::geradeweg;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = geradeweg::deserialize_problem(url).ok_or("invalid url")?;
-    let is_line = geradeweg::solve_geradeweg(&problem);
+    let (full, problem) = geradeweg::deserialize_problem(url).ok_or("invalid url")?;
+    let is_line = geradeweg::solve_geradeweg(full, &problem);
 
     let height = problem.len();
     let width = problem[0].len();
