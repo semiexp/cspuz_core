@@ -2,10 +2,12 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
+    Tuple2,
 };
-use cspuz_rs::solver::{Config, GraphDivisionMode, Solver};
+use cspuz_rs::solver::{bool_constant, Config, GraphDivisionMode, Solver};
 
 pub fn solve_fillomino(
+    max3: bool,
     clues: &[Vec<Option<i32>>],
 ) -> Option<(
     Vec<Vec<Option<i32>>>,
@@ -18,17 +20,21 @@ pub fn solve_fillomino(
 
     let mut solver = Solver::with_config(config);
     let mut ranges = vec![];
+    let mut max = (h * w) as i32;
+    if max3 {
+        max = 3;
+    }
     for y in 0..h {
         let mut row = vec![];
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 if n < 0 {
-                    row.push((1, (h * w) as i32));
+                    row.push((1, max));
                 } else {
                     row.push((n, n));
                 }
             } else {
-                row.push((1, (h * w) as i32));
+                row.push((1, max));
             }
         }
         ranges.push(row);
@@ -56,7 +62,11 @@ pub fn solve_fillomino(
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 if n >= 0 {
-                    solver.add_expr(num.at((y, x)).eq(n));
+                    if n > 3 && max3 {
+                        solver.add_expr(bool_constant(false));
+                    } else {
+                        solver.add_expr(num.at((y, x)).eq(n));
+                    }
                 }
             }
         }
@@ -67,14 +77,20 @@ pub fn solve_fillomino(
         .map(|f| (f.get(num), f.get(&is_border)))
 }
 
-type Problem = Vec<Vec<Option<i32>>>;
+type Problem = (bool, Vec<Vec<Option<i32>>>);
 
 fn combinator() -> impl Combinator<Problem> {
-    Grid::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ]))
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "t/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Grid::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
+        ])),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
@@ -89,20 +105,35 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
-        vec![
-            vec![None, Some(1), None, None, None],
-            vec![None, None, Some(3), Some(4), None],
-            vec![Some(2), None, None, Some(5), None],
-            vec![None, Some(4), None, None, None],
-            vec![None, None, None, None, None],
-        ]
+    fn problem_for_tests1() -> Problem {
+        (
+            false,
+            vec![
+                vec![None, Some(1), None, None, None],
+                vec![None, None, Some(3), Some(4), None],
+                vec![Some(2), None, None, Some(5), None],
+                vec![None, Some(4), None, None, None],
+                vec![None, None, None, None, None],
+            ],
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            true,
+            vec![
+                vec![None, Some(2), Some(1), None],
+                vec![None, None, None, None],
+                vec![None, None, None, None],
+                vec![Some(2), Some(1), None, None],
+            ],
+        )
     }
 
     #[test]
-    fn test_fillomino_problem() {
-        let problem = problem_for_tests();
-        let ans = solve_fillomino(&problem);
+    fn test_fillomino_problem1() {
+        let (max3, problem) = problem_for_tests1();
+        let ans = solve_fillomino(max3, &problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
         let expected = crate::util::tests::to_option_2d([
@@ -116,9 +147,32 @@ mod tests {
     }
 
     #[test]
+    fn test_fillomino_problem2() {
+        let (max3, problem) = problem_for_tests2();
+        let ans = solve_fillomino(max3, &problem);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+        let expected = crate::util::tests::to_option_2d([
+            [2, 2, 1, 2],
+            [1, 3, 3, 2],
+            [2, 3, 1, 3],
+            [2, 1, 3, 3],
+        ]);
+        assert_eq!(ans.0, expected);
+    }
+
+    #[test]
     fn test_fillomino_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?fillomino/5/5/g1k34g2h5h4n";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?fillomino/5/5/g1k34g2h5h4n";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?fillomino/t/4/4/g21o21h";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
