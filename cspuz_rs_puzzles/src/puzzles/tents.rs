@@ -2,13 +2,13 @@ use crate::util;
 
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid, Dict, HexInt, Map, NumSpaces, OutsideSequences, Size, Spaces, Tuple2,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid, HexInt, Map, NumSpaces, Optionalize, Seq, Sequencer, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
 pub fn solve_tents(
-    clue_vertical: &[Option<Vec<i32>>],
-    clue_horizontal: &[Option<Vec<i32>>],
+    clue_vertical: &[Option<i32>],
+    clue_horizontal: &[Option<i32>],
     trees: &Vec<Vec<bool>>,
 ) -> Option<(graph::BoolGridEdgesIrrefutableFacts, Vec<Vec<Option<bool>>>)> {
     let (h, w) = util::infer_shape(trees);
@@ -49,28 +49,33 @@ pub fn solve_tents(
     
 
     for y in 0..h {
-        if let Some(clue) = &clue_vertical[y] {
-            solver.add_expr(is_tent.slice_fixed_y((y, ..)).count_true().eq(clue[0]));
+        if let Some(n) = &clue_horizontal[y] {
+            let row = is_tent.slice_fixed_y((y, ..));
+            solver.add_expr(row.count_true().eq(*n));
         }
     }
     for x in 0..w {
-        if let Some(clue) = &clue_horizontal[x] {
-            solver.add_expr(is_tent.slice_fixed_x((.., x)).count_true().eq(clue[0]));
+        if let Some(n) = &clue_vertical[x] {
+            let col = is_tent.slice_fixed_x((.., x));
+            solver.add_expr(col.count_true().eq(*n));
         }
     }
 
     solver.irrefutable_facts().map(|f| (f.get(is_pair), f.get(&is_tent)))
 }
 
-type Problem = ((Vec<Option<Vec<i32>>>, Vec<Option<Vec<i32>>>), Vec<Vec<bool>>);
+pub type Problem = (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<bool>>);
 
-fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        OutsideSequences::new(Choice::new(vec![
-            Box::new(Dict::new(-1, ".")),
-            Box::new(HexInt),
-        ])),
-        ContextBasedGrid::new(Map::new(
+fn external_combinator() -> impl Combinator<Option<i32>> {
+    Choice::new(vec![
+        Box::new(Optionalize::new(HexInt)),
+        Box::new(Spaces::new(None, 'g')),
+    ])
+}
+
+fn internal_combinator() -> impl Combinator<Vec<Vec<bool>>> {
+    ContextBasedGrid::new(
+        Map::new(
             Choice::new(vec![
                 Box::new(NumSpaces::new(0, 17)),
                 Box::new(Spaces::new_with_maximum(None, 'i', 'z')),
@@ -83,13 +88,80 @@ fn combinator() -> impl Combinator<Problem> {
                 Some(0) => Some(true),
                 _ => Some(false),
             },
-        )
-    )))
+        ),
+    )
+}
+
+pub struct TentsCombinator;
+
+impl Combinator<Problem> for TentsCombinator {
+    fn serialize(
+        &self,
+        ctx: &cspuz_rs::serializer::Context,
+        input: &[Problem],
+    ) -> Option<(usize, Vec<u8>)> {
+        if input.is_empty() {
+            return None;
+        }
+
+        let height = ctx.height?;
+        let width = ctx.width?;
+
+        let problem = &input[0];
+
+        let surrounding = [&problem.0[..], &problem.1[..]].concat();
+        let mut ret = Seq::new(external_combinator(), width + height)
+            .serialize(ctx, &[surrounding])?
+            .1;
+
+        let cells = &problem.2;
+
+        ret.extend(
+            internal_combinator()
+                .serialize(ctx, &[cells.clone()])?
+                .1,
+        );
+
+        Some((1, ret))
+    }
+
+    fn deserialize(
+        &self,
+        ctx: &cspuz_rs::serializer::Context,
+        input: &[u8],
+    ) -> Option<(usize, Vec<Problem>)> {
+        let mut sequencer = Sequencer::new(input);
+
+        let height = ctx.height?;
+        let width = ctx.width?;
+
+        let surrounding =
+            sequencer.deserialize(ctx, Seq::new(external_combinator(), width + height))?;
+        if surrounding.len() != 1 {
+            return None;
+        }
+        let surrounding = surrounding.into_iter().next().unwrap();
+
+        let clues_up = surrounding[..width].to_vec();
+        let clues_left = surrounding[width..].to_vec();
+
+        let cells = sequencer.deserialize(ctx, internal_combinator())?;
+        if cells.len() != 1 {
+            return None;
+        }
+        let cells = cells.into_iter().next().unwrap();
+        Some((sequencer.n_read(), vec![(clues_up, clues_left, cells)]))
+    }
+}
+
+fn combinator() -> impl Combinator<Problem> {
+    Size::new(TentsCombinator)
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.0 .1.len();
-    let width = problem.0 .0.len();
+    let height = problem.1.len();
+    let width = problem.0.len();
+
     problem_to_url_with_context(
         combinator(),
         "tents",
@@ -109,16 +181,16 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         let clue_vertical = vec![
+            Some(3),
             None,
-            None,
-            Some(vec![1]),
+            Some(2),
             None,
             None,
         ];
         let clue_horizontal = vec![
-            Some(vec![3]),
             None,
-            Some(vec![2]),
+            None,
+            Some(1),
             None,
             None,
         ];
@@ -129,13 +201,13 @@ mod tests {
             [1, 0, 0, 0, 1],
             [0, 1, 0, 0, 0],
         ]);
-        ((clue_vertical, clue_horizontal), trees)
+        (clue_vertical, clue_horizontal, trees)
     }
 
     #[test]
     fn test_tents_problem() {
-        let (clues, trees) = problem_for_tests();
-        let ans = solve_tents(&clues.0, &clues.1, &trees);
+        let (clue_vertical, clue_horizontal, trees) = problem_for_tests();
+        let ans = solve_tents(&clue_vertical, &clue_horizontal, &trees);
         assert!(ans.is_some());
         let (_, is_tent) = ans.unwrap();
 
