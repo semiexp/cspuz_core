@@ -293,7 +293,7 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         if x > 0 && y < h - 1 {
             ret.push((y + 1, x - 1));
         }
-        if y < h - 1 && y < h - 1 {
+        if x < w - 1 && y < h - 1 {
             ret.push((y + 1, x + 1));
         }
         if x < w - 1 && y > 0 {
