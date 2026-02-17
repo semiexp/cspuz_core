@@ -2,7 +2,8 @@ use crate::util;
 
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid, HexInt, Map, NumSpaces, Optionalize, Seq, Sequencer, Size, Spaces,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
+    HexInt, Map, NumSpaces, Optionalize, Seq, Sequencer, Size, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -24,12 +25,14 @@ pub fn solve_tents(
 
     for x in 0..w {
         for y in 0..h {
-            solver.add_expr((is_tent.at((y, x)) | is_tree.at((y, x))).imp(is_pair.vertex_neighbors((y, x)).count_true().eq(1))); // Each tree is paired with one tent, and vice versa
+            solver.add_expr(
+                (is_tent.at((y, x)) | is_tree.at((y, x)))
+                    .imp(is_pair.vertex_neighbors((y, x)).count_true().eq(1)),
+            ); // Each tree is paired with one tent, and vice versa
             if trees[y][x] {
                 solver.add_expr(is_tree.at((y, x)));
                 solver.add_expr(!is_tent.at((y, x)));
-            }
-            else{
+            } else {
                 solver.add_expr(!is_tree.at((y, x)));
             }
         }
@@ -37,16 +40,15 @@ pub fn solve_tents(
 
     solver.add_expr(!(is_tent.slice((..(h - 1), ..)) & is_tent.slice((1.., ..)))); // Star battle like constraints for tents
     solver.add_expr(!(is_tent.slice((.., ..(w - 1))) & is_tent.slice((.., 1..))));
-    solver
-        .add_expr(!(is_tent.slice((..(h - 1), ..(w - 1))) & is_tent.slice((1.., 1..))));
-    solver
-        .add_expr(!(is_tent.slice((..(h - 1), 1..)) & is_tent.slice((1.., ..(w - 1)))));
-
+    solver.add_expr(!(is_tent.slice((..(h - 1), ..(w - 1))) & is_tent.slice((1.., 1..))));
+    solver.add_expr(!(is_tent.slice((..(h - 1), 1..)) & is_tent.slice((1.., ..(w - 1)))));
 
     solver.add_expr(is_tree.count_true().eq(is_tent.count_true()));
-    solver.add_expr(is_tent.count_true().eq(&is_pair.horizontal.count_true() + &is_pair.vertical.count_true())); // There are as many pairs as there are tents and trees
-
-    
+    solver.add_expr(
+        is_tent
+            .count_true()
+            .eq(&is_pair.horizontal.count_true() + &is_pair.vertical.count_true()),
+    ); // There are as many pairs as there are tents and trees
 
     for y in 0..h {
         if let Some(n) = &clue_horizontal[y] {
@@ -61,7 +63,9 @@ pub fn solve_tents(
         }
     }
 
-    solver.irrefutable_facts().map(|f| (f.get(is_pair), f.get(&is_tent)))
+    solver
+        .irrefutable_facts()
+        .map(|f| (f.get(is_pair), f.get(&is_tent)))
 }
 
 pub type Problem = (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<bool>>);
@@ -74,22 +78,20 @@ fn external_combinator() -> impl Combinator<Option<i32>> {
 }
 
 fn internal_combinator() -> impl Combinator<Vec<Vec<bool>>> {
-    ContextBasedGrid::new(
-        Map::new(
-            Choice::new(vec![
-                Box::new(NumSpaces::new(0, 17)),
-                Box::new(Spaces::new_with_maximum(None, 'i', 'z')),
-            ]),
-            |x: bool| match x {
-                true => Some(Some(0)),
-                false => None,
-            },
-            |n: Option<i32>| match n {
-                Some(0) => Some(true),
-                _ => Some(false),
-            },
-        ),
-    )
+    ContextBasedGrid::new(Map::new(
+        Choice::new(vec![
+            Box::new(NumSpaces::new(0, 17)),
+            Box::new(Spaces::new_with_maximum(None, 'i', 'z')),
+        ]),
+        |x: bool| match x {
+            true => Some(Some(0)),
+            false => None,
+        },
+        |n: Option<i32>| match n {
+            Some(0) => Some(true),
+            _ => Some(false),
+        },
+    ))
 }
 
 pub struct TentsCombinator;
@@ -116,11 +118,7 @@ impl Combinator<Problem> for TentsCombinator {
 
         let cells = &problem.2;
 
-        ret.extend(
-            internal_combinator()
-                .serialize(ctx, &[cells.clone()])?
-                .1,
-        );
+        ret.extend(internal_combinator().serialize(ctx, &[cells.clone()])?.1);
 
         Some((1, ret))
     }
@@ -180,20 +178,8 @@ mod tests {
     use crate::util;
 
     fn problem_for_tests() -> Problem {
-        let clue_vertical = vec![
-            Some(3),
-            None,
-            Some(2),
-            None,
-            None,
-        ];
-        let clue_horizontal = vec![
-            None,
-            None,
-            Some(1),
-            None,
-            None,
-        ];
+        let clue_vertical = vec![Some(3), None, Some(2), None, None];
+        let clue_horizontal = vec![None, None, Some(1), None, None];
         let trees = crate::util::tests::to_bool_2d([
             [0, 0, 0, 1, 0],
             [1, 0, 0, 0, 1],
@@ -220,7 +206,6 @@ mod tests {
         ]);
         assert_eq!(is_tent, expected);
     }
-
 
     #[test]
     fn test_tents_serializer() {

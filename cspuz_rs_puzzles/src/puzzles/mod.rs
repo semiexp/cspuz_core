@@ -124,7 +124,7 @@ pub mod sukoro;
 pub mod tamago_town;
 pub mod tapa;
 pub mod tasquare;
-pub mod tents
+pub mod tents;
 mod tetrochain_common;
 pub mod tetrochain_ctb;
 pub mod tetrochain_k;
