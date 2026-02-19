@@ -85,7 +85,7 @@ fn internal_combinator() -> impl Combinator<Vec<Vec<bool>>> {
         ]),
         |x: bool| match x {
             true => Some(Some(0)),
-            false => None,
+            false => Some(None),
         },
         |n: Option<i32>| match n {
             Some(0) => Some(true),
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn test_tents_serializer() {
         let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?tents/5/5/3g2j1hk1322313";
+        let url = "https://puzz.link/p?tents/5/5/3g2j1hk1322313";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
