@@ -7,10 +7,9 @@ pub fn add_full_loop_constraints(
     height: usize,
     width: usize,
 ) {
-    let is_passed = &graph::single_cycle_grid_edges(solver, is_line);
     for y in 0..height + 1 {
         for x in 0..width + 1 {
-            solver.add_expr(is_passed.at((y, x)));
+            solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().ne(0));
         }
     }
 }
