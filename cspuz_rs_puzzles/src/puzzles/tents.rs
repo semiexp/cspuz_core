@@ -27,7 +27,7 @@ pub fn solve_tents(
         for y in 0..h {
             solver.add_expr(
                 (is_tent.at((y, x)) | is_tree.at((y, x)))
-                    .imp(is_pair.vertex_neighbors((y, x)).count_true().eq(1)),
+                    .iff(is_pair.vertex_neighbors((y, x)).count_true().eq(1)),
             ); // Each tree is paired with one tent, and vice versa
             if trees[y][x] {
                 solver.add_expr(is_tree.at((y, x)));
@@ -35,6 +35,14 @@ pub fn solve_tents(
             } else {
                 solver.add_expr(!is_tree.at((y, x)));
             }
+            solver.add_expr(is_pair.vertex_neighbors((y, x)).count_true().le(1));
+            solver.add_expr(
+                is_tree
+                    .four_neighbors((y, x))
+                    .count_true()
+                    .eq(0)
+                    .imp(!is_tent.at((y, x))),
+            );
         }
     }
 
