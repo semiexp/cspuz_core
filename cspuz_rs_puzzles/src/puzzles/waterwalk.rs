@@ -4,8 +4,8 @@ use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
+    ContextBasedGrid, Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -75,7 +75,7 @@ fn combinator() -> impl Combinator<Problem> {
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let (h, w) = util::infer_shape(&problem.1 .0);
-    problem_to_url_with_context(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "waterwalk",
         problem.clone(),
@@ -166,13 +166,13 @@ mod tests {
     fn test_waterwalk_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?waterwalk/6/5/786a842l3h1q1g3k";
+            let url = "https://pzprxs.vercel.app/p?waterwalk/6/5/786a842l3h1q1g3k";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?waterwalk/f/3/2/00l";
+            let url = "https://pzprxs.vercel.app/p?waterwalk/f/3/2/00l";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }
