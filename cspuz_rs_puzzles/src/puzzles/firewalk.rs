@@ -3,7 +3,7 @@ use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{Solver, FALSE, TRUE};
@@ -204,10 +204,9 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.0.len();
     let width = problem.0[0].len();
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "firewalk",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized(height, width),
     )

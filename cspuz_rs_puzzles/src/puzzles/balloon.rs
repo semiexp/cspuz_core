@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, Dict, HexInt, MultiDigit, Optionalize, PrefixAndSuffix, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, IntVarArray1D, Solver};
@@ -189,10 +189,9 @@ fn combinator() -> impl Combinator<Problem> {
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let (h, w) = util::infer_shape(&problem.0);
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "balloon",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized(h, w),
     )
