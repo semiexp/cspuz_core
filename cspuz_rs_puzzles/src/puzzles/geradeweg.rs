@@ -2,8 +2,8 @@ use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
-    Tuple2,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
+    Spaces, Tuple2,
 };
 use cspuz_rs::solver::{Solver, FALSE};
 
@@ -134,7 +134,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "geradeweg", problem.clone())
+    problem_to_url_pzprxs(combinator(), "geradeweg", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -223,7 +223,7 @@ mod tests {
     fn test_geradeweg_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?geradeweg/6/5/j1h23m.r4";
+            let url = "https://pzprxs.vercel.app/p?geradeweg/6/5/j1h23m.r4";
             crate::util::tests::serializer_test(
                 problem,
                 url,
@@ -234,7 +234,7 @@ mod tests {
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?geradeweg/f/4/4/p2g3i";
+            let url = "https://pzprxs.vercel.app/p?geradeweg/f/4/4/p2g3i";
             crate::util::tests::serializer_test(
                 problem,
                 url,

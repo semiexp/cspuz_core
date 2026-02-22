@@ -3,7 +3,7 @@ use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::items::NumberedArrow;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, MaybeSkip,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, MaybeSkip,
     NumberedArrowCombinator, Optionalize, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
@@ -70,7 +70,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "yajilin", problem.clone())
+    problem_to_url_pzprxs(combinator(), "yajilin", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -136,7 +136,6 @@ mod tests {
 
     #[test]
     fn test_yajilin_problem2() {
-        // https://puzsq.logicpuzzle.app/puzzle/8218
         let (outside, problem) = problem_for_tests2();
         let ans = solve_yajilin(outside, &problem);
         assert!(ans.is_some());
@@ -158,13 +157,14 @@ mod tests {
     fn test_yajilin_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g";
+            let url =
+                "https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?yajilin/o/7/7/210.40zq120.31"; //
+            let url = "https://pzprxs.vercel.app/p?yajilin/o/7/7/210.40zq120.31"; // Credits to Rubrica
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }

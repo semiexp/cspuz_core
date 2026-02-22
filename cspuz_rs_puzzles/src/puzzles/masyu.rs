@@ -2,7 +2,7 @@ use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, Map, MultiDigit, Tuple2,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, Map, MultiDigit, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -96,7 +96,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "masyu", problem.clone())
+    problem_to_url_pzprxs(combinator(), "masyu", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -186,13 +186,13 @@ mod tests {
     fn test_masyu_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?masyu/10/10/0600003i06b1300600000a30600i090330";
+            let url = "https://pzprxs.vercel.app/p?masyu/10/10/0600003i06b1300600000a30600i090330";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?masyu/f/4/4/0003i0";
+            let url = "https://pzprxs.vercel.app/p?masyu/f/4/4/0003i0";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }

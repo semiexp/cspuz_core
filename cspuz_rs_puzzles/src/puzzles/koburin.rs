@@ -2,8 +2,8 @@ use crate::puzzles::loop_common::force_shaded_outside;
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, MaybeSkip, NumSpaces, Spaces,
-    Tuple2,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, MaybeSkip, NumSpaces,
+    Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -78,7 +78,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "koburin", problem.clone())
+    problem_to_url_pzprxs(combinator(), "koburin", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -232,19 +232,19 @@ mod tests {
     fn test_koburin_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?koburin/6/5/j.hclbkai";
+            let url = "https://pzprxs.vercel.app/p?koburin/6/5/j.hclbkai";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?koburin/o/7/7/pcm.mbman"; // Credits to Rubricas
+            let url = "https://pzprxs.vercel.app/p?koburin/o/7/7/pcm.mbman"; // Credits to Rubricas
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests3();
-            let url = "https://puzz.link/p?koburin/m/4/4/n.i..10";
+            let url = "https://pzprxs.vercel.app/p?koburin/m/4/4/n.i..10";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }

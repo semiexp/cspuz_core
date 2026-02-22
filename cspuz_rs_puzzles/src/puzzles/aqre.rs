@@ -1,6 +1,6 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
     Optionalize, RoomsWithValues, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
@@ -82,7 +82,7 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.1 .0.vertical.len();
     let width = problem.1 .0.vertical[0].len() + 1;
-    problem_to_url_with_context(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "aqre",
         problem.clone(),
@@ -162,7 +162,7 @@ mod tests {
     fn test_aqre_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?aqre/6/6/8a41dd1t0re00g300g";
+            let url = "https://pzprxs.vercel.app/p?aqre/6/6/8a41dd1t0re00g300g";
             crate::util::tests::serializer_test(
                 problem,
                 url,
@@ -173,7 +173,7 @@ mod tests {
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?aqre/b/3/3/vg00i";
+            let url = "https://pzprxs.vercel.app/p?aqre/b/3/3/vg00i";
             crate::util::tests::serializer_test(
                 problem,
                 url,

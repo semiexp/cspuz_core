@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
-    Tuple2,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
+    Spaces, Tuple2,
 };
 use cspuz_rs::solver::{bool_constant, Config, GraphDivisionMode, Solver};
 
@@ -94,7 +94,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "fillomino", problem.clone())
+    problem_to_url_pzprxs(combinator(), "fillomino", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -165,13 +165,13 @@ mod tests {
     fn test_fillomino_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?fillomino/5/5/g1k34g2h5h4n";
+            let url = "https://pzprxs.vercel.app/p?fillomino/5/5/g1k34g2h5h4n";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?fillomino/t/4/4/g21o21h";
+            let url = "https://pzprxs.vercel.app/p?fillomino/t/4/4/g21o21h";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }

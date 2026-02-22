@@ -1,7 +1,7 @@
 use crate::puzzles::loop_common::force_shaded_outside;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
     Optionalize, RoomsWithValues, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
@@ -71,7 +71,7 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.1 .0.vertical.len();
     let width = problem.1 .0.vertical[0].len() + 1;
-    problem_to_url_with_context(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "yajilin-regions",
         problem.clone(),
@@ -157,13 +157,13 @@ mod tests {
     fn test_yajilin_regions_serializer() {
         {
             let problem = problem_for_tests1();
-            let url = "https://puzz.link/p?yajilin-regions/6/6/ii02q2070d0gg221";
+            let url = "https://pzprxs.vercel.app/p?yajilin-regions/6/6/ii02q2070d0gg221";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
         {
             let problem = problem_for_tests2();
-            let url = "https://puzz.link/p?yajilin-regions/o/4/4/0000004";
+            let url = "https://pzprxs.vercel.app/p?yajilin-regions/o/4/4/0000004";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
     }
