@@ -1,6 +1,6 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
@@ -94,10 +94,9 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.1.vertical.len();
     let width = problem.1.vertical[0].len() + 1;
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "numcity",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized(height, width),
     )

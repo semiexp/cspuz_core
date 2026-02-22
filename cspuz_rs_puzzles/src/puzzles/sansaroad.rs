@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, MultiDigit, Size, SizeDoubler, Spaces,
 };
 use cspuz_rs::solver::Solver;
@@ -83,10 +83,9 @@ fn combinator() -> impl Combinator<Problem> {
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let (h, w) = util::infer_shape(problem);
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "sansaroad",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized((h + 1) / 2, (w + 1) / 2),
     )

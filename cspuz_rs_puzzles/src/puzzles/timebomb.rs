@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context, Dict, Grid,
-    HexInt, Optionalize, Spaces,
+    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
+    Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -113,15 +113,7 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.len();
-    let width = problem.len();
-    problem_to_url_with_context_and_site(
-        combinator(),
-        "timebomb",
-        "https://pzprxs.vercel.app/p?",
-        problem.clone(),
-        &Context::sized(height, width),
-    )
+    problem_to_url_pzprxs(combinator(), "timebomb", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
