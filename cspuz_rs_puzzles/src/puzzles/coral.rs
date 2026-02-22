@@ -1,6 +1,6 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Combinator, Context, HexInt,
+    problem_to_url_with_context_pzprxs, url_to_problem, Combinator, Context, HexInt,
     OutsideSequences, Size,
 };
 use cspuz_rs::solver::{any, count_true, BoolVarArray1D, Solver, TRUE};
@@ -81,10 +81,9 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.1.len();
     let width = problem.0.len();
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "coral",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized(height, width),
     )

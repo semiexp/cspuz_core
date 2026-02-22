@@ -1767,11 +1767,42 @@ where
         .map(|body| prefix + puzzle_kind + "/" + &body)
 }
 
+pub fn problem_to_url_with_context_pzprxs<T, C>(
+    combinator: C,
+    puzzle_kind: &str,
+    problem: T,
+    ctx: &Context,
+) -> Option<String>
+where
+    C: Combinator<T>,
+{
+    problem_to_url_with_context_and_site(
+        combinator,
+        puzzle_kind,
+        "https://pzprxs.vercel.app/p?",
+        problem,
+        ctx,
+    )
+}
+
 pub fn problem_to_url<T, C>(combinator: C, puzzle_kind: &str, problem: T) -> Option<String>
 where
     C: Combinator<T>,
 {
     problem_to_url_with_context(combinator, puzzle_kind, problem, &Context::new())
+}
+
+pub fn problem_to_url_pzprxs<T, C>(combinator: C, puzzle_kind: &str, problem: T) -> Option<String>
+where
+    C: Combinator<T>,
+{
+    problem_to_url_with_context_and_site(
+        combinator,
+        puzzle_kind,
+        "https://pzprxs.vercel.app/p?",
+        problem,
+        &Context::new(),
+    )
 }
 
 pub fn url_to_puzzle_kind(serialized: &str) -> Option<String> {

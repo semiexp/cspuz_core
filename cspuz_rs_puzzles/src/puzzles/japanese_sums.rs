@@ -1,6 +1,6 @@
 use cspuz_rs::complex_constraints::japanese;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context_and_site, url_to_problem, Choice, Combinator, Context,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context,
     ContextBasedGrid, DecInt, Dict, HexInt, Optionalize, OutsideSequences, PrefixAndSuffix, Size,
     Spaces, Tuple3,
 };
@@ -82,10 +82,9 @@ fn combinator() -> impl Combinator<Problem> {
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     let height = problem.1 .1.len();
     let width = problem.1 .0.len();
-    problem_to_url_with_context_and_site(
+    problem_to_url_with_context_pzprxs(
         combinator(),
         "japanesesums",
-        "https://pzprxs.vercel.app/p?",
         problem.clone(),
         &Context::sized(height, width),
     )
