@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     DecInt, Dict, HexInt, Map, MultiDigit, Optionalize, Seq, Sequencer, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{any, bool_constant, count_true, Solver};
+use cspuz_rs::solver::{any, count_true, Solver, FALSE};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BattleshipClue {
@@ -30,8 +30,6 @@ pub fn solve_battleship(
 ) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(board);
     let (pieces_merged, cnts) = normalize_and_merge_pieces(pieces);
-
-    // TODO: check if all pieces are connected
 
     let mut id = 1;
     let mut piece_transformations_ids_all = vec![];
@@ -191,78 +189,42 @@ pub fn solve_battleship(
 
     for y in 0..h {
         for x in 0..w {
-            match board[y][x] {
-                BattleshipClue::ShipUp
-                | BattleshipClue::ShipDown
-                | BattleshipClue::ShipLeft
-                | BattleshipClue::ShipRight => {
-                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(1))
-                }
-                BattleshipClue::ShipUpLeft
-                | BattleshipClue::ShipUpRight
-                | BattleshipClue::ShipDownLeft
-                | BattleshipClue::ShipDownRight => {
-                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().eq(2))
-                }
-                BattleshipClue::ShipSquare => {
-                    solver.add_expr(is_ship.four_neighbors((y, x)).count_true().ge(2))
-                }
-                BattleshipClue::ShipCircle => solver.add_expr(!is_ship.four_neighbors((y, x))),
-                _ => (),
+            let has_up = board[y][x] == BattleshipClue::ShipUp
+                || board[y][x] == BattleshipClue::ShipUpLeft
+                || board[y][x] == BattleshipClue::ShipUpRight;
+            let has_down = board[y][x] == BattleshipClue::ShipDown
+                || board[y][x] == BattleshipClue::ShipDownLeft
+                || board[y][x] == BattleshipClue::ShipDownRight;
+            let has_left = board[y][x] == BattleshipClue::ShipLeft
+                || board[y][x] == BattleshipClue::ShipUpLeft
+                || board[y][x] == BattleshipClue::ShipDownLeft;
+            let has_right = board[y][x] == BattleshipClue::ShipRight
+                || board[y][x] == BattleshipClue::ShipUpRight
+                || board[y][x] == BattleshipClue::ShipDownRight;
+            if has_up {
+                solver.add_expr(is_ship.at_offset((y, x), (1, 0), FALSE));
             }
-            match board[y][x] {
-                BattleshipClue::ShipUp if y < (h - 1) => solver.add_expr(is_ship.at((y + 1, x))),
-                BattleshipClue::ShipDown if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
-                BattleshipClue::ShipLeft if x < (w - 1) => solver.add_expr(is_ship.at((y, x + 1))),
-                BattleshipClue::ShipRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
-                BattleshipClue::ShipSquare if (y > 0 && y < (h - 1) && x > 0 && x < (w - 1)) => {
-                    solver.add_expr(
-                        (is_ship.at((y, x - 1)) & (is_ship.at((y, x + 1))))
-                            | (is_ship.at((y - 1, x)) & is_ship.at((y + 1, x))),
-                    )
-                }
-                BattleshipClue::ShipSquare if (x > 0 && x < (w - 1)) => {
-                    solver.add_expr(is_ship.at((y, x - 1)) & (is_ship.at((y, x + 1))))
-                }
-                BattleshipClue::ShipSquare if (y > 0 && y < (h - 1)) => {
-                    solver.add_expr(is_ship.at((y - 1, x)) & (is_ship.at((y + 1, x))))
-                }
-                BattleshipClue::ShipUp
-                | BattleshipClue::ShipDown
-                | BattleshipClue::ShipLeft
-                | BattleshipClue::ShipRight
-                | BattleshipClue::ShipSquare => solver.add_expr(bool_constant(false)),
-                _ => (),
+            if has_down {
+                solver.add_expr(is_ship.at_offset((y, x), (-1, 0), FALSE));
             }
-            match board[y][x] {
-                BattleshipClue::ShipUpLeft if y < (h - 1) => {
-                    solver.add_expr(is_ship.at((y + 1, x)))
-                }
-                BattleshipClue::ShipUpRight if y < (h - 1) => {
-                    solver.add_expr(is_ship.at((y + 1, x)))
-                }
-                BattleshipClue::ShipDownLeft if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
-                BattleshipClue::ShipDownRight if y > 0 => solver.add_expr(is_ship.at((y - 1, x))),
-                BattleshipClue::ShipUpLeft
-                | BattleshipClue::ShipUpRight
-                | BattleshipClue::ShipDownLeft
-                | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
-                _ => (),
+            if has_left {
+                solver.add_expr(is_ship.at_offset((y, x), (0, 1), FALSE));
             }
-            match board[y][x] {
-                BattleshipClue::ShipUpLeft if x < (w - 1) => {
-                    solver.add_expr(is_ship.at((y, x + 1)))
-                }
-                BattleshipClue::ShipDownLeft if x < (w - 1) => {
-                    solver.add_expr(is_ship.at((y, x + 1)))
-                }
-                BattleshipClue::ShipUpRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
-                BattleshipClue::ShipDownRight if x > 0 => solver.add_expr(is_ship.at((y, x - 1))),
-                BattleshipClue::ShipUpLeft
-                | BattleshipClue::ShipUpRight
-                | BattleshipClue::ShipDownLeft
-                | BattleshipClue::ShipDownRight => solver.add_expr(bool_constant(false)),
-                _ => (),
+            if has_right {
+                solver.add_expr(is_ship.at_offset((y, x), (0, -1), FALSE));
+            }
+
+            if board[y][x] == BattleshipClue::ShipSquare {
+                solver.add_expr(
+                    (is_ship.at_offset((y, x), (1, 0), FALSE)
+                        & is_ship.at_offset((y, x), (-1, 0), FALSE))
+                        | (is_ship.at_offset((y, x), (0, 1), FALSE)
+                            & is_ship.at_offset((y, x), (0, -1), FALSE)),
+                );
+            }
+
+            if board[y][x] == BattleshipClue::ShipCircle {
+                solver.add_expr(!is_ship.four_neighbors((y, x)));
             }
         }
     }
