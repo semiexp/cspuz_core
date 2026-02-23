@@ -201,17 +201,15 @@ pub fn solve_battleship(
             let has_right = board[y][x] == BattleshipClue::ShipRight
                 || board[y][x] == BattleshipClue::ShipUpRight
                 || board[y][x] == BattleshipClue::ShipDownRight;
-            if has_up {
-                solver.add_expr(is_ship.at_offset((y, x), (1, 0), FALSE));
-            }
-            if has_down {
-                solver.add_expr(is_ship.at_offset((y, x), (-1, 0), FALSE));
-            }
-            if has_left {
-                solver.add_expr(is_ship.at_offset((y, x), (0, 1), FALSE));
-            }
-            if has_right {
-                solver.add_expr(is_ship.at_offset((y, x), (0, -1), FALSE));
+            if (board[y][x] != BattleshipClue::ShipCircle)
+                & (board[y][x] != BattleshipClue::ShipSquare)
+                & (board[y][x] != BattleshipClue::Water)
+                & (board[y][x] != BattleshipClue::None)
+            {
+                solver.add_expr(is_ship.at_offset((y, x), (1, 0), FALSE).iff(has_up));
+                solver.add_expr(is_ship.at_offset((y, x), (-1, 0), FALSE).iff(has_down));
+                solver.add_expr(is_ship.at_offset((y, x), (0, 1), FALSE).iff(has_left));
+                solver.add_expr(is_ship.at_offset((y, x), (0, -1), FALSE).iff(has_right));
             }
 
             if board[y][x] == BattleshipClue::ShipSquare {
