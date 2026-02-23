@@ -72,6 +72,7 @@ pub mod loop_common;
 pub mod loop_special;
 pub mod masyu;
 pub mod milktea;
+pub mod minesweeper;
 pub mod moonsun;
 pub mod morningwalk;
 pub mod multiplication_link;
