@@ -1,3 +1,4 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::puzzles::walk_common::{merge_walk_answers, walk_not_passing_colored_cell};
 use crate::util;
 use cspuz_rs::graph;
@@ -8,6 +9,7 @@ use cspuz_rs::serializer::{
 use cspuz_rs::solver::{count_true, BoolExpr, Solver};
 
 pub fn solve_energywalk(
+    full: bool,
     colored: &[Vec<bool>],
     num: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -18,6 +20,10 @@ pub fn solve_energywalk(
     solver.add_expr(is_line.horizontal.any() | is_line.vertical.any());
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
+
+    if full {
+        add_full_loop_constraints(&mut solver, is_line, h - 1, w - 1);
+    }
 
     // The network is conneceted
     {
@@ -148,29 +154,35 @@ pub fn solve_energywalk(
     }
 
     let ans1 = solver.irrefutable_facts().map(|f| f.get(is_line));
-    let ans2 = walk_not_passing_colored_cell(colored, num);
+    let ans2 = walk_not_passing_colored_cell(full, colored, num);
     merge_walk_answers(ans1, ans2)
 }
 
-type Problem = (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>);
+type Problem = (bool, (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>));
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        ContextBasedGrid::new(Map::new(
-            MultiDigit::new(2, 5),
-            |x| Some(if x { 1 } else { 0 }),
-            |x| Some(x == 1),
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "f/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(Tuple2::new(
+            ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x| Some(if x { 1 } else { 0 }),
+                |x| Some(x == 1),
+            )),
+            ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Spaces::new(None, 'g')),
+                Box::new(Dict::new(Some(-1), ".")),
+            ])),
         )),
-        ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Optionalize::new(HexInt)),
-            Box::new(Spaces::new(None, 'g')),
-            Box::new(Dict::new(Some(-1), ".")),
-        ])),
-    ))
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem.0);
+    let (h, w) = util::infer_shape(&problem.1 .0);
     problem_to_url_with_context_pzprxs(
         combinator(),
         "energywalk",
@@ -187,29 +199,42 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         (
-            crate::util::tests::to_bool_2d([
-                [0, 0, 1, 0, 1, 0],
-                [0, 1, 0, 0, 0, 0],
-                [1, 0, 1, 1, 0, 0],
-                [0, 0, 0, 0, 0, 1],
-                [0, 1, 1, 0, 0, 1],
-            ]),
-            vec![
-                vec![Some(3), None, None, Some(1), None, None],
-                vec![None, None, None, None, None, None],
-                vec![None, Some(2), None, None, None, None],
-                vec![None, None, None, None, None, None],
-                vec![None, None, None, None, None, None],
-            ],
+            false,
+            (
+                crate::util::tests::to_bool_2d([
+                    [0, 0, 1, 0, 1, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [1, 0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 1],
+                    [0, 1, 1, 0, 0, 1],
+                ]),
+                vec![
+                    vec![Some(3), None, None, Some(1), None, None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, Some(2), None, None, None, None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, None, None, None, None, None],
+                ],
+            ),
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            true,
+            (
+                crate::util::tests::to_bool_2d([[0, 0, 0], [0, 0, 0]]),
+                vec![vec![None, None, None], vec![None, None, None]],
+            ),
         )
     }
 
     #[test]
     fn test_energywalk_problem() {
-        let (water, num) = problem_for_tests();
-        let ans = solve_energywalk(&water, &num);
+        let (full, (colored, num)) = problem_for_tests1();
+        let ans = solve_energywalk(full, &colored, &num);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -232,9 +257,31 @@ mod tests {
     }
 
     #[test]
+    fn test_energywalk_problem2() {
+        let (full, (colored, num)) = problem_for_tests2();
+        let ans = solve_energywalk(full, &colored, &num);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = graph::GridEdges {
+            horizontal: crate::util::tests::to_option_bool_2d([[1, 1], [1, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 0, 1]]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_energywalk_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?energywalk/6/5/545g2p3h1o2v";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://pzprxs.vercel.app/p?energywalk/6/5/545g2p3h1o2v";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://pzprxs.vercel.app/p?energywalk/f/3/2/00l";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }

@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::fillomino;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = fillomino::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = fillomino::solve_fillomino(&problem);
+    let (max3, problem) = fillomino::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = fillomino::solve_fillomino(max3, &problem);
 
     let height = problem.len();
     let width = problem[0].len();

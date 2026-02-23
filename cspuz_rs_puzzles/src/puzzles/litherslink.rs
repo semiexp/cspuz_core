@@ -1,7 +1,8 @@
-use crate::puzzles::slitherlink::combinator;
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::serializer::{problem_to_url, url_to_problem};
+use cspuz_rs::serializer::{
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
+};
 use cspuz_rs::solver::{Solver, TRUE};
 
 pub fn solve_litherslink(
@@ -86,6 +87,14 @@ pub fn solve_litherslink(
 }
 
 type Problem = Vec<Vec<Option<i32>>>;
+
+fn combinator() -> impl Combinator<Problem> {
+    Grid::new(Choice::new(vec![
+        Box::new(NumSpaces::new(4, 2)),
+        Box::new(Spaces::new(None, 'g')),
+        Box::new(Dict::new(Some(-1), ".")),
+    ]))
+}
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
     problem_to_url(combinator(), "lither", problem.clone())

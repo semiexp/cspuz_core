@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::balloon;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (color, num) = balloon::deserialize_problem(url).ok_or("invalid url")?;
-    let has_line = balloon::solve_balloon(&color, &num);
+    let (loopback, (color, num)) = balloon::deserialize_problem(url).ok_or("invalid url")?;
+    let has_line = balloon::solve_balloon(loopback, &color, &num);
     let height = num.len();
     let width = num[0].len();
     let mut board = Board::new(

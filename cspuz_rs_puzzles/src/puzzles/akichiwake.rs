@@ -1,11 +1,12 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, HexInt, Optionalize,
-    RoomsWithValues, Size, Spaces,
+    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
+    Optionalize, RoomsWithValues, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
 pub fn solve_akichiwake(
+    reduced: bool,
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
     clues: &[Option<i32>],
 ) -> Option<Vec<Vec<Option<bool>>>> {
@@ -67,7 +68,7 @@ pub fn solve_akichiwake(
                 let p = rooms[i][0];
                 if n == 0 {
                     solver.add_expr(is_black.at(p));
-                } else if n == 1 {
+                } else if n == 1 && !reduced {
                     solver.add_expr(!is_black.at(p));
                 } else {
                     return None;
@@ -75,7 +76,9 @@ pub fn solve_akichiwake(
                 continue;
             }
             let sizes = &solver.int_var_1d(rooms[i].len(), 1, n);
-            solver.add_expr(sizes.ge(n).any());
+            if !reduced {
+                solver.add_expr(sizes.ge(n).any());
+            }
 
             let mut edges = vec![];
             let mut has_edge = vec![];
@@ -101,18 +104,27 @@ pub fn solve_akichiwake(
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
-pub(super) type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>);
+pub(super) type Problem = (
+    bool,
+    (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Option<i32>>),
+);
 
 pub(super) fn combinator() -> impl Combinator<Problem> {
-    Size::new(RoomsWithValues::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])))
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "x/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(RoomsWithValues::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ]))),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.0.vertical.len();
-    let width = problem.0.vertical[0].len() + 1;
+    let height = problem.1 .0.vertical.len();
+    let width = problem.1 .0.vertical[0].len() + 1;
     problem_to_url_with_context(
         combinator(),
         "akichi",
@@ -129,31 +141,47 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         (
-            graph::InnerGridEdges {
-                horizontal: crate::util::tests::to_bool_2d([
-                    [0, 0, 0, 1, 1, 1],
-                    [0, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 1, 1, 0],
-                    [0, 0, 0, 0, 0, 0],
-                ]),
-                vertical: crate::util::tests::to_bool_2d([
-                    [0, 0, 1, 0, 0],
-                    [0, 0, 1, 0, 1],
-                    [0, 0, 1, 0, 1],
-                    [0, 1, 0, 0, 1],
-                    [0, 1, 0, 0, 1],
-                ]),
-            },
-            vec![Some(3), Some(2), Some(1), Some(3), None, Some(5)],
+            false,
+            (
+                graph::InnerGridEdges {
+                    horizontal: crate::util::tests::to_bool_2d([
+                        [0, 0, 0, 1, 1, 1],
+                        [0, 0, 0, 0, 0, 0],
+                        [1, 1, 1, 1, 1, 0],
+                        [0, 0, 0, 0, 0, 0],
+                    ]),
+                    vertical: crate::util::tests::to_bool_2d([
+                        [0, 0, 1, 0, 0],
+                        [0, 0, 1, 0, 1],
+                        [0, 0, 1, 0, 1],
+                        [0, 1, 0, 0, 1],
+                        [0, 1, 0, 0, 1],
+                    ]),
+                },
+                vec![Some(3), Some(2), Some(1), Some(3), None, Some(5)],
+            ),
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            true,
+            (
+                graph::InnerGridEdges {
+                    horizontal: crate::util::tests::to_bool_2d([[1, 1, 1], [1, 1, 1]]),
+                    vertical: crate::util::tests::to_bool_2d([[0, 0], [0, 0], [1, 0]]),
+                },
+                vec![Some(2), None, Some(0), Some(1)],
+            ),
         )
     }
 
     #[test]
-    fn test_akichiwake_problem() {
-        let (borders, clues) = problem_for_tests();
-        let ans = solve_akichiwake(&borders, &clues);
+    fn test_akichiwake_problem1() {
+        let (reduced, (borders, clues)) = problem_for_tests1();
+        let ans = solve_akichiwake(reduced, &borders, &clues);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -168,9 +196,38 @@ mod tests {
     }
 
     #[test]
+    fn test_akichiwake_problem2() {
+        let (reduced, (borders, clues)) = problem_for_tests2();
+        let ans = solve_akichiwake(reduced, &borders, &clues);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = crate::util::tests::to_option_bool_2d([[0, 1, 0], [0, 0, 0], [1, 0, 1]]);
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_akichiwake_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?akichi/6/5/455993g7o03213g5";
-        crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?akichi/6/5/455993g7o03213g5";
+            crate::util::tests::serializer_test(
+                problem,
+                url,
+                serialize_problem,
+                deserialize_problem,
+            );
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://puzz.link/p?akichi/x/3/3/10vg2g01";
+            crate::util::tests::serializer_test(
+                problem,
+                url,
+                serialize_problem,
+                deserialize_problem,
+            );
+        }
     }
 }

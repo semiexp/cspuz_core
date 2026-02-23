@@ -4,8 +4,9 @@ use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::yajilin_regions;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = yajilin_regions::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = yajilin_regions::solve_yajilin_regions(&borders, &clues);
+    let (outside, (borders, clues)) =
+        yajilin_regions::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = yajilin_regions::solve_yajilin_regions(outside, &borders, &clues);
 
     let (height, width) = if let Some((ref _is_line, ref is_black)) = ans {
         (is_black.len(), is_black[0].len())

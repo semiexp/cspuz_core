@@ -68,6 +68,7 @@ pub mod letter_weights;
 pub mod litherslink;
 pub mod lits;
 pub mod lohkous;
+pub mod loop_common;
 pub mod loop_special;
 pub mod masyu;
 pub mod milktea;

@@ -5,8 +5,8 @@ use cspuz_rs_puzzles::puzzles::yajilin;
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     use cspuz_rs::items::Arrow;
 
-    let problem = yajilin::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = yajilin::solve_yajilin(&problem);
+    let (outside, problem) = yajilin::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = yajilin::solve_yajilin(outside, &problem);
 
     let height = problem.len();
     let width = problem[0].len();

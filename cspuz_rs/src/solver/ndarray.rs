@@ -270,6 +270,37 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         }
         ret
     }
+
+    pub fn eight_neighbor_indices(&self, idx: (usize, usize)) -> Vec<(usize, usize)> {
+        let (h, w) = self.shape();
+        let (y, x) = idx;
+        let mut ret = vec![];
+        if y > 0 {
+            ret.push((y - 1, x));
+        }
+        if x > 0 {
+            ret.push((y, x - 1));
+        }
+        if y < h - 1 {
+            ret.push((y + 1, x));
+        }
+        if x < w - 1 {
+            ret.push((y, x + 1));
+        }
+        if y > 0 && x > 0 {
+            ret.push((y - 1, x - 1));
+        }
+        if x > 0 && y < h - 1 {
+            ret.push((y + 1, x - 1));
+        }
+        if x < w - 1 && y < h - 1 {
+            ret.push((y + 1, x + 1));
+        }
+        if x < w - 1 && y > 0 {
+            ret.push((y - 1, x + 1));
+        }
+        ret
+    }
 }
 
 impl<T: Clone> NdArray<(usize, usize), T> {
@@ -385,6 +416,10 @@ impl<T: Clone> NdArray<(usize, usize), T> {
 
     pub fn four_neighbors(&self, idx: (usize, usize)) -> NdArray<(usize,), T> {
         self.select(self.four_neighbor_indices(idx))
+    }
+
+    pub fn eight_neighbors(&self, idx: (usize, usize)) -> NdArray<(usize,), T> {
+        self.select(self.eight_neighbor_indices(idx))
     }
 
     pub fn pointing_cells(

@@ -1,3 +1,4 @@
+use crate::puzzles::loop_common::add_full_loop_constraints;
 use crate::puzzles::walk_common::{merge_walk_answers, walk_not_passing_colored_cell};
 use crate::util;
 use cspuz_rs::complex_constraints::walk_line_size;
@@ -9,6 +10,7 @@ use cspuz_rs::serializer::{
 use cspuz_rs::solver::Solver;
 
 pub fn solve_forestwalk(
+    full: bool,
     forest: &[Vec<bool>],
     num: &[Vec<Option<i32>>],
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
@@ -26,6 +28,10 @@ pub fn solve_forestwalk(
         let line_graph = g.line_graph();
 
         graph::active_vertices_connected(&mut solver, &vertices, &line_graph);
+    }
+
+    if full {
+        add_full_loop_constraints(&mut solver, is_line, h - 1, w - 1);
     }
 
     let is_passed = &solver.bool_var_2d((h, w));
@@ -58,29 +64,35 @@ pub fn solve_forestwalk(
     }
 
     let ans1 = solver.irrefutable_facts().map(|f| f.get(is_line));
-    let ans2 = walk_not_passing_colored_cell(forest, num);
+    let ans2 = walk_not_passing_colored_cell(full, forest, num);
     merge_walk_answers(ans1, ans2)
 }
 
-type Problem = (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>);
+type Problem = (bool, (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>));
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        ContextBasedGrid::new(Map::new(
-            MultiDigit::new(2, 5),
-            |x| Some(if x { 1 } else { 0 }),
-            |x| Some(x == 1),
+    Tuple2::new(
+        Choice::new(vec![
+            Box::new(Dict::new(true, "f/")),
+            Box::new(Dict::new(false, "")),
+        ]),
+        Size::new(Tuple2::new(
+            ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x| Some(if x { 1 } else { 0 }),
+                |x| Some(x == 1),
+            )),
+            ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Spaces::new(None, 'g')),
+                Box::new(Dict::new(Some(-1), ".")),
+            ])),
         )),
-        ContextBasedGrid::new(Choice::new(vec![
-            Box::new(Optionalize::new(HexInt)),
-            Box::new(Spaces::new(None, 'g')),
-            Box::new(Dict::new(Some(-1), ".")),
-        ])),
-    ))
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let (h, w) = util::infer_shape(&problem.0);
+    let (h, w) = util::infer_shape(&problem.1 .0);
     problem_to_url_with_context_pzprxs(
         combinator(),
         "forestwalk",
@@ -97,29 +109,42 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         (
-            crate::util::tests::to_bool_2d([
-                [0, 0, 1, 0, 1, 0],
-                [1, 0, 0, 0, 1, 0],
-                [0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [1, 1, 0, 0, 1, 0],
-            ]),
-            vec![
-                vec![Some(2), None, None, Some(3), None, None],
-                vec![None, None, None, None, None, None],
-                vec![None, None, None, None, Some(4), None],
-                vec![None, None, None, None, None, None],
-                vec![None, None, None, None, None, None],
-            ],
+            false,
+            (
+                crate::util::tests::to_bool_2d([
+                    [0, 0, 1, 0, 1, 0],
+                    [1, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [1, 1, 0, 0, 1, 0],
+                ]),
+                vec![
+                    vec![Some(2), None, None, Some(3), None, None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, None, None, None, Some(4), None],
+                    vec![None, None, None, None, None, None],
+                    vec![None, None, None, None, None, None],
+                ],
+            ),
+        )
+    }
+
+    fn problem_for_tests2() -> Problem {
+        (
+            true,
+            (
+                crate::util::tests::to_bool_2d([[0, 0, 0], [0, 0, 0]]),
+                vec![vec![None, None, None], vec![None, None, None]],
+            ),
         )
     }
 
     #[test]
-    fn test_forestwalk_problem() {
-        let (icebarn, num) = problem_for_tests();
-        let ans = solve_forestwalk(&icebarn, &num);
+    fn test_forestwalk_problem1() {
+        let (full, (forest, num)) = problem_for_tests1();
+        let ans = solve_forestwalk(full, &forest, &num);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -142,9 +167,31 @@ mod tests {
     }
 
     #[test]
+    fn test_forestwalk_problem2() {
+        let (full, (forest, num)) = problem_for_tests2();
+        let ans = solve_forestwalk(full, &forest, &num);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = graph::GridEdges {
+            horizontal: crate::util::tests::to_option_bool_2d([[1, 1], [1, 1]]),
+            vertical: crate::util::tests::to_option_bool_2d([[1, 0, 1]]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_forestwalk_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?forestwalk/6/5/58gg1i2h3r4s";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://pzprxs.vercel.app/p?forestwalk/6/5/58gg1i2h3r4s";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://pzprxs.vercel.app/p?forestwalk/f/3/2/00l";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
