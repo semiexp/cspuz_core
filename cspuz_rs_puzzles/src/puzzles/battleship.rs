@@ -72,7 +72,7 @@ pub fn solve_battleship(
     let cell_state = &solver.int_var_2d((h, w), 0, id - 1);
     solver.add_answer_key_bool(is_ship);
 
-    for i in 1..id - 1 {
+    for i in 1..id {
         graph::active_vertices_connected_2d(&mut solver, cell_state.eq(i));
     }
 
