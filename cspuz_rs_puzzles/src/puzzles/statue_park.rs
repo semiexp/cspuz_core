@@ -1,10 +1,11 @@
 use crate::util;
 use cspuz_rs::graph;
+use cspuz_rs::polyomino::{normalize_and_merge_pieces, polyomino_placement};
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, DecInt,
     Dict, Map, MultiDigit, Seq, Sequencer, Size, Tuple2,
 };
-use cspuz_rs::solver::{any, count_true, Solver};
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StatueParkClue {
@@ -20,119 +21,12 @@ pub fn solve_statue_park(
     let (h, w) = util::infer_shape(board);
     let (pieces_merged, cnts) = normalize_and_merge_pieces(pieces);
 
-    // TODO: check if all pieces are connected
-
-    let mut id = 1;
-    let mut piece_transformations_ids_all = vec![];
-    let mut leader_ids_all = vec![];
-
-    for piece in &pieces_merged {
-        let piece_transformations = enumerate_piece_transformations(piece);
-        let mut piece_transformations_ids = vec![];
-        let mut leader_ids = vec![];
-        for t in piece_transformations {
-            let (ph, pw) = util::infer_shape(&t);
-            let mut ids = vec![];
-            let mut ld = None;
-            for y in 0..ph {
-                let mut row = vec![];
-                for x in 0..pw {
-                    if t[y][x] {
-                        if ld.is_none() {
-                            ld = Some(id);
-                        }
-                        row.push(Some(id));
-                        id += 1;
-                    } else {
-                        row.push(None);
-                    }
-                }
-                ids.push(row);
-            }
-            piece_transformations_ids.push(ids);
-
-            assert!(ld.is_some());
-            leader_ids.push(ld.unwrap());
-        }
-        piece_transformations_ids_all.push(piece_transformations_ids);
-        leader_ids_all.push(leader_ids);
-    }
-
     let mut solver = Solver::new();
     let is_block = &solver.bool_var_2d((h, w));
-    let cell_state = &solver.int_var_2d((h, w), 0, id - 1);
     solver.add_answer_key_bool(is_block);
     graph::active_vertices_connected_2d(&mut solver, !is_block);
 
-    solver.add_expr(is_block.iff(cell_state.ne(0)));
-
-    for y in 0..h {
-        for x in 0..w {
-            for i in 0..piece_transformations_ids_all.len() {
-                for j in 0..piece_transformations_ids_all[i].len() {
-                    let piece_transformations_ids = &piece_transformations_ids_all[i][j];
-                    let (ph, pw) = util::infer_shape(piece_transformations_ids);
-
-                    for py in 0..ph {
-                        for px in 0..pw {
-                            if let Some(id) = piece_transformations_ids[py][px] {
-                                if !(y >= py && x >= px && y + ph - py <= h && x + pw - px <= w) {
-                                    solver.add_expr(cell_state.at((y, x)).ne(id));
-                                    continue;
-                                }
-
-                                for (dy, dx) in [(1, 0), (0, 1), (-1, 0), (0, -1)] {
-                                    let pyi = py as i32;
-                                    let pxi = px as i32;
-
-                                    let py2 = pyi + dy;
-                                    let px2 = pxi + dx;
-                                    let y2 = y as i32 + dy;
-                                    let x2 = x as i32 + dx;
-
-                                    let id2 = if 0 <= py2
-                                        && py2 < ph as i32
-                                        && 0 <= px2
-                                        && px2 < pw as i32
-                                    {
-                                        piece_transformations_ids[py2 as usize][px2 as usize]
-                                    } else {
-                                        None
-                                    };
-
-                                    if let Some(id2) = id2 {
-                                        solver.add_expr(cell_state.at((y, x)).eq(id).imp(
-                                            cell_state.at((y2 as usize, x2 as usize)).eq(id2),
-                                        ));
-                                    } else {
-                                        if 0 <= y2 && y2 < h as i32 && 0 <= x2 && x2 < w as i32 {
-                                            solver.add_expr(cell_state.at((y, x)).eq(id).imp(
-                                                cell_state.at((y2 as usize, x2 as usize)).eq(0),
-                                            ));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    for i in 0..pieces_merged.len() {
-        let mut inds = vec![];
-        for y in 0..h {
-            for x in 0..w {
-                let mut ind = vec![];
-                for &j in leader_ids_all[i].iter() {
-                    ind.push(cell_state.at((y, x)).eq(j));
-                }
-                inds.push(any(ind));
-            }
-        }
-        solver.add_expr(count_true(inds).eq(cnts[i] as i32));
-    }
+    polyomino_placement(&mut solver, is_block, &pieces_merged, &cnts, &cnts, false);
 
     for y in 0..h {
         for x in 0..w {
@@ -145,68 +39,6 @@ pub fn solve_statue_park(
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_block))
-}
-
-fn rotate_piece_90(piece: &[Vec<bool>]) -> Vec<Vec<bool>> {
-    let h = piece.len();
-    let w = piece[0].len();
-    let mut ret = vec![vec![false; h]; w];
-    for i in 0..h {
-        for j in 0..w {
-            ret[j][h - i - 1] = piece[i][j];
-        }
-    }
-    ret
-}
-
-fn flip_piece(piece: &[Vec<bool>]) -> Vec<Vec<bool>> {
-    let h = piece.len();
-    let w = piece[0].len();
-    let mut ret = vec![vec![false; w]; h];
-    for i in 0..h {
-        for j in 0..w {
-            ret[i][w - j - 1] = piece[i][j];
-        }
-    }
-    ret
-}
-
-fn enumerate_piece_transformations(piece: &[Vec<bool>]) -> Vec<Vec<Vec<bool>>> {
-    let mut piece = piece.to_vec();
-    let mut ret = vec![];
-    for _ in 0..4 {
-        ret.push(piece.clone());
-        let cur = flip_piece(&piece);
-        ret.push(cur);
-
-        piece = rotate_piece_90(&piece);
-    }
-    ret
-}
-
-fn normalize_piece(piece: &[Vec<bool>]) -> Vec<Vec<bool>> {
-    let mut transformations = enumerate_piece_transformations(piece);
-    transformations.sort();
-    transformations.into_iter().next().unwrap()
-}
-
-fn normalize_and_merge_pieces(pieces: &[Vec<Vec<bool>>]) -> (Vec<Vec<Vec<bool>>>, Vec<usize>) {
-    let mut pieces = pieces
-        .iter()
-        .map(|p| normalize_piece(p))
-        .collect::<Vec<_>>();
-    pieces.sort();
-    let mut ret = vec![];
-    let mut cnt = vec![];
-    for p in pieces {
-        if !ret.is_empty() && ret[ret.len() - 1] == p {
-            *cnt.last_mut().unwrap() += 1;
-        } else {
-            ret.push(p);
-            cnt.push(1);
-        }
-    }
-    (ret, cnt)
 }
 
 fn tetrominoes() -> Vec<Vec<Vec<bool>>> {

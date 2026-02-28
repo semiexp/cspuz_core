@@ -4,6 +4,7 @@ pub mod complex_constraints;
 pub mod graph;
 pub mod hex;
 pub mod items;
+pub mod polyomino;
 pub mod serializer;
 pub mod solver;
 
