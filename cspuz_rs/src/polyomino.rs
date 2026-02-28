@@ -272,3 +272,103 @@ pub fn pentominoes() -> Vec<Polyomino> {
         ],
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_polyomino_placement_simple() {
+        for disallow_corner_touch in [false, true] {
+            let mut solver = Solver::new();
+            let board = &solver.bool_var_2d((4, 3));
+            let pieces = vec![
+                vec![
+                    vec![true, true, true],
+                    vec![true, false, false],
+                ],
+                vec![
+                    vec![true, true, true],
+                    vec![true, true, false],
+                ],
+            ];
+            solver.add_expr(!board.at((1, 0)));
+            solver.add_expr(!board.at((1, 1)));
+
+            polyomino_placement(&mut solver, board, &pieces, &[1, 1], &[1, 1], disallow_corner_touch);
+
+            let ans = solver.solve();
+
+            if disallow_corner_touch {
+                assert!(ans.is_none());
+            } else {
+                assert!(ans.is_some());
+
+                let ans = ans.unwrap();
+                let expected = vec![
+                    vec![true, true, true],
+                    vec![false, false, true],
+                    vec![true, true, false],
+                    vec![true, true, true],
+                ];
+                assert_eq!(ans.get(board), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn test_polyomino_placement_multiple() {
+        let mut solver = Solver::new();
+        let board = &solver.bool_var_2d((4, 3));
+        let pieces = vec![
+            vec![
+                vec![true, true, true],
+                vec![true, false, false],
+            ],
+        ];
+        solver.add_expr(!board.at((1, 0)));
+
+        polyomino_placement(&mut solver, board, &pieces, &[2], &[2], true);
+
+        let ans = solver.solve();
+
+        assert!(ans.is_some());
+
+        let ans = ans.unwrap();
+        let expected = vec![
+            vec![true, true, true],
+            vec![false, false, true],
+            vec![true, false, false],
+            vec![true, true, true],
+        ];
+        assert_eq!(ans.get(board), expected);
+    }
+
+    #[test]
+    fn test_polyomino_placement_self_diagonal_adjacency() {
+        let mut solver = Solver::new();
+        let board = &solver.bool_var_2d((3, 3));
+        let pieces = vec![
+            vec![
+                vec![true, true, true],
+                vec![true, false, true],
+                vec![true, true, false],
+            ],
+        ];
+        solver.add_expr(!board.at((0, 0)));
+
+        polyomino_placement(&mut solver, board, &pieces, &[1], &[1], true);
+
+        let ans = solver.solve();
+
+        assert!(ans.is_some());
+
+        let ans = ans.unwrap();
+        let expected = vec![
+            vec![false, true, true],
+            vec![true, false, true],
+            vec![true, true, true],
+        ];
+        assert_eq!(ans.get(board), expected);
+    }
+}
