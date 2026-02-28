@@ -1,6 +1,6 @@
 use crate::util;
 use cspuz_rs::polyomino::{
-    normalize_and_merge_pieces, pentominoes, polyomino_placement, tetrominoes,
+    normalize_and_merge_pieces, pentominoes, polyomino_placement, tetrominoes, PieceCombinator,
 };
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
@@ -158,82 +158,6 @@ fn size5() -> Vec<Vec<Vec<bool>>> {
         vec![vec![true, true, true, true]],
         vec![vec![true, true, true, true, true]],
     ]
-}
-
-struct PieceCombinator;
-
-impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[Vec<Vec<bool>>],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let data = &input[0];
-        let height = data.len();
-        let width = data[0].len();
-
-        if !((1..=35).contains(&height) && (1..=35).contains(&width)) {
-            return None;
-        }
-
-        let mut ret = vec![];
-        let (_, app) = MultiDigit::new(36, 1).serialize(ctx, &[width as i32])?;
-        ret.extend(app);
-        let (_, app) = MultiDigit::new(36, 1).serialize(ctx, &[height as i32])?;
-        ret.extend(app);
-        let mut seq = vec![];
-        for y in 0..height {
-            for x in 0..width {
-                seq.push(if data[y][x] { 1 } else { 0 });
-            }
-        }
-        while seq.last() == Some(&0) {
-            seq.pop();
-        }
-        let (_, app) = Seq::new(MultiDigit::new(2, 5), seq.len())
-            .serialize(&Context::sized(height, width), &[seq])?;
-        ret.extend(app);
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Vec<Vec<bool>>>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let width = sequencer.deserialize(ctx, MultiDigit::new(36, 1))?;
-        assert_eq!(width.len(), 1);
-        let width = width[0] as usize;
-
-        let height = sequencer.deserialize(ctx, MultiDigit::new(36, 1))?;
-        assert_eq!(height.len(), 1);
-        let height = height[0] as usize;
-
-        let mut ret = vec![vec![false; width]; height];
-        let mut pos = 0;
-        while pos < height * width {
-            if let Some(subseq) = sequencer.deserialize(ctx, MultiDigit::new(2, 5)) {
-                for i in 0..subseq.len() {
-                    if pos >= height * width {
-                        break;
-                    }
-                    ret[pos / width][pos % width] = subseq[i] == 1;
-                    pos += 1;
-                }
-            } else {
-                break;
-            }
-        }
-
-        Some((sequencer.n_read(), vec![ret]))
-    }
 }
 
 struct PiecesCombinator;

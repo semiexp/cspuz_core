@@ -1,3 +1,4 @@
+use crate::serializer::{Combinator, Context, MultiDigit, Seq, Sequencer};
 use crate::solver::{any, count_true, traits::Operand, Solver};
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 
@@ -271,6 +272,78 @@ pub fn pentominoes() -> Vec<Polyomino> {
             vec![true, false, false],
         ],
     ]
+}
+
+pub struct PieceCombinator;
+
+impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
+    fn serialize(&self, ctx: &Context, input: &[Vec<Vec<bool>>]) -> Option<(usize, Vec<u8>)> {
+        if input.is_empty() {
+            return None;
+        }
+
+        let data = &input[0];
+        let height = data.len();
+        let width = data[0].len();
+
+        if !((1..=35).contains(&height) && (1..=35).contains(&width)) {
+            return None;
+        }
+
+        let mut ret = vec![];
+        let (_, app) = MultiDigit::new(36, 1).serialize(ctx, &[width as i32])?;
+        ret.extend(app);
+        let (_, app) = MultiDigit::new(36, 1).serialize(ctx, &[height as i32])?;
+        ret.extend(app);
+        let mut seq = vec![];
+        for y in 0..height {
+            for x in 0..width {
+                seq.push(if data[y][x] { 1 } else { 0 });
+            }
+        }
+        while seq.last() == Some(&0) {
+            seq.pop();
+        }
+        let (_, app) = Seq::new(MultiDigit::new(2, 5), seq.len())
+            .serialize(&Context::sized(height, width), &[seq])?;
+        ret.extend(app);
+
+        Some((1, ret))
+    }
+
+    fn deserialize(
+        &self,
+        ctx: &crate::serializer::Context,
+        input: &[u8],
+    ) -> Option<(usize, Vec<Vec<Vec<bool>>>)> {
+        let mut sequencer = Sequencer::new(input);
+
+        let width = sequencer.deserialize(ctx, MultiDigit::new(36, 1))?;
+        assert_eq!(width.len(), 1);
+        let width = width[0] as usize;
+
+        let height = sequencer.deserialize(ctx, MultiDigit::new(36, 1))?;
+        assert_eq!(height.len(), 1);
+        let height = height[0] as usize;
+
+        let mut ret = vec![vec![false; width]; height];
+        let mut pos = 0;
+        while pos < height * width {
+            if let Some(subseq) = sequencer.deserialize(ctx, MultiDigit::new(2, 5)) {
+                for i in 0..subseq.len() {
+                    if pos >= height * width {
+                        break;
+                    }
+                    ret[pos / width][pos % width] = subseq[i] == 1;
+                    pos += 1;
+                }
+            } else {
+                break;
+            }
+        }
+
+        Some((sequencer.n_read(), vec![ret]))
+    }
 }
 
 #[cfg(test)]
