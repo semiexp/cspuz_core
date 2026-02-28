@@ -206,3 +206,69 @@ pub fn normalize_and_merge_pieces(pieces: &[Polyomino]) -> (Vec<Polyomino>, Vec<
     }
     (ret, cnt)
 }
+
+pub fn tetrominoes() -> Vec<Polyomino> {
+    vec![
+        vec![vec![true, true, true, true]],
+        vec![vec![true, true, true], vec![true, false, false]],
+        vec![vec![true, true, true], vec![false, true, false]],
+        vec![vec![true, true, false], vec![false, true, true]],
+        vec![vec![true, true], vec![true, true]],
+    ]
+}
+
+pub fn pentominoes() -> Vec<Polyomino> {
+    vec![
+        vec![
+            vec![false, false, true],
+            vec![true, true, true],
+            vec![false, true, false],
+        ],
+        vec![vec![true], vec![true], vec![true], vec![true], vec![true]],
+        vec![
+            vec![false, true],
+            vec![false, true],
+            vec![false, true],
+            vec![true, true],
+        ],
+        vec![
+            vec![false, true],
+            vec![false, true],
+            vec![true, true],
+            vec![true, false],
+        ],
+        vec![vec![false, true], vec![true, true], vec![true, true]],
+        vec![
+            vec![false, false, true],
+            vec![true, true, true],
+            vec![false, false, true],
+        ],
+        vec![vec![true, true], vec![false, true], vec![true, true]],
+        vec![
+            vec![false, false, true],
+            vec![false, false, true],
+            vec![true, true, true],
+        ],
+        vec![
+            vec![false, false, true],
+            vec![false, true, true],
+            vec![true, true, false],
+        ],
+        vec![
+            vec![false, true, false],
+            vec![true, true, true],
+            vec![false, true, false],
+        ],
+        vec![
+            vec![false, true],
+            vec![false, true],
+            vec![true, true],
+            vec![false, true],
+        ],
+        vec![
+            vec![false, false, true],
+            vec![true, true, true],
+            vec![true, false, false],
+        ],
+    ]
+}

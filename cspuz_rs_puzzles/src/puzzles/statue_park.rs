@@ -1,6 +1,8 @@
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::polyomino::{normalize_and_merge_pieces, polyomino_placement};
+use cspuz_rs::polyomino::{
+    normalize_and_merge_pieces, pentominoes, polyomino_placement, tetrominoes,
+};
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, DecInt,
     Dict, Map, MultiDigit, Seq, Sequencer, Size, Tuple2,
@@ -41,16 +43,6 @@ pub fn solve_statue_park(
     solver.irrefutable_facts().map(|f| f.get(is_block))
 }
 
-fn tetrominoes() -> Vec<Vec<Vec<bool>>> {
-    vec![
-        vec![vec![true, true, true, true]],
-        vec![vec![true, true, true], vec![true, false, false]],
-        vec![vec![true, true, true], vec![false, true, false]],
-        vec![vec![true, true, false], vec![false, true, true]],
-        vec![vec![true, true], vec![true, true]],
-    ]
-}
-
 fn double_tetrominoes() -> Vec<Vec<Vec<bool>>> {
     let mut ret = vec![];
     for p in tetrominoes() {
@@ -58,62 +50,6 @@ fn double_tetrominoes() -> Vec<Vec<Vec<bool>>> {
         ret.push(p.clone());
     }
     ret
-}
-
-fn pentominoes() -> Vec<Vec<Vec<bool>>> {
-    vec![
-        vec![
-            vec![false, false, true],
-            vec![true, true, true],
-            vec![false, true, false],
-        ],
-        vec![vec![true], vec![true], vec![true], vec![true], vec![true]],
-        vec![
-            vec![false, true],
-            vec![false, true],
-            vec![false, true],
-            vec![true, true],
-        ],
-        vec![
-            vec![false, true],
-            vec![false, true],
-            vec![true, true],
-            vec![true, false],
-        ],
-        vec![vec![false, true], vec![true, true], vec![true, true]],
-        vec![
-            vec![false, false, true],
-            vec![true, true, true],
-            vec![false, false, true],
-        ],
-        vec![vec![true, true], vec![false, true], vec![true, true]],
-        vec![
-            vec![false, false, true],
-            vec![false, false, true],
-            vec![true, true, true],
-        ],
-        vec![
-            vec![false, false, true],
-            vec![false, true, true],
-            vec![true, true, false],
-        ],
-        vec![
-            vec![false, true, false],
-            vec![true, true, true],
-            vec![false, true, false],
-        ],
-        vec![
-            vec![false, true],
-            vec![false, true],
-            vec![true, true],
-            vec![false, true],
-        ],
-        vec![
-            vec![false, false, true],
-            vec![true, true, true],
-            vec![true, false, false],
-        ],
-    ]
 }
 
 struct PieceCombinator;
