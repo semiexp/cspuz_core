@@ -1,4 +1,4 @@
-use crate::serializer::{Combinator, Context, MultiDigit, Seq, Sequencer};
+use crate::serializer::{Combinator, Context, DecInt, Dict, MultiDigit, Seq, Sequencer};
 use crate::solver::{any, count_true, traits::Operand, Solver};
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 
@@ -340,6 +340,80 @@ impl Combinator<Vec<Vec<bool>>> for PieceCombinator {
             } else {
                 break;
             }
+        }
+
+        Some((sequencer.n_read(), vec![ret]))
+    }
+}
+
+pub struct PiecesCombinator<'a> {
+    known_piece_sets: Vec<(Vec<Polyomino>, &'a [u8])>,
+}
+
+impl<'a> PiecesCombinator<'a> {
+    pub fn new(known_piece_sets: Vec<(Vec<Polyomino>, &'a [u8])>) -> PiecesCombinator<'a> {
+        PiecesCombinator { known_piece_sets }
+    }
+}
+
+impl<'a> Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator<'a> {
+    fn serialize(&self, ctx: &Context, input: &[Vec<Vec<Vec<bool>>>]) -> Option<(usize, Vec<u8>)> {
+        if input.is_empty() {
+            return None;
+        }
+
+        let data = &input[0];
+
+        for (known_pieces, code) in &self.known_piece_sets {
+            if data == known_pieces {
+                return Some((1, code.to_vec()));
+            }
+        }
+
+        let mut ret = vec![];
+        ret.push(b'/');
+
+        let (_, app) = DecInt.serialize(ctx, &[data.len() as i32])?;
+        ret.extend(app);
+
+        for i in 0..data.len() {
+            ret.push(b'/');
+
+            let (_, app) = PieceCombinator.serialize(ctx, &data[i..=i])?;
+            ret.extend(app);
+        }
+
+        Some((1, ret))
+    }
+
+    fn deserialize(
+        &self,
+        ctx: &Context,
+        input: &[u8],
+    ) -> Option<(usize, Vec<Vec<Vec<Vec<bool>>>>)> {
+        let mut sequencer = Sequencer::new(input);
+
+        for (known_pieces, code) in &self.known_piece_sets {
+            if sequencer
+                .deserialize(ctx, Dict::new(0, code.to_vec()))
+                .is_some()
+            {
+                return Some((sequencer.n_read(), vec![known_pieces.clone()]));
+            }
+        }
+
+        sequencer.deserialize(ctx, Dict::new(0, "/"))?;
+
+        let n_pieces = sequencer.deserialize(ctx, DecInt)?;
+        assert_eq!(n_pieces.len(), 1);
+        let n_pieces = n_pieces[0] as usize;
+
+        let mut ret = vec![];
+        for _ in 0..n_pieces {
+            sequencer.deserialize(ctx, Dict::new(0, "/"))?;
+            let piece: Vec<Vec<Vec<bool>>> = sequencer.deserialize(ctx, PieceCombinator)?;
+            assert_eq!(piece.len(), 1);
+            ret.push(piece.into_iter().next().unwrap());
         }
 
         Some((sequencer.n_read(), vec![ret]))

@@ -1,10 +1,10 @@
 use crate::util;
 use cspuz_rs::polyomino::{
-    normalize_and_merge_pieces, pentominoes, polyomino_placement, tetrominoes, PieceCombinator,
+    normalize_and_merge_pieces, pentominoes, polyomino_placement, tetrominoes, PiecesCombinator,
 };
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    DecInt, Dict, HexInt, Map, MultiDigit, Optionalize, Seq, Sequencer, Size, Spaces, Tuple2,
+    HexInt, Map, Optionalize, Seq, Sequencer, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{Solver, FALSE};
 
@@ -160,89 +160,6 @@ fn size5() -> Vec<Vec<Vec<bool>>> {
     ]
 }
 
-struct PiecesCombinator;
-
-impl Combinator<Vec<Vec<Vec<bool>>>> for PiecesCombinator {
-    fn serialize(&self, ctx: &Context, input: &[Vec<Vec<Vec<bool>>>]) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let data = &input[0];
-
-        if data == &size3() {
-            return Some((1, vec![b'/', b'/', b'c']));
-        }
-        if data == &size4() {
-            return Some((1, vec![b'/', b'/', b'd']));
-        }
-        if data == &size5() {
-            return Some((1, vec![b'/', b'/', b'e']));
-        }
-        if data == &tetrominoes() {
-            return Some((1, vec![b'/', b'/', b't']));
-        }
-        if data == &pentominoes() {
-            return Some((1, vec![b'/', b'/', b'p']));
-        }
-
-        let mut ret = vec![];
-        ret.push(b'/');
-
-        let (_, app) = DecInt.serialize(ctx, &[data.len() as i32])?;
-        ret.extend(app);
-
-        for i in 0..data.len() {
-            ret.push(b'/');
-
-            let (_, app) = PieceCombinator.serialize(ctx, &data[i..=i])?;
-            ret.extend(app);
-        }
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Vec<Vec<Vec<bool>>>>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        if sequencer.deserialize(ctx, Dict::new(0, "//c")).is_some() {
-            return Some((sequencer.n_read(), vec![size3()]));
-        }
-        if sequencer.deserialize(ctx, Dict::new(0, "//d")).is_some() {
-            return Some((sequencer.n_read(), vec![size4()]));
-        }
-        if sequencer.deserialize(ctx, Dict::new(0, "//e")).is_some() {
-            return Some((sequencer.n_read(), vec![size5()]));
-        }
-        if sequencer.deserialize(ctx, Dict::new(0, "//t")).is_some() {
-            return Some((sequencer.n_read(), vec![tetrominoes()]));
-        }
-        if sequencer.deserialize(ctx, Dict::new(0, "//p")).is_some() {
-            return Some((sequencer.n_read(), vec![pentominoes()]));
-        }
-
-        sequencer.deserialize(ctx, Dict::new(0, "/"))?;
-
-        let n_pieces = sequencer.deserialize(ctx, DecInt)?;
-        assert_eq!(n_pieces.len(), 1);
-        let n_pieces = n_pieces[0] as usize;
-
-        let mut ret = vec![];
-        for _ in 0..n_pieces {
-            sequencer.deserialize(ctx, Dict::new(0, "/"))?;
-            let piece: Vec<Vec<Vec<bool>>> = sequencer.deserialize(ctx, PieceCombinator)?;
-            assert_eq!(piece.len(), 1);
-            ret.push(piece.into_iter().next().unwrap());
-        }
-
-        Some((sequencer.n_read(), vec![ret]))
-    }
-}
-
 pub type Grid = (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<BattleshipClue>>);
 
 pub type Problem = (Grid, Vec<Vec<Vec<bool>>>);
@@ -354,7 +271,16 @@ impl Combinator<Grid> for GridCombinator {
 }
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(GridCombinator, PiecesCombinator))
+    Size::new(Tuple2::new(
+        GridCombinator,
+        PiecesCombinator::new(vec![
+            (size3(), b"//c"),
+            (size4(), b"//d"),
+            (size5(), b"//e"),
+            (tetrominoes(), b"//t"),
+            (pentominoes(), b"//p"),
+        ]),
+    ))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
