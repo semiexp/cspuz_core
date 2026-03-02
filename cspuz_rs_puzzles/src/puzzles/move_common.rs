@@ -1,5 +1,5 @@
 use cspuz_rs::graph;
-use cspuz_rs::solver::{count_true, IntVarArray2D, Solver};
+use cspuz_rs::solver::{count_true, IntVarArray2D, Solver, TRUE};
 
 pub fn add_movement_constraints(
     solver: &mut Solver,
@@ -19,6 +19,7 @@ pub fn add_movement_constraints(
             }
         }
     }
+    let mut start_amount = 0;
     // Create int array to track number movement
     let movement_as_num = &solver.int_var_2d((h, w), -2, clue_max);
     let dir = &solver.int_var_2d((h, w), 0, 4); // 1: up, 2: down, 3: left, 4: right
@@ -58,8 +59,10 @@ pub fn add_movement_constraints(
             if let Some(n) = start_state[y][x] {
                 if n == -1 {
                     solver.add_expr(movement_as_num.at((y, x)).ge(0));
+                    start_amount += 1;
                 } else if n > -1 {
                     solver.add_expr(movement_as_num.at((y, x)).eq(n));
+                    start_amount += 1;
                 }
                 solver.add_expr(!has_in_edge);
             } else {
@@ -71,6 +74,10 @@ pub fn add_movement_constraints(
                         .eq(0)
                         .imp(end_state.at((y, x)).eq(-2)),
                 );
+                solver.add_expr((end_state.at((y, x)).eq(-2)).iff(
+                    movement.vertex_neighbors((y, x)).count_true().eq(0)
+                        | movement.vertex_neighbors((y, x)).count_true().eq(2),
+                ));
             }
 
             // Handle number propagation and grid edge restriction
@@ -140,5 +147,55 @@ pub fn add_movement_constraints(
             solver.add_expr((end_state.at((y, x)).eq(movement_as_num.at((y, x)))).iff(d.eq(0)));
         }
     }
+
+    // No loops
+    let mut aux_graph = graph::Graph::new((h - 1) * (w - 1) + 1 + (h - 1) * w + h * (w - 1));
+    let mut indicator = vec![TRUE; (h - 1) * (w - 1) + 1];
+
+    for y in 0..h {
+        for x in 0..w - 1 {
+            let v1 = if y == 0 {
+                (h - 1) * (w - 1)
+            } else {
+                (y - 1) * (w - 1) + x
+            };
+            let v2 = if y == h - 1 {
+                (h - 1) * (w - 1)
+            } else {
+                y * (w - 1) + x
+            };
+
+            let e = indicator.len();
+            aux_graph.add_edge(e, v1);
+            aux_graph.add_edge(e, v2);
+
+            indicator.push(!movement.horizontal.at((y, x)));
+        }
+    }
+
+    for y in 0..h - 1 {
+        for x in 0..w {
+            let v1 = if x == 0 {
+                (h - 1) * (w - 1)
+            } else {
+                y * (w - 1) + x - 1
+            };
+            let v2 = if x == w - 1 {
+                (h - 1) * (w - 1)
+            } else {
+                y * (w - 1) + x
+            };
+
+            let e = indicator.len();
+            aux_graph.add_edge(e, v1);
+            aux_graph.add_edge(e, v2);
+
+            indicator.push(!movement.vertical.at((y, x)));
+        }
+    }
+
+    graph::active_vertices_connected(solver, &indicator, &aux_graph);
+
     solver.add_expr(end_state.ne(-1));
+    solver.add_expr(end_state.ge(0).count_true().eq(start_amount));
 }
