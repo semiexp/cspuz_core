@@ -7,6 +7,7 @@ pub mod aquapelago;
 pub mod aquarium;
 pub mod araf;
 pub mod archipelago;
+pub mod armyants;
 pub mod ayeheya;
 pub mod balloon;
 pub mod barns;

@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{sum, Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_armyants(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -22,7 +22,7 @@ pub fn solve_armyants(
         }
     }
 
-    let end_state = &solver.int_var_2d((h, w), -1, clue_max);
+    let end_state = &solver.int_var_2d((h, w), -2, clue_max);
     solver.add_answer_key_int(end_state);
     let movement = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&movement.horizontal);
@@ -49,16 +49,28 @@ pub fn solve_armyants(
         for x in 0..w {
             solver.add_expr(end_state.at((y, x)).eq(1).imp(
                 end_state.four_neighbors((y, x)).ge(1).count_true().eq(0)
-                    ^ (end_state.four_neighbors((y, x)).ge(1).count_true().eq(1)
-                        & sum(end_state.ge(0).four_neighbors((y, x))).eq(2)),
+                    | (end_state.four_neighbors((y, x)).ge(1).count_true().eq(1)
+                        & end_state.four_neighbors((y, x)).eq(2).count_true().eq(1)),
             ));
             solver.add_expr(
                 end_state.at((y, x)).ge(2).imp(
                     (end_state.four_neighbors((y, x)).ge(1).count_true().eq(1)
-                        & sum(end_state.four_neighbors((y, x))).eq(end_state.at((y, x)) - 1))
-                        ^ (end_state.four_neighbors((y, x)).ge(1).count_true().eq(2)
-                            & sum(end_state.ge(0).four_neighbors((y, x)))
-                                .eq(end_state.at((y, x)) + end_state.at((y, x)))),
+                        & end_state
+                            .four_neighbors((y, x))
+                            .eq(end_state.at((y, x)) - 1)
+                            .count_true()
+                            .eq(1))
+                        | (end_state.four_neighbors((y, x)).ge(1).count_true().eq(2)
+                            & (end_state
+                                .four_neighbors((y, x))
+                                .eq(end_state.at((y, x)) - 1)
+                                .count_true()
+                                .eq(1)
+                                & end_state
+                                    .four_neighbors((y, x))
+                                    .eq(end_state.at((y, x)) + 1)
+                                    .count_true()
+                                    .eq(1))),
                 ),
             );
         }

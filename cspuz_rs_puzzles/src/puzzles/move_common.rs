@@ -68,8 +68,8 @@ pub fn add_movement_constraints(
                     movement
                         .vertex_neighbors((y, x))
                         .count_true()
-                        .ge(1)
-                        .iff(end_state.at((y, x)).ge(0)),
+                        .eq(0)
+                        .imp(end_state.at((y, x)).eq(-2)),
                 );
             }
 
