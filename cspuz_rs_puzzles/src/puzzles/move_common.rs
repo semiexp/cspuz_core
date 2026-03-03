@@ -3,6 +3,7 @@ use cspuz_rs::solver::{count_true, IntVarArray2D, Solver, TRUE};
 
 pub fn add_movement_constraints(
     solver: &mut Solver,
+    clue_max: i32,
     movement: &graph::BoolGridEdges,
     start_state: &[Vec<Option<i32>>],
     end_state: &IntVarArray2D,
@@ -10,15 +11,6 @@ pub fn add_movement_constraints(
     w: usize, // width
     straight: bool,
 ) {
-    // Get max number
-    let mut clue_max = 0;
-    for y in 0..h {
-        for x in 0..w {
-            if let Some(n) = start_state[y][x] {
-                clue_max = clue_max.max(n);
-            }
-        }
-    }
     let mut start_amount = 0;
     // Create int array to track number movement
     let movement_as_num = &solver.int_var_2d((h, w), -2, clue_max);

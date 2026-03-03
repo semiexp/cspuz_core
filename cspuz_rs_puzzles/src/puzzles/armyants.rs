@@ -14,15 +14,19 @@ pub fn solve_armyants(
     let mut solver = Solver::new();
 
     let mut clue_max = 0;
+    let mut num_qmark = 0;
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 clue_max = clue_max.max(n);
+                if n == -1 {
+                    num_qmark += 1;
+                }
             }
         }
     }
 
-    let end_state = &solver.int_var_2d((h, w), -2, clue_max);
+    let end_state = &solver.int_var_2d((h, w), -2, clue_max + num_qmark);
     solver.add_answer_key_int(end_state);
     let movement = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&movement.horizontal);
@@ -43,38 +47,93 @@ pub fn solve_armyants(
         }
     }
 
-    add_movement_constraints(&mut solver, movement, clues, end_state, h, w, false);
+    add_movement_constraints(
+        &mut solver,
+        clue_max + num_qmark,
+        movement,
+        clues,
+        end_state,
+        h,
+        w,
+        false,
+    );
 
     for y in 0..h {
         for x in 0..w {
-            solver.add_expr(end_state.at((y, x)).eq(1).imp(
-                end_state.four_neighbors((y, x)).ge(1).count_true().eq(0)
-                    | (end_state.four_neighbors((y, x)).ge(1).count_true().eq(1)
-                        & end_state.four_neighbors((y, x)).eq(2).count_true().eq(1)),
-            ));
+            let connected = &solver.bool_var_2d((h, w));
+            solver.add_expr(
+                end_state
+                    .four_neighbors((y, x))
+                    .ge(end_state.at((y, x)) + 1)
+                    .count_true()
+                    .eq(0)
+                    .imp(connected.imp(end_state.ge(1))),
+            );
+            solver.add_expr(
+                ((end_state.at((y, x)).ge(1))
+                    & end_state
+                        .four_neighbors((y, x))
+                        .ge(end_state.at((y, x)) + 1)
+                        .count_true()
+                        .eq(0))
+                .imp(connected.count_true().eq(end_state.at((y, x)))),
+            );
+            graph::active_vertices_connected_2d(&mut solver, connected);
+
+            for nb in connected.four_neighbor_indices((y, x)) {
+                solver.add_expr(
+                    end_state
+                        .four_neighbors((y, x))
+                        .ge(end_state.at((y, x)) + 1)
+                        .count_true()
+                        .eq(0)
+                        .imp(end_state.ge(1).at(nb).imp(connected.at(nb))),
+                );
+            }
+            solver.add_expr(
+                end_state
+                    .four_neighbors((y, x))
+                    .ge(end_state.at((y, x)) + 1)
+                    .count_true()
+                    .eq(0)
+                    .imp(
+                        (end_state.ge(1).slice((1.., ..)) & end_state.ge(1).slice((..(h - 1), ..)))
+                            .imp(
+                                connected
+                                    .slice((1.., ..))
+                                    .iff(connected.slice((..(h - 1), ..))),
+                            ),
+                    ),
+            );
+            solver.add_expr(
+                end_state
+                    .four_neighbors((y, x))
+                    .ge(end_state.at((y, x)) + 1)
+                    .count_true()
+                    .eq(0)
+                    .imp(
+                        (end_state.ge(1).slice((.., 1..)) & end_state.ge(1).slice((.., ..(w - 1))))
+                            .imp(
+                                connected
+                                    .slice((.., 1..))
+                                    .iff(connected.slice((.., ..(w - 1)))),
+                            ),
+                    ),
+            );
+
             solver.add_expr(
                 end_state.at((y, x)).ge(2).imp(
-                    (end_state.four_neighbors((y, x)).ge(1).count_true().eq(1)
-                        & end_state
-                            .four_neighbors((y, x))
-                            .eq(end_state.at((y, x)) - 1)
-                            .count_true()
-                            .eq(1))
-                        | (end_state.four_neighbors((y, x)).ge(1).count_true().eq(2)
-                            & (end_state
-                                .four_neighbors((y, x))
-                                .eq(end_state.at((y, x)) - 1)
-                                .count_true()
-                                .eq(1)
-                                & end_state
-                                    .four_neighbors((y, x))
-                                    .eq(end_state.at((y, x)) + 1)
-                                    .count_true()
-                                    .eq(1))),
+                    end_state
+                        .four_neighbors((y, x))
+                        .eq(end_state.at((y, x)) - 1)
+                        .count_true()
+                        .eq(1),
                 ),
             );
         }
     }
+
+    solver.add_expr(end_state.ne(0));
 
     solver
         .irrefutable_facts()
