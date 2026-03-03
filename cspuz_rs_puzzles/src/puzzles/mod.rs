@@ -13,6 +13,7 @@ pub mod barns;
 pub mod battleship;
 pub mod bdwalk;
 pub mod bosanowa;
+pub mod canalview;
 pub mod castle_walker;
 pub mod castle_wall;
 pub mod cave;
