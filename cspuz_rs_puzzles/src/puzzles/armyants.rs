@@ -19,14 +19,14 @@ pub fn solve_armyants(
         for x in 0..w {
             if let Some(n) = clues[y][x] {
                 clue_max = clue_max.max(n);
-                if n == -1 {
+                if n < 0 {
                     num_qmark += 1;
                 }
             }
         }
     }
 
-    let end_state = &solver.int_var_2d((h, w), -2, clue_max + num_qmark);
+    let end_state = &solver.int_var_2d((h, w), -1, clue_max + num_qmark);
     solver.add_answer_key_int(end_state);
     let movement = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&movement.horizontal);
@@ -196,10 +196,10 @@ mod tests {
         let (movement, final_state) = ans.unwrap();
 
         let expected_nums = crate::util::tests::to_option_2d([
-            [2, 1, -2, -2],
-            [-2, -2, 4, -2],
-            [-2, -2, 3, -2],
-            [-2, -2, 2, 1],
+            [2, 1, -1, -1],
+            [-1, -1, 4, -1],
+            [-1, -1, 3, -1],
+            [-1, -1, 2, 1],
         ]);
 
         let expected_paths = graph::BoolGridEdgesIrrefutableFacts {

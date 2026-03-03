@@ -13,7 +13,7 @@ pub fn add_movement_constraints(
 ) {
     let mut start_amount = 0;
     // Create int array to track number movement
-    let movement_as_num = &solver.int_var_2d((h, w), -2, clue_max);
+    let movement_as_num = &solver.int_var_2d((h, w), -1, clue_max);
     let dir = &solver.int_var_2d((h, w), 0, 4); // 1: up, 2: down, 3: left, 4: right
 
     // Link direction with movement grid
@@ -64,9 +64,9 @@ pub fn add_movement_constraints(
                         .vertex_neighbors((y, x))
                         .count_true()
                         .eq(0)
-                        .imp(end_state.at((y, x)).eq(-2)),
+                        .imp(end_state.at((y, x)).eq(-1)),
                 );
-                solver.add_expr((end_state.at((y, x)).eq(-2)).iff(
+                solver.add_expr((end_state.at((y, x)).eq(-1)).iff(
                     movement.vertex_neighbors((y, x)).count_true().eq(0)
                         | movement.vertex_neighbors((y, x)).count_true().eq(2),
                 ));
@@ -135,7 +135,7 @@ pub fn add_movement_constraints(
             }
 
             // If a cell doesn't have a number in the end state, either the cell is on a movement line but not at its end, or its not on a line at all
-            solver.add_expr((d.ne(0)).imp(end_state.at((y, x)).eq(-2)));
+            solver.add_expr((d.ne(0)).imp(end_state.at((y, x)).eq(-1)));
             solver.add_expr((end_state.at((y, x)).eq(movement_as_num.at((y, x)))).iff(d.eq(0)));
         }
     }
@@ -188,6 +188,5 @@ pub fn add_movement_constraints(
 
     graph::active_vertices_connected(solver, &indicator, &aux_graph);
 
-    solver.add_expr(end_state.ne(-1));
     solver.add_expr(end_state.ge(0).count_true().eq(start_amount));
 }
