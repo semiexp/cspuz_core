@@ -112,6 +112,7 @@ pub mod shakashaka;
 pub mod shikaku;
 pub mod shimaguni;
 pub mod simpleloop;
+pub mod skyscrapers;
 pub mod slalom;
 pub mod slashpack;
 pub mod slicy;

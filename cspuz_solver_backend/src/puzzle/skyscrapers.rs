@@ -1,18 +1,12 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::Uniqueness;
-use cspuz_rs_puzzles::puzzles::easyasabc;
+use cspuz_rs_puzzles::puzzles::skyscrapers;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (range, (clues_up, clues_down, clues_left, clues_right, cells)) =
-        easyasabc::deserialize_problem(url).ok_or("invalid url")?;
-    let ans: Option<Vec<Vec<Option<i32>>>> = easyasabc::solve_easyasabc(
-        range,
-        &clues_up,
-        &clues_down,
-        &clues_left,
-        &clues_right,
-        cells,
-    );
+    let (clues_up, clues_down, clues_left, clues_right, cells) =
+        skyscrapers::deserialize_problem(url).ok_or("invalid url")?;
+    let ans: Option<Vec<Vec<Option<i32>>>> =
+        skyscrapers::solve_skyscrapers(&clues_up, &clues_down, &clues_left, &clues_right, &cells);
 
     let height = clues_left.len();
     let width = clues_up.len();
@@ -69,19 +63,11 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     }
                 }
             } else if let Some(ans) = &ans {
-                if let Some(a) = ans[y][x] {
-                    if a == -1 {
-                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
-                    } else if (1..=26).contains(&a) {
-                        let p = (a - 1) as usize;
-                        board.push(Item::cell(
-                            y + 1,
-                            x + 1,
-                            "green",
-                            ItemKind::Text(&ALPHA[p..=p]),
-                        ));
+                if let Some(n) = ans[y][x] {
+                    if n > 0 {
+                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Num(n)));
                     } else {
-                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Num(clue - 26)));
+                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
                     }
                 }
             }
