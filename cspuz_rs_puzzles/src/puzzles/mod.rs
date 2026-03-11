@@ -110,6 +110,7 @@ pub mod sendai;
 pub mod shakashaka;
 pub mod shikaku;
 pub mod shimaguni;
+pub mod simplegako;
 pub mod simpleloop;
 pub mod slalom;
 pub mod slashpack;
