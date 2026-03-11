@@ -48,9 +48,9 @@ pub fn solve_doubleback(
         for &pt in &rooms[i] {
             cells.push(is_passed.at(pt));
         }
-        // Check every cell is visited
-        solver.add_expr(count_true(&cells).eq(rooms[i].len() as i32));
     }
+
+    solver.add_expr(is_passed);
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
