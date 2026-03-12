@@ -1201,43 +1201,36 @@ impl<C> OutsideCells2<C> {
     }
 }
 
-impl<T, C> Combinator<(Vec<Option<T>>, Vec<Option<T>>)> for OutsideCells2<C>
+impl<T, C> Combinator<(Vec<T>, Vec<T>)> for OutsideCells2<C>
 where
     T: Clone + PartialEq,
     C: Combinator<T>,
 {
-    fn serialize(
-        &self,
-        ctx: &Context,
-        input: &[(Vec<Option<T>>, Vec<Option<T>>)],
-    ) -> Option<(usize, Vec<u8>)> {
+    fn serialize(&self, ctx: &Context, input: &[(Vec<T>, Vec<T>)]) -> Option<(usize, Vec<u8>)> {
         if input.len() == 0 {
             return None;
         }
-        let h: usize = ctx.height?;
-        let w = ctx.width?;
+        let height = ctx.height?;
+        let width = ctx.width?;
 
-        let clues = &input[0];
+        let input = &input[0];
 
-        let surrounding = [&clues.0[..], &clues.1[..]].concat();
-        let ret = Seq::new(base_serializer, width + height)
+        let surrounding = [&input.0[..], &input.1[..]].concat();
+        let ret = Seq::new(&self.base_serializer, width + height)
             .serialize(ctx, &[surrounding])?
             .1;
 
         Some((1, ret))
     }
 
-    fn deserialize(
-        &self,
-        ctx: &Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<(Vec<Option<T>>, Vec<Option<T>>)>)> {
+    fn deserialize(&self, ctx: &Context, input: &[u8]) -> Option<(usize, Vec<(Vec<T>, Vec<T>)>)> {
         let mut sequencer = Sequencer::new(input);
 
         let height = ctx.height?;
         let width = ctx.width?;
 
-        let surrounding = sequencer.deserialize(ctx, Seq::new(base_serializer, width + height))?;
+        let surrounding =
+            sequencer.deserialize(ctx, Seq::new(&self.base_serializer, width + height))?;
         if surrounding.len() != 1 {
             return None;
         }
@@ -1260,13 +1253,7 @@ impl<C> OutsideCells4<C> {
     }
 }
 
-impl<T, C>
-    Combinator<(
-        Vec<Option<T>>,
-        Vec<Option<T>>,
-        Vec<Option<T>>,
-        Vec<Option<T>>,
-    )> for OutsideCells4<C>
+impl<T, C> Combinator<(Vec<T>, Vec<T>, Vec<T>, Vec<T>)> for OutsideCells4<C>
 where
     T: Clone + PartialEq,
     C: Combinator<T>,
@@ -1274,23 +1261,18 @@ where
     fn serialize(
         &self,
         ctx: &Context,
-        input: &[(
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-        )],
+        input: &[(Vec<T>, Vec<T>, Vec<T>, Vec<T>)],
     ) -> Option<(usize, Vec<u8>)> {
         if input.len() == 0 {
             return None;
         }
-        let h: usize = ctx.height?;
-        let w = ctx.width?;
+        let height = ctx.height?;
+        let width = ctx.width?;
 
-        let clues = &input[0];
+        let input = &input[0];
 
-        let surrounding = [&clues.0[..], &clues.1[..], &clues.2[..], &clues.3[..]].concat();
-        let ret = Seq::new(base_serializer, width + height)
+        let surrounding = [&input.0[..], &input.1[..], &input.2[..], &input.3[..]].concat();
+        let ret = Seq::new(&self.base_serializer, width + height)
             .serialize(ctx, &[surrounding])?
             .1;
 
@@ -1301,22 +1283,14 @@ where
         &self,
         ctx: &Context,
         input: &[u8],
-    ) -> Option<(
-        usize,
-        Vec<(
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-            Vec<Option<T>>,
-        )>,
-    )> {
+    ) -> Option<(usize, Vec<(Vec<T>, Vec<T>, Vec<T>, Vec<T>)>)> {
         let mut sequencer = Sequencer::new(input);
 
         let height = ctx.height?;
         let width = ctx.width?;
 
         let surrounding =
-            sequencer.deserialize(ctx, Seq::new(base_serializer, 2 * (width + height)))?;
+            sequencer.deserialize(ctx, Seq::new(&self.base_serializer, 2 * (width + height)))?;
         if surrounding.len() != 1 {
             return None;
         }
