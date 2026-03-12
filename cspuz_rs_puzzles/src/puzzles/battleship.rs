@@ -4,7 +4,7 @@ use cspuz_rs::polyomino::{
 };
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Map, Optionalize, Seq, Sequencer, Size, Spaces, Tuple2,
+    HexInt, Map, Optionalize, OutsideCells2, Size, Spaces, Tuple3,
 };
 use cspuz_rs::solver::{Solver, FALSE};
 
@@ -160,18 +160,13 @@ fn size5() -> Vec<Vec<Vec<bool>>> {
     ]
 }
 
-pub type Grid = (Vec<Option<i32>>, Vec<Option<i32>>, Vec<Vec<BattleshipClue>>);
+pub type Problem = (
+    (Vec<Option<i32>>, Vec<Option<i32>>),
+    Vec<Vec<BattleshipClue>>,
+    Vec<Vec<Vec<bool>>>,
+);
 
-pub type Problem = (Grid, Vec<Vec<Vec<bool>>>);
-
-fn external_combinator() -> impl Combinator<Option<i32>> {
-    Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])
-}
-
-fn grid_combinator() -> impl Combinator<BattleshipClue> {
+fn clue_combinator() -> impl Combinator<BattleshipClue> {
     Choice::new(vec![
         Box::new(Spaces::new(BattleshipClue::None, 'g')),
         Box::new(Map::new(
@@ -208,71 +203,13 @@ fn grid_combinator() -> impl Combinator<BattleshipClue> {
     ])
 }
 
-pub struct GridCombinator;
-
-impl Combinator<Grid> for GridCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[Grid],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let problem = &input[0];
-
-        let surrounding = [&problem.0[..], &problem.1[..]].concat();
-        let mut ret = Seq::new(external_combinator(), width + height)
-            .serialize(ctx, &[surrounding])?
-            .1;
-
-        let cells = &problem.2;
-
-        ret.extend(
-            ContextBasedGrid::new(grid_combinator())
-                .serialize(ctx, &[cells.clone()])?
-                .1,
-        );
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Grid>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let surrounding =
-            sequencer.deserialize(ctx, Seq::new(external_combinator(), width + height))?;
-        if surrounding.len() != 1 {
-            return None;
-        }
-        let surrounding = surrounding.into_iter().next().unwrap();
-
-        let clues_up = surrounding[..width].to_vec();
-        let clues_left = surrounding[width..].to_vec();
-
-        let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(grid_combinator()))?;
-        if cells.len() != 1 {
-            return None;
-        }
-        let cells = cells.into_iter().next().unwrap();
-        Some((sequencer.n_read(), vec![(clues_up, clues_left, cells)]))
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
-        GridCombinator,
+    Size::new(Tuple3::new(
+        OutsideCells2::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ])),
+        ContextBasedGrid::new(clue_combinator()),
         PiecesCombinator::new(vec![
             (size3(), b"//c"),
             (size4(), b"//d"),
@@ -304,23 +241,21 @@ mod tests {
     use super::*;
 
     // Generic problem testing
-    fn problem_for_tests1() -> (Grid, Vec<Vec<Vec<bool>>>) {
+    fn problem_for_tests1() -> Problem {
         // https://puzz.link/p?battleship/6/6/g12h2g30g3gk0r3w//c
         let mut ret = vec![vec![BattleshipClue::None; 6]; 6];
         ret[3][0] = BattleshipClue::ShipLeft;
         ret[0][5] = BattleshipClue::Water;
-
-        let grid = (
+        let outside_clues = (
             vec![None, Some(1), Some(2), None, None, Some(2)],
             vec![None, Some(3), Some(0), None, Some(3), None],
-            ret,
         );
 
-        (grid, size3())
+        (outside_clues, ret, size3())
     }
 
     // Corner ship testing
-    fn problem_for_tests2() -> (Grid, Vec<Vec<Vec<bool>>>) {
+    fn problem_for_tests2() -> Problem {
         // https://puzz.link/p?battleship/2/5/m7hai89g/2/22u/22u
         let mut ret = vec![vec![BattleshipClue::None; 2]; 5];
         ret[0][0] = BattleshipClue::ShipUpLeft;
@@ -328,18 +263,18 @@ mod tests {
         ret[3][1] = BattleshipClue::ShipUpRight;
         ret[4][0] = BattleshipClue::ShipDownLeft;
 
-        let grid = (vec![None, None], vec![None, None, None, None, None], ret);
+        let outside_clues = (vec![None; 2], vec![None; 5]);
 
         let pieces = vec![
             vec![vec![true, true], vec![true, true]],
             vec![vec![true, true], vec![true, true]],
         ];
 
-        (grid, pieces)
+        (outside_clues, ret, pieces)
     }
 
     // Ends and squares on border testing
-    fn problem_for_tests3() -> (Grid, Vec<Vec<Vec<bool>>>) {
+    fn problem_for_tests3() -> Problem {
         // https://puzz.link/p?battleship/7/7/ti5s1i5g3g4g5i2s5i/5/31s/31s/31s/31s/33bk
         let mut ret = vec![vec![BattleshipClue::None; 7]; 7];
         ret[0][3] = BattleshipClue::ShipSquare;
@@ -351,11 +286,7 @@ mod tests {
         ret[3][4] = BattleshipClue::ShipRight;
         ret[4][3] = BattleshipClue::ShipDown;
 
-        let grid = (
-            vec![None, None, None, None, None, None, None],
-            vec![None, None, None, None, None, None, None],
-            ret,
-        );
+        let outside_clues = (vec![None; 7], vec![None; 7]);
 
         let pieces = vec![
             vec![vec![true, true, true]],
@@ -369,13 +300,13 @@ mod tests {
             ],
         ];
 
-        (grid, pieces)
+        (outside_clues, ret, pieces)
     }
 
     #[test]
     fn test_battleship_problem1() {
-        let (grid, pieces) = problem_for_tests1();
-        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
+        let (outside_clues, grid, pieces) = problem_for_tests1();
+        let ans = solve_battleship(&outside_clues.0, &outside_clues.1, &grid, &pieces);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -392,8 +323,8 @@ mod tests {
 
     #[test]
     fn test_battleship_problem2() {
-        let (grid, pieces) = problem_for_tests2();
-        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
+        let (outside_clues, grid, pieces) = problem_for_tests2();
+        let ans = solve_battleship(&outside_clues.0, &outside_clues.1, &grid, &pieces);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -404,8 +335,8 @@ mod tests {
 
     #[test]
     fn test_battleship_problem3() {
-        let (grid, pieces) = problem_for_tests3();
-        let ans = solve_battleship(&grid.0, &grid.1, &grid.2, &pieces);
+        let (outside_clues, grid, pieces) = problem_for_tests3();
+        let ans = solve_battleship(&outside_clues.0, &outside_clues.1, &grid, &pieces);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
