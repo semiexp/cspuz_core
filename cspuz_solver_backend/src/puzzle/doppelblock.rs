@@ -3,7 +3,7 @@ use crate::uniqueness::Uniqueness;
 use cspuz_rs_puzzles::puzzles::doppelblock;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (clues_up, clues_left, cells) =
+    let ((clues_up, clues_left), cells) =
         doppelblock::deserialize_problem(url).ok_or("invalid url")?;
     let ans: Option<Vec<Vec<Option<i32>>>> =
         doppelblock::solve_doppelblock(&clues_up, &clues_left, &cells);
