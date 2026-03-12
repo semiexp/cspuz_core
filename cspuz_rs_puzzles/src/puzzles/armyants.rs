@@ -61,64 +61,38 @@ pub fn solve_armyants(
     for y in 0..h {
         for x in 0..w {
             let connected = &solver.bool_var_2d((h, w));
-            solver.add_expr(
-                end_state
-                    .four_neighbors((y, x))
-                    .ge(end_state.at((y, x)) + 1)
-                    .count_true()
-                    .eq(0)
-                    .imp(connected.imp(end_state.ge(1))),
-            );
-            solver.add_expr(
-                ((end_state.at((y, x)).ge(1))
-                    & end_state
-                        .four_neighbors((y, x))
-                        .ge(end_state.at((y, x)) + 1)
-                        .count_true()
-                        .eq(0))
-                .imp(connected.count_true().eq(end_state.at((y, x)))),
-            );
+            let is_maximal_ant = end_state
+                .four_neighbors((y, x))
+                .ge(end_state.at((y, x)) + 1)
+                .count_true()
+                .eq(0)
+                & end_state.at((y, x)).ge(1);
+            solver.add_expr(is_maximal_ant.imp(connected.count_true().eq(end_state.at((y, x)))));
+
             graph::active_vertices_connected_2d(&mut solver, connected);
 
             for nb in connected.four_neighbor_indices((y, x)) {
-                solver.add_expr(
-                    end_state
-                        .four_neighbors((y, x))
-                        .ge(end_state.at((y, x)) + 1)
-                        .count_true()
-                        .eq(0)
-                        .imp(end_state.ge(1).at(nb).imp(connected.at(nb))),
-                );
+                solver.add_expr(is_maximal_ant.imp(end_state.ge(1).at(nb).imp(connected.at(nb))));
             }
+
             solver.add_expr(
-                end_state
-                    .four_neighbors((y, x))
-                    .ge(end_state.at((y, x)) + 1)
-                    .count_true()
-                    .eq(0)
+                is_maximal_ant
+                    .imp(end_state.ge(1).slice((1.., ..)) & end_state.ge(1).slice((..(h - 1), ..)))
                     .imp(
-                        (end_state.ge(1).slice((1.., ..)) & end_state.ge(1).slice((..(h - 1), ..)))
-                            .imp(
-                                connected
-                                    .slice((1.., ..))
-                                    .iff(connected.slice((..(h - 1), ..))),
-                            ),
+                        connected
+                            .slice((1.., ..))
+                            .iff(connected.slice((..(h - 1), ..))),
                     ),
             );
             solver.add_expr(
-                end_state
-                    .four_neighbors((y, x))
-                    .ge(end_state.at((y, x)) + 1)
-                    .count_true()
-                    .eq(0)
-                    .imp(
-                        (end_state.ge(1).slice((.., 1..)) & end_state.ge(1).slice((.., ..(w - 1))))
-                            .imp(
-                                connected
-                                    .slice((.., 1..))
-                                    .iff(connected.slice((.., ..(w - 1)))),
-                            ),
-                    ),
+                is_maximal_ant.imp(
+                    (end_state.ge(1).slice((.., 1..)) & end_state.ge(1).slice((.., ..(w - 1))))
+                        .imp(
+                            connected
+                                .slice((.., 1..))
+                                .iff(connected.slice((.., ..(w - 1)))),
+                        ),
+                ),
             );
 
             solver.add_expr(
