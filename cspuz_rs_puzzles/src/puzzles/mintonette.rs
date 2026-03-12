@@ -48,19 +48,16 @@ pub fn solve_mintonette(
     }
 
     for i in 0..blocks.len() {
+        let (yi, xi, ni) = clue_pos[i];
+        if ni > -1 {
+            solver.add_expr((blocks[i].clone() & is_turn).count_true().eq(ni));
+        }
         for j in (i + 1)..blocks.len() {
-            let (yi, xi, ni) = clue_pos[i];
             let (yj, xj, nj) = clue_pos[j];
 
             if (ni != nj) & (ni > -1) & (nj > -1) {
                 solver.add_expr(!(blocks[i].at((yj, xj))));
                 solver.add_expr(!(blocks[j].at((yi, xi))));
-            }
-            if ni > -1 {
-                solver.add_expr((blocks[i].clone() & is_turn).count_true().eq(ni));
-            }
-            if nj > -1 {
-                solver.add_expr((blocks[j].clone() & is_turn).count_true().eq(nj));
             }
         }
     }
