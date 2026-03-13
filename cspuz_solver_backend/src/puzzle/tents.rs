@@ -3,7 +3,7 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::tents;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (clues_up, clues_left, trees) = tents::deserialize_problem(url).ok_or("invalid url")?;
+    let ((clues_up, clues_left), trees) = tents::deserialize_problem(url).ok_or("invalid url")?;
     let ans = tents::solve_tents(&clues_up, &clues_left, &trees);
 
     let height = clues_left.len();
