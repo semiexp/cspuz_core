@@ -53,8 +53,6 @@ pub fn solve_armyants(
         movement,
         clues,
         end_state,
-        h,
-        w,
         false,
     );
 

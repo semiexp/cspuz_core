@@ -1,3 +1,4 @@
+use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::solver::{count_true, IntVarArray2D, Solver, TRUE};
 
@@ -7,11 +8,14 @@ pub fn add_movement_constraints(
     movement: &graph::BoolGridEdges,
     start_state: &[Vec<Option<i32>>],
     end_state: &IntVarArray2D,
-    h: usize, // height
-    w: usize, // width
     straight: bool,
 ) {
     let mut start_amount = 0;
+    let (h, w) = util::infer_shape(start_state);
+    // Various asserts to make sure the solution arrays are consistent with the puzzle grid shape
+    assert!(movement.base_shape() == (h - 1, w - 1));
+    assert!(end_state.shape() == (h, w));
+
     // Create int array to track number movement
     let movement_as_num = &solver.int_var_2d((h, w), -1, clue_max);
     let dir = &solver.int_var_2d((h, w), 0, 4); // 1: up, 2: down, 3: left, 4: right
@@ -132,6 +136,20 @@ pub fn add_movement_constraints(
                 if x < w - 1 {
                     solver.add_expr(dir.at((y, x + 1)).eq(3).imp(d.eq(3) | d.eq(0)));
                 }
+            }
+
+            // No cycles of length 2
+            if y > 0 {
+                solver.add_expr(dir.at((y - 1, x)).eq(2).imp(d.ne(1)));
+            }
+            if y < h - 1 {
+                solver.add_expr(dir.at((y + 1, x)).eq(1).imp(d.ne(2)));
+            }
+            if x > 0 {
+                solver.add_expr(dir.at((y, x - 1)).eq(4).imp(d.ne(3)));
+            }
+            if x < w - 1 {
+                solver.add_expr(dir.at((y, x + 1)).eq(3).imp(d.ne(4)));
             }
 
             // If a cell doesn't have a number in the end state, either the cell is on a movement line but not at its end, or its not on a line at all
