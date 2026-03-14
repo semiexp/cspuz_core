@@ -17,21 +17,6 @@ pub fn solve_milktea(clues: &[Vec<i32>]) -> Option<graph::BoolGridEdgesIrrefutab
     let is_center = &solver.bool_var_2d((h, w));
     for y in 0..h {
         for x in 0..w {
-            let mut adj = vec![];
-
-            if y > 0 {
-                adj.push(is_line.vertical.at((y - 1, x)));
-            }
-            if x > 0 {
-                adj.push(is_line.horizontal.at((y, x - 1)));
-            }
-            if y < h - 1 {
-                adj.push(is_line.vertical.at((y, x)));
-            }
-            if x < w - 1 {
-                adj.push(is_line.horizontal.at((y, x)));
-            }
-
             let n = &solver.int_var(0, 3);
             solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(n));
 
