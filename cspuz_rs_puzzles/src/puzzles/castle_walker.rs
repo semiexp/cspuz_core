@@ -2,7 +2,7 @@ use crate::penpa_editor::{decode_penpa_editor_url, Item, PenpaEditorPuzzle};
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::items::Arrow;
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{Solver, FALSE};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CastleWalkerSquare {
@@ -34,51 +34,12 @@ pub fn solve_castle_walker(
 
     let (is_passed, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, is_line);
 
-    let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let up = &(&is_line.vertical & &direction.vertical);
-    let down = &(&is_line.vertical & !&direction.vertical);
-    let left = &(&is_line.horizontal & &direction.horizontal);
-    let right = &(&is_line.horizontal & !&direction.horizontal);
-
-    for y in 0..h {
-        for x in 0..w {
-            let mut inbound = vec![];
-            let mut outbound = vec![];
-            if y > 0 {
-                inbound.push(is_line.vertical.at((y - 1, x)) & !direction.vertical.at((y - 1, x)));
-                outbound.push(up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                inbound.push(is_line.vertical.at((y, x)) & direction.vertical.at((y, x)));
-                outbound.push(down.at((y, x)));
-            }
-            if x > 0 {
-                inbound
-                    .push(is_line.horizontal.at((y, x - 1)) & !direction.horizontal.at((y, x - 1)));
-                outbound.push(left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                inbound.push(is_line.horizontal.at((y, x)) & direction.horizontal.at((y, x)));
-                outbound.push(right.at((y, x)));
-            }
-            solver.add_expr(count_true(&inbound).eq(count_true(&outbound)));
-        }
-    }
-
-    for y in 0..h {
-        for x in 0..w {
-            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                solver.add_expr(!is_cross.at((y, x)));
-            } else {
-                solver.add_expr(is_cross.at((y, x)).imp(
-                    up.at((y - 1, x)).iff(up.at((y, x)))
-                        & down.at((y - 1, x)).iff(down.at((y, x)))
-                        & left.at((y, x - 1)).iff(left.at((y, x)))
-                        & right.at((y, x - 1)).iff(right.at((y, x))),
-                ));
-            }
-        }
-    }
+    let graph::DirectedEdges {
+        up,
+        down,
+        left,
+        right,
+    } = &graph::active_edges_directed_cycle_path(&mut solver, is_line, true, false);
 
     for y in 0..h {
         for x in 0..w {
