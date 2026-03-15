@@ -69,10 +69,13 @@ pub fn solve_bdwalk(
     }
 
     let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let up = &(&is_line.vertical & &direction.vertical);
-    let down = &(&is_line.vertical & !&direction.vertical);
-    let left = &(&is_line.horizontal & &direction.horizontal);
-    let right = &(&is_line.horizontal & !&direction.horizontal);
+    let directed_loop = graph::DirectedLoop::new(&is_line, &direction);
+    let graph::DirectedLoop {
+        up,
+        down,
+        left,
+        right,
+    } = &directed_loop;
 
     let level = &solver.int_var_2d((h, w), 1, max_level);
 
@@ -132,25 +135,8 @@ pub fn solve_bdwalk(
 
     for y in 0..h {
         for x in 0..w {
-            let mut inbound = vec![];
-            let mut outbound = vec![];
-            if y > 0 {
-                inbound.push(is_line.vertical.at((y - 1, x)) & !direction.vertical.at((y - 1, x)));
-                outbound.push(up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                inbound.push(is_line.vertical.at((y, x)) & direction.vertical.at((y, x)));
-                outbound.push(down.at((y, x)));
-            }
-            if x > 0 {
-                inbound
-                    .push(is_line.horizontal.at((y, x - 1)) & !direction.horizontal.at((y, x - 1)));
-                outbound.push(left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                inbound.push(is_line.horizontal.at((y, x)) & direction.horizontal.at((y, x)));
-                outbound.push(right.at((y, x)));
-            }
+            let inbound = directed_loop.inbound((y, x));
+            let outbound = directed_loop.outbound((y, x));
 
             if (y, x) == start {
                 solver.add_expr(count_true(&inbound).eq(0));
