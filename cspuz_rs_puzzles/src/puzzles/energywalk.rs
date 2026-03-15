@@ -34,13 +34,13 @@ pub fn solve_energywalk(
     }
 
     let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let directed_loop = graph::DirectedLoop::new(&is_line, &direction);
-    let graph::DirectedLoop {
+    let directed_edges = graph::DirectedEdges::new(&is_line, &direction);
+    let graph::DirectedEdges {
         up,
         down,
         left,
         right,
-    } = &directed_loop;
+    } = &directed_edges;
 
     let line_size = solver.int_var_2d((h, w), 0, (h * w) as i32);
     let line_rank = solver.int_var_2d((h, w), 0, (h * w) as i32);
@@ -91,8 +91,8 @@ pub fn solve_energywalk(
                 continue;
             }
 
-            let inbound = directed_loop.inbound((y, x));
-            let outbound = directed_loop.outbound((y, x));
+            let inbound = directed_edges.inbound((y, x));
+            let outbound = directed_edges.outbound((y, x));
             solver.add_expr(count_true(&inbound).eq(count_true(&outbound)));
         }
     }

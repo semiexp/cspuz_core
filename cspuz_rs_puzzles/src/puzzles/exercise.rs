@@ -13,7 +13,7 @@ pub fn solve_exercise(has_block: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrr
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
-    let graph::DirectedLoop {
+    let graph::DirectedEdges {
         up,
         down,
         left,

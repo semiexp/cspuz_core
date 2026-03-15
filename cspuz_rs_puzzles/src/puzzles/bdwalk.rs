@@ -69,13 +69,13 @@ pub fn solve_bdwalk(
     }
 
     let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let directed_loop = graph::DirectedLoop::new(&is_line, &direction);
-    let graph::DirectedLoop {
+    let directed_edges = graph::DirectedEdges::new(&is_line, &direction);
+    let graph::DirectedEdges {
         up,
         down,
         left,
         right,
-    } = &directed_loop;
+    } = &directed_edges;
 
     let level = &solver.int_var_2d((h, w), 1, max_level);
 
@@ -135,8 +135,8 @@ pub fn solve_bdwalk(
 
     for y in 0..h {
         for x in 0..w {
-            let inbound = directed_loop.inbound((y, x));
-            let outbound = directed_loop.outbound((y, x));
+            let inbound = directed_edges.inbound((y, x));
+            let outbound = directed_edges.outbound((y, x));
 
             if (y, x) == start {
                 solver.add_expr(count_true(&inbound).eq(0));

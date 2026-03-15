@@ -953,20 +953,20 @@ pub fn crossable_single_cycle_grid_edges(
     (is_passed, is_cross)
 }
 
-pub struct DirectedLoop {
+pub struct DirectedEdges {
     pub up: BoolExprArray2D,
     pub down: BoolExprArray2D,
     pub left: BoolExprArray2D,
     pub right: BoolExprArray2D,
 }
 
-impl DirectedLoop {
-    pub fn new(is_active_edge: &BoolGridEdges, direction: &BoolGridEdges) -> DirectedLoop {
+impl DirectedEdges {
+    pub fn new(is_active_edge: &BoolGridEdges, direction: &BoolGridEdges) -> DirectedEdges {
         let up = &is_active_edge.vertical & &direction.vertical;
         let down = &is_active_edge.vertical & !&direction.vertical;
         let left = &is_active_edge.horizontal & &direction.horizontal;
         let right = &is_active_edge.horizontal & !&direction.horizontal;
-        DirectedLoop {
+        DirectedEdges {
             up,
             down,
             left,
@@ -1016,11 +1016,11 @@ pub fn active_edges_directed_cycle_path(
     is_active_edge: &BoolGridEdges,
     allow_self_cross: bool,
     allow_path: bool,
-) -> DirectedLoop {
+) -> DirectedEdges {
     let (h, w) = is_active_edge.base_shape();
 
     let direction = &BoolGridEdges::new(solver, (h, w));
-    let directed_loop = DirectedLoop::new(is_active_edge, direction);
+    let directed_loop = DirectedEdges::new(is_active_edge, direction);
 
     for y in 0..=h {
         for x in 0..=w {

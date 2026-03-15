@@ -34,7 +34,7 @@ pub fn solve_castle_walker(
 
     let (is_passed, is_cross) = graph::crossable_single_cycle_grid_edges(&mut solver, is_line);
 
-    let graph::DirectedLoop {
+    let graph::DirectedEdges {
         up,
         down,
         left,
