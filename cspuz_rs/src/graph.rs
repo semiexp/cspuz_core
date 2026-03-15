@@ -961,6 +961,19 @@ pub struct DirectedLoop {
 }
 
 impl DirectedLoop {
+    pub fn new(is_active_edge: &BoolGridEdges, direction: &BoolGridEdges) -> DirectedLoop {
+        let up = &is_active_edge.vertical & &direction.vertical;
+        let down = &is_active_edge.vertical & !&direction.vertical;
+        let left = &is_active_edge.horizontal & &direction.horizontal;
+        let right = &is_active_edge.horizontal & !&direction.horizontal;
+        DirectedLoop {
+            up,
+            down,
+            left,
+            right,
+        }
+    }
+
     pub fn inbound(&self, pos: (usize, usize)) -> BoolExprArray1D {
         let (y, x) = pos;
         let mut ret = vec![];
@@ -1006,18 +1019,8 @@ pub fn active_edges_directed_cycle_path(
 ) -> DirectedLoop {
     let (h, w) = is_active_edge.base_shape();
 
-    let direction = BoolGridEdges::new(solver, (h, w));
-    let up = &is_active_edge.vertical & &direction.vertical;
-    let down = &is_active_edge.vertical & !&direction.vertical;
-    let left = &is_active_edge.horizontal & &direction.horizontal;
-    let right = &is_active_edge.horizontal & !&direction.horizontal;
-
-    let directed_loop = DirectedLoop {
-        up,
-        down,
-        left,
-        right,
-    };
+    let direction = &BoolGridEdges::new(solver, (h, w));
+    let directed_loop = DirectedLoop::new(is_active_edge, direction);
 
     for y in 0..=h {
         for x in 0..=w {
