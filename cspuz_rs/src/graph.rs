@@ -1,8 +1,8 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolVar, BoolVarArray1D,
-    BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
+    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolExprArray2D, BoolVar,
+    BoolVarArray1D, BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
     OwnedPartialModel, Solver,
 };
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
@@ -951,6 +951,131 @@ pub fn crossable_single_cycle_grid_edges(
     active_vertices_connected(solver, &gv, &g);
 
     (is_passed, is_cross)
+}
+
+pub struct DirectedLoop {
+    pub up: BoolExprArray2D,
+    pub down: BoolExprArray2D,
+    pub left: BoolExprArray2D,
+    pub right: BoolExprArray2D,
+}
+
+impl DirectedLoop {
+    pub fn inbound(&self, pos: (usize, usize)) -> BoolExprArray1D {
+        let (y, x) = pos;
+        let mut ret = vec![];
+        if y > 0 {
+            ret.push(self.down.at((y - 1, x)));
+        }
+        if y < self.up.shape().0 {
+            ret.push(self.up.at((y, x)));
+        }
+        if x > 0 {
+            ret.push(self.right.at((y, x - 1)));
+        }
+        if x < self.left.shape().1 {
+            ret.push(self.left.at((y, x)));
+        }
+        BoolExprArray1D::new(ret)
+    }
+
+    pub fn outbound(&self, pos: (usize, usize)) -> BoolExprArray1D {
+        let (y, x) = pos;
+        let mut ret = vec![];
+        if y > 0 {
+            ret.push(self.up.at((y - 1, x)));
+        }
+        if y < self.down.shape().0 {
+            ret.push(self.down.at((y, x)));
+        }
+        if x > 0 {
+            ret.push(self.left.at((y, x - 1)));
+        }
+        if x < self.right.shape().1 {
+            ret.push(self.right.at((y, x)));
+        }
+        BoolExprArray1D::new(ret)
+    }
+}
+
+pub fn active_edges_directed_cycle_path(
+    solver: &mut Solver,
+    is_active_edge: &BoolGridEdges,
+    allow_self_cross: bool,
+    allow_path: bool,
+) -> DirectedLoop {
+    let (h, w) = is_active_edge.base_shape();
+
+    let direction = BoolGridEdges::new(solver, (h, w));
+    let up = &is_active_edge.vertical & &direction.vertical;
+    let down = &is_active_edge.vertical & !&direction.vertical;
+    let left = &is_active_edge.horizontal & &direction.horizontal;
+    let right = &is_active_edge.horizontal & !&direction.horizontal;
+
+    let directed_loop = DirectedLoop {
+        up,
+        down,
+        left,
+        right,
+    };
+
+    for y in 0..=h {
+        for x in 0..=w {
+            let inbound = directed_loop.inbound((y, x));
+            let outbound = directed_loop.outbound((y, x));
+
+            match (allow_self_cross, allow_path) {
+                (false, false) => {
+                    let deg = &solver.int_var(0, 1);
+                    solver.add_expr(inbound.count_true().eq(deg));
+                    solver.add_expr(outbound.count_true().eq(deg));
+                }
+                (false, true) => {
+                    solver.add_expr(inbound.count_true().le(1));
+                    solver.add_expr(outbound.count_true().le(1));
+                }
+                (true, false) => {
+                    solver.add_expr(inbound.count_true().eq(outbound.count_true()));
+                }
+                (true, true) => {
+                    let in_deg = &solver.int_var(0, 2);
+                    let out_deg = &solver.int_var(0, 2);
+                    solver.add_expr(inbound.count_true().eq(in_deg));
+                    solver.add_expr(outbound.count_true().eq(out_deg));
+                    solver
+                        .add_expr((in_deg.le(1) & out_deg.le(1)) | (in_deg.eq(2) & out_deg.eq(2)));
+                }
+            }
+        }
+    }
+
+    if allow_self_cross {
+        for y in 1..(h - 1) {
+            for x in 1..(w - 1) {
+                solver.add_expr(
+                    is_active_edge.vertex_neighbors((y, x)).all().imp(
+                        directed_loop
+                            .up
+                            .at((y - 1, x))
+                            .iff(directed_loop.up.at((y, x)))
+                            & directed_loop
+                                .down
+                                .at((y - 1, x))
+                                .iff(directed_loop.down.at((y, x)))
+                            & directed_loop
+                                .left
+                                .at((y, x - 1))
+                                .iff(directed_loop.left.at((y, x)))
+                            & directed_loop
+                                .right
+                                .at((y, x - 1))
+                                .iff(directed_loop.right.at((y, x))),
+                    ),
+                );
+            }
+        }
+    }
+    directed_loop
 }
 
 #[cfg(test)]
