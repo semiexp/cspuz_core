@@ -165,10 +165,6 @@ pub fn solve_bdwalk(
         }
     }
 
-    solver.solve().map(|f| {
-        eprintln!("is_line: {:?}", f.get(is_line));
-        eprintln!("level: {:?}", f.get(level));
-    });
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
 
