@@ -1126,4 +1126,148 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_active_edges_directed_cycle_path() {
+        // no cross, cycle only
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+
+            single_cycle_grid_edges(&mut solver, &edges);
+            let directed_edges =
+                active_edges_directed_cycle_path(&mut solver, &edges, false, false);
+            solver.add_expr(directed_edges.right.at((0, 0)));
+            solver.add_expr(directed_edges.left.at((1, 1)));
+            solver.add_expr(directed_edges.up.at((0, 3)));
+
+            let answer = solver.solve();
+            assert!(answer.is_some());
+            let answer = answer.unwrap();
+            assert_eq!(
+                answer.get(&edges.horizontal),
+                vec![
+                    vec![true, true, false, true],
+                    vec![false, true, false, false],
+                    vec![false, true, true, false],
+                    vec![true, true, true, true],
+                ]
+            );
+            assert_eq!(
+                answer.get(&edges.vertical),
+                vec![
+                    vec![true, false, true, true, true],
+                    vec![true, true, false, true, true],
+                    vec![true, false, false, false, true],
+                ]
+            );
+        }
+
+        // no cross, allow paths
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, false, true);
+            solver.add_expr(directed_edges.right.at((1, 1)));
+            solver.add_expr(directed_edges.left.at((1, 3)));
+            solver.add_expr(directed_edges.up.at((2, 2)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![None, None, None, None],
+                    vec![None, Some(true), Some(false), Some(true)],
+                    vec![None, None, None, None],
+                    vec![None, None, None, None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![None, None, None, None, None],
+                    vec![None, None, Some(false), None, None],
+                    vec![None, None, Some(true), None, None],
+                ]
+            );
+        }
+
+        // allow cross, cycle only
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            crossable_single_cycle_grid_edges(&mut solver, &edges);
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, true, false);
+            solver.add_expr(directed_edges.right.at((0, 0)));
+            solver.add_expr(directed_edges.left.at((0, 2)));
+            solver.add_expr(directed_edges.down.at((2, 0)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![Some(true), Some(false), Some(true), None],
+                    vec![Some(true), Some(true), None, None],
+                    vec![Some(true), Some(false), None, None],
+                    vec![Some(true), Some(true), None, None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![Some(true), Some(true), Some(true), None, None],
+                    vec![Some(false), Some(true), None, None, None],
+                    vec![Some(true), Some(false), None, None, None],
+                ]
+            );
+        }
+
+        // no cross, allow paths
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, true, true);
+            solver.add_expr(directed_edges.up.at((0, 1)));
+            solver.add_expr(directed_edges.left.at((3, 2)));
+            solver.add_expr(edges.horizontal.at((0, 1)));
+            solver.add_expr(edges.horizontal.at((1, 1)));
+            solver.add_expr(edges.horizontal.at((1, 2)));
+            solver.add_expr(edges.vertical.at((0, 2)));
+            solver.add_expr(edges.vertical.at((1, 2)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![Some(false), Some(true), Some(false), None],
+                    vec![None, Some(true), Some(true), None],
+                    vec![None, None, None, None],
+                    vec![None, None, Some(true), None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![None, Some(true), Some(true), None, None],
+                    vec![None, None, Some(true), None, None],
+                    vec![None, None, Some(false), None, None],
+                ]
+            );
+        }
+    }
 }
