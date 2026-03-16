@@ -1053,8 +1053,8 @@ pub fn active_edges_directed_cycle_path(
     }
 
     if allow_self_cross {
-        for y in 1..(h - 1) {
-            for x in 1..(w - 1) {
+        for y in 1..h {
+            for x in 1..w {
                 solver.add_expr(
                     is_active_edge.vertex_neighbors((y, x)).all().imp(
                         directed_loop
