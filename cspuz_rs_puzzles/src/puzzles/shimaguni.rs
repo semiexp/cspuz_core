@@ -18,30 +18,19 @@ pub fn solve_shimaguni(
     let rooms = graph::borders_to_rooms(borders);
     assert_eq!(rooms.len(), clues.len());
 
-    let mut idx = vec![vec![(usize::MAX, usize::MAX); w]; h];
+    let mut room_id = vec![vec![usize::MAX; w]; h];
     let mut num_black = vec![];
     for i in 0..rooms.len() {
         let room = &rooms[i];
-        let mut cells = vec![];
         for j in 0..room.len() {
-            cells.push(is_black.at(room[j]));
-            idx[room[j].0][room[j].1] = (i, j);
+            room_id[room[j].0][room[j].1] = i;
         }
+        let cells = is_black.select(room);
         let n = solver.int_var(0, room.len() as i32);
         solver.add_expr(count_true(&cells).eq(&n));
         solver.add_expr(n.ge(1));
         num_black.push(n);
-        let mut graph = graph::Graph::new(room.len());
-        for j in 0..room.len() {
-            let (y, x) = room[j];
-            if y < h - 1 && idx[y + 1][x].0 == i {
-                graph.add_edge(j, idx[y + 1][x].1);
-            }
-            if x < w - 1 && idx[y][x + 1].0 == i {
-                graph.add_edge(j, idx[y][x + 1].1);
-            }
-        }
-        graph::active_vertices_connected(&mut solver, &cells, &graph);
+        graph::active_vertices_connected_2d_region(&mut solver, is_black, room);
     }
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
@@ -54,15 +43,15 @@ pub fn solve_shimaguni(
     let mut adj_rooms = vec![];
     for y in 0..h {
         for x in 0..w {
-            if y < h - 1 && idx[y][x].0 != idx[y + 1][x].0 {
-                let a = idx[y][x].0;
-                let b = idx[y + 1][x].0;
+            if y < h - 1 && room_id[y][x] != room_id[y + 1][x] {
+                let a = room_id[y][x];
+                let b = room_id[y + 1][x];
                 adj_rooms.push((a.min(b), a.max(b)));
                 solver.add_expr(!(is_black.at((y, x)) & is_black.at((y + 1, x))));
             }
-            if x < w - 1 && idx[y][x].0 != idx[y][x + 1].0 {
-                let a = idx[y][x].0;
-                let b = idx[y][x + 1].0;
+            if x < w - 1 && room_id[y][x] != room_id[y][x + 1] {
+                let a = room_id[y][x];
+                let b = room_id[y][x + 1];
                 adj_rooms.push((a.min(b), a.max(b)));
                 solver.add_expr(!(is_black.at((y, x)) & is_black.at((y, x + 1))));
             }
