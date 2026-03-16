@@ -1,8 +1,8 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolVar, BoolVarArray1D,
-    BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
+    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolExprArray2D, BoolVar,
+    BoolVarArray1D, BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
     OwnedPartialModel, Solver,
 };
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
@@ -953,6 +953,134 @@ pub fn crossable_single_cycle_grid_edges(
     (is_passed, is_cross)
 }
 
+pub struct DirectedEdges {
+    pub up: BoolExprArray2D,
+    pub down: BoolExprArray2D,
+    pub left: BoolExprArray2D,
+    pub right: BoolExprArray2D,
+}
+
+impl DirectedEdges {
+    pub fn new(is_active_edge: &BoolGridEdges, direction: &BoolGridEdges) -> DirectedEdges {
+        let up = &is_active_edge.vertical & &direction.vertical;
+        let down = &is_active_edge.vertical & !&direction.vertical;
+        let left = &is_active_edge.horizontal & &direction.horizontal;
+        let right = &is_active_edge.horizontal & !&direction.horizontal;
+        DirectedEdges {
+            up,
+            down,
+            left,
+            right,
+        }
+    }
+
+    pub fn inbound(&self, pos: (usize, usize)) -> BoolExprArray1D {
+        let (y, x) = pos;
+        let mut ret = vec![];
+        if y > 0 {
+            ret.push(self.down.at((y - 1, x)));
+        }
+        if y < self.up.shape().0 {
+            ret.push(self.up.at((y, x)));
+        }
+        if x > 0 {
+            ret.push(self.right.at((y, x - 1)));
+        }
+        if x < self.left.shape().1 {
+            ret.push(self.left.at((y, x)));
+        }
+        BoolExprArray1D::new(ret)
+    }
+
+    pub fn outbound(&self, pos: (usize, usize)) -> BoolExprArray1D {
+        let (y, x) = pos;
+        let mut ret = vec![];
+        if y > 0 {
+            ret.push(self.up.at((y - 1, x)));
+        }
+        if y < self.down.shape().0 {
+            ret.push(self.down.at((y, x)));
+        }
+        if x > 0 {
+            ret.push(self.left.at((y, x - 1)));
+        }
+        if x < self.right.shape().1 {
+            ret.push(self.right.at((y, x)));
+        }
+        BoolExprArray1D::new(ret)
+    }
+}
+
+pub fn active_edges_directed_cycle_path(
+    solver: &mut Solver,
+    is_active_edge: &BoolGridEdges,
+    allow_self_cross: bool,
+    allow_path: bool,
+) -> DirectedEdges {
+    let (h, w) = is_active_edge.base_shape();
+
+    let direction = &BoolGridEdges::new(solver, (h, w));
+    let directed_loop = DirectedEdges::new(is_active_edge, direction);
+
+    for y in 0..=h {
+        for x in 0..=w {
+            let inbound = directed_loop.inbound((y, x));
+            let outbound = directed_loop.outbound((y, x));
+
+            match (allow_self_cross, allow_path) {
+                (false, false) => {
+                    let deg = &solver.int_var(0, 1);
+                    solver.add_expr(inbound.count_true().eq(deg));
+                    solver.add_expr(outbound.count_true().eq(deg));
+                }
+                (false, true) => {
+                    solver.add_expr(inbound.count_true().le(1));
+                    solver.add_expr(outbound.count_true().le(1));
+                }
+                (true, false) => {
+                    solver.add_expr(inbound.count_true().eq(outbound.count_true()));
+                }
+                (true, true) => {
+                    let in_deg = &solver.int_var(0, 2);
+                    let out_deg = &solver.int_var(0, 2);
+                    solver.add_expr(inbound.count_true().eq(in_deg));
+                    solver.add_expr(outbound.count_true().eq(out_deg));
+                    solver
+                        .add_expr((in_deg.le(1) & out_deg.le(1)) | (in_deg.eq(2) & out_deg.eq(2)));
+                }
+            }
+        }
+    }
+
+    if allow_self_cross {
+        for y in 1..h {
+            for x in 1..w {
+                solver.add_expr(
+                    is_active_edge.vertex_neighbors((y, x)).all().imp(
+                        directed_loop
+                            .up
+                            .at((y - 1, x))
+                            .iff(directed_loop.up.at((y, x)))
+                            & directed_loop
+                                .down
+                                .at((y - 1, x))
+                                .iff(directed_loop.down.at((y, x)))
+                            & directed_loop
+                                .left
+                                .at((y, x - 1))
+                                .iff(directed_loop.left.at((y, x)))
+                            & directed_loop
+                                .right
+                                .at((y, x - 1))
+                                .iff(directed_loop.right.at((y, x))),
+                    ),
+                );
+            }
+        }
+    }
+    directed_loop
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -997,5 +1125,149 @@ mod tests {
                 vec![false, false, true, false, true],
             ]
         );
+    }
+
+    #[test]
+    fn test_active_edges_directed_cycle_path() {
+        // no cross, cycle only
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+
+            single_cycle_grid_edges(&mut solver, &edges);
+            let directed_edges =
+                active_edges_directed_cycle_path(&mut solver, &edges, false, false);
+            solver.add_expr(directed_edges.right.at((0, 0)));
+            solver.add_expr(directed_edges.left.at((1, 1)));
+            solver.add_expr(directed_edges.up.at((0, 3)));
+
+            let answer = solver.solve();
+            assert!(answer.is_some());
+            let answer = answer.unwrap();
+            assert_eq!(
+                answer.get(&edges.horizontal),
+                vec![
+                    vec![true, true, false, true],
+                    vec![false, true, false, false],
+                    vec![false, true, true, false],
+                    vec![true, true, true, true],
+                ]
+            );
+            assert_eq!(
+                answer.get(&edges.vertical),
+                vec![
+                    vec![true, false, true, true, true],
+                    vec![true, true, false, true, true],
+                    vec![true, false, false, false, true],
+                ]
+            );
+        }
+
+        // no cross, allow paths
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, false, true);
+            solver.add_expr(directed_edges.right.at((1, 1)));
+            solver.add_expr(directed_edges.left.at((1, 3)));
+            solver.add_expr(directed_edges.up.at((2, 2)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![None, None, None, None],
+                    vec![None, Some(true), Some(false), Some(true)],
+                    vec![None, None, None, None],
+                    vec![None, None, None, None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![None, None, None, None, None],
+                    vec![None, None, Some(false), None, None],
+                    vec![None, None, Some(true), None, None],
+                ]
+            );
+        }
+
+        // allow cross, cycle only
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            crossable_single_cycle_grid_edges(&mut solver, &edges);
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, true, false);
+            solver.add_expr(directed_edges.right.at((0, 0)));
+            solver.add_expr(directed_edges.left.at((0, 2)));
+            solver.add_expr(directed_edges.down.at((2, 0)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![Some(true), Some(false), Some(true), None],
+                    vec![Some(true), Some(true), None, None],
+                    vec![Some(true), Some(false), None, None],
+                    vec![Some(true), Some(true), None, None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![Some(true), Some(true), Some(true), None, None],
+                    vec![Some(false), Some(true), None, None, None],
+                    vec![Some(true), Some(false), None, None, None],
+                ]
+            );
+        }
+
+        // no cross, allow paths
+        {
+            let mut solver = Solver::new();
+            let edges = crate::graph::BoolGridEdges::new(&mut solver, (3, 4));
+            solver.add_answer_key_bool(&edges.horizontal);
+            solver.add_answer_key_bool(&edges.vertical);
+
+            let directed_edges = active_edges_directed_cycle_path(&mut solver, &edges, true, true);
+            solver.add_expr(directed_edges.up.at((0, 1)));
+            solver.add_expr(directed_edges.left.at((3, 2)));
+            solver.add_expr(edges.horizontal.at((0, 1)));
+            solver.add_expr(edges.horizontal.at((1, 1)));
+            solver.add_expr(edges.horizontal.at((1, 2)));
+            solver.add_expr(edges.vertical.at((0, 2)));
+            solver.add_expr(edges.vertical.at((1, 2)));
+
+            let irrefutable_facts = solver.irrefutable_facts();
+            assert!(irrefutable_facts.is_some());
+            let irrefutable_facts = irrefutable_facts.unwrap();
+            assert_eq!(
+                irrefutable_facts.get(&edges.horizontal),
+                vec![
+                    vec![Some(false), Some(true), Some(false), None],
+                    vec![None, Some(true), Some(true), None],
+                    vec![None, None, None, None],
+                    vec![None, None, Some(true), None],
+                ]
+            );
+            assert_eq!(
+                irrefutable_facts.get(&edges.vertical),
+                vec![
+                    vec![None, Some(true), Some(true), None, None],
+                    vec![None, None, Some(true), None, None],
+                    vec![None, None, Some(false), None, None],
+                ]
+            );
+        }
     }
 }

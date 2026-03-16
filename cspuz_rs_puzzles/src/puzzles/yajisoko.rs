@@ -24,10 +24,7 @@ pub fn solve_yajisoko(
     solver.add_answer_key_bool(&is_line.vertical);
 
     let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let up = &(&is_line.vertical & &direction.vertical);
-    let down = &(&is_line.vertical & !&direction.vertical);
-    let left = &(&is_line.horizontal & &direction.horizontal);
-    let right = &(&is_line.horizontal & !&direction.horizontal);
+    let directed_edges = graph::DirectedEdges::new(&is_line, &direction);
 
     let block_after_move = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(block_after_move);
@@ -58,25 +55,8 @@ pub fn solve_yajisoko(
 
     for y in 0..h {
         for x in 0..w {
-            let mut inbound = vec![];
-            let mut outbound = vec![];
-
-            if y > 0 {
-                inbound.push(down.at((y - 1, x)));
-                outbound.push(up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                inbound.push(up.at((y, x)));
-                outbound.push(down.at((y, x)));
-            }
-            if x > 0 {
-                inbound.push(right.at((y, x - 1)));
-                outbound.push(left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                inbound.push(left.at((y, x)));
-                outbound.push(right.at((y, x)));
-            }
+            let inbound = directed_edges.inbound((y, x));
+            let outbound = directed_edges.outbound((y, x));
 
             if clues[y][x] == YajisokoCell::Block {
                 solver.add_expr(!any(&inbound));
