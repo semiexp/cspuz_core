@@ -1054,6 +1054,12 @@ fn normalize_extension_supports(
         }
     }
 
+    if supports_idx.is_empty() {
+        // No support tuple is compatible with the variable domains: constraint is UNSAT
+        env.norm.add_constraint(Constraint::new());
+        return;
+    }
+
     for n_prefix in 0..vars.len() {
         let mut left = 0;
         while left < supports_idx.len() {
@@ -1527,6 +1533,23 @@ mod tests {
                     vec![Some(1), Some(2), None],
                     vec![Some(2), Some(0), Some(2)],
                 ],
+            ));
+            tester.check();
+        }
+    }
+
+    #[cfg(feature = "csp-extra-constraints")]
+    #[test]
+    fn test_normalization_extension_supports_3() {
+        for use_native in [false, true] {
+            let mut tester = NormalizerTester::new();
+            tester.config.use_native_extension_supports = use_native;
+
+            let a = tester.new_int_var(Domain::range(0, 3));
+            let b = tester.new_int_var(Domain::range(0, 3));
+            tester.add_constraint(Stmt::ExtensionSupports(
+                vec![a.expr(), b.expr()],
+                vec![vec![Some(4), Some(-1)]],
             ));
             tester.check();
         }
