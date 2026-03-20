@@ -69,6 +69,7 @@ pub mod kurodoko;
 pub mod kurotto;
 pub mod lapaz;
 pub mod letter_weights;
+pub mod lightandshadow;
 pub mod litherslink;
 pub mod lits;
 pub mod lohkous;
