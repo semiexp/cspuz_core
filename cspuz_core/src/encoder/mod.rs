@@ -199,6 +199,7 @@ macro_rules! new_vars_as_lits {
     };
 }
 
+#[allow(unused)]
 use new_var;
 #[allow(unused)]
 use new_vars_as_lits;
