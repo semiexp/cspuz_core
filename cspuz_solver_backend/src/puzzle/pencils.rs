@@ -9,7 +9,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     let height = problem.len();
     let width = problem[0].len();
     let mut board = Board::new(
-        BoardKind::OuterGrid,
+        BoardKind::ColoredGrid("#cccccc"),
         height,
         width,
         ans.as_ref()
@@ -59,7 +59,6 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     for y in 0..height {
         for x in 0..width {
             if y < height - 1 {
-                let mut need_default_edge = true;
                 if let Some((_, line, border)) = &ans {
                     let kind = match (border.horizontal[y][x], line.vertical[y][x]) {
                         (Some(true), _) => Some(ItemKind::BoldWall),
@@ -67,9 +66,6 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         (Some(false), Some(false)) => Some(ItemKind::Cross),
                         _ => None,
                     };
-                    if kind == Some(ItemKind::BoldWall) {
-                        need_default_edge = false;
-                    }
                     if let Some(kind) = kind {
                         board.push(Item {
                             y: y * 2 + 2,
@@ -79,17 +75,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         })
                     }
                 }
-                if need_default_edge {
-                    board.push(Item {
-                        y: y * 2 + 2,
-                        x: x * 2 + 1,
-                        color: "#cccccc",
-                        kind: ItemKind::Wall,
-                    });
-                }
             }
             if x < width - 1 {
-                let mut need_default_edge = true;
                 if let Some((_, line, border)) = &ans {
                     let kind = match (border.vertical[y][x], line.horizontal[y][x]) {
                         (Some(true), _) => Some(ItemKind::BoldWall),
@@ -97,9 +84,6 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         (Some(false), Some(false)) => Some(ItemKind::Cross),
                         _ => None,
                     };
-                    if kind == Some(ItemKind::BoldWall) {
-                        need_default_edge = false;
-                    }
                     if let Some(kind) = kind {
                         board.push(Item {
                             y: y * 2 + 1,
@@ -108,14 +92,6 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                             kind,
                         })
                     }
-                }
-                if need_default_edge {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2 + 2,
-                        color: "#cccccc",
-                        kind: ItemKind::Wall,
-                    });
                 }
             }
         }
@@ -136,7 +112,7 @@ mod tests {
         compare_board_and_check_no_solution_case!(
             solve("https://puzz.link/p?pencils/6/6/kgin3p2oil2njkimjk"),
             Board {
-                kind: BoardKind::OuterGrid,
+                kind: BoardKind::ColoredGrid("#cccccc"),
                 height: 6,
                 width: 6,
                 data: vec![
@@ -152,101 +128,65 @@ mod tests {
                     Item { y: 11, x: 1, color: "black", kind: ItemKind::PencilRight },
                     Item { y: 11, x: 9, color: "black", kind: ItemKind::PencilLeft },
                     Item { y: 2, x: 1, color: "green", kind: ItemKind::Line },
-                    Item { y: 2, x: 1, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 1, x: 2, color: "green", kind: ItemKind::Line },
-                    Item { y: 1, x: 2, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 2, x: 3, color: "green", kind: ItemKind::Cross },
-                    Item { y: 2, x: 3, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 1, x: 4, color: "green", kind: ItemKind::Cross },
-                    Item { y: 1, x: 4, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 2, x: 5, color: "green", kind: ItemKind::Line },
-                    Item { y: 2, x: 5, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 1, x: 6, color: "green", kind: ItemKind::Cross },
-                    Item { y: 1, x: 6, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 2, x: 7, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 1, x: 8, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 2, x: 9, color: "green", kind: ItemKind::Cross },
-                    Item { y: 2, x: 9, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 1, x: 10, color: "green", kind: ItemKind::Line },
-                    Item { y: 1, x: 10, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 2, x: 11, color: "green", kind: ItemKind::Line },
-                    Item { y: 2, x: 11, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 4, x: 1, color: "green", kind: ItemKind::Line },
-                    Item { y: 4, x: 1, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 3, x: 2, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 4, x: 3, color: "green", kind: ItemKind::Cross },
-                    Item { y: 4, x: 3, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 3, x: 4, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 4, x: 5, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 3, x: 6, color: "green", kind: ItemKind::Cross },
-                    Item { y: 3, x: 6, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 4, x: 7, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 3, x: 8, color: "green", kind: ItemKind::Line },
-                    Item { y: 3, x: 8, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 4, x: 9, color: "green", kind: ItemKind::Line },
-                    Item { y: 4, x: 9, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 3, x: 10, color: "green", kind: ItemKind::Cross },
-                    Item { y: 3, x: 10, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 4, x: 11, color: "green", kind: ItemKind::Cross },
-                    Item { y: 4, x: 11, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 6, x: 1, color: "green", kind: ItemKind::Cross },
-                    Item { y: 6, x: 1, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 5, x: 2, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 6, x: 3, color: "green", kind: ItemKind::Cross },
-                    Item { y: 6, x: 3, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 5, x: 4, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 6, x: 5, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 5, x: 6, color: "green", kind: ItemKind::Cross },
-                    Item { y: 5, x: 6, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 6, x: 7, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 5, x: 8, color: "green", kind: ItemKind::Cross },
-                    Item { y: 5, x: 8, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 6, x: 9, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 5, x: 10, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 6, x: 11, color: "green", kind: ItemKind::Cross },
-                    Item { y: 6, x: 11, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 8, x: 1, color: "green", kind: ItemKind::Line },
-                    Item { y: 8, x: 1, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 7, x: 2, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 8, x: 3, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 7, x: 4, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 8, x: 5, color: "green", kind: ItemKind::Line },
-                    Item { y: 8, x: 5, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 7, x: 6, color: "green", kind: ItemKind::Cross },
-                    Item { y: 7, x: 6, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 8, x: 7, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 7, x: 8, color: "green", kind: ItemKind::Cross },
-                    Item { y: 7, x: 8, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 8, x: 9, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 7, x: 10, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 8, x: 11, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 10, x: 1, color: "green", kind: ItemKind::Line },
-                    Item { y: 10, x: 1, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 9, x: 2, color: "green", kind: ItemKind::Cross },
-                    Item { y: 9, x: 2, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 10, x: 3, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 9, x: 4, color: "green", kind: ItemKind::Line },
-                    Item { y: 9, x: 4, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 10, x: 5, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 9, x: 6, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 10, x: 7, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 9, x: 8, color: "green", kind: ItemKind::Cross },
-                    Item { y: 9, x: 8, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 10, x: 9, color: "green", kind: ItemKind::Cross },
-                    Item { y: 10, x: 9, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 9, x: 10, color: "green", kind: ItemKind::Line },
-                    Item { y: 9, x: 10, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 10, x: 11, color: "green", kind: ItemKind::Cross },
-                    Item { y: 10, x: 11, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 11, x: 2, color: "green", kind: ItemKind::Cross },
-                    Item { y: 11, x: 2, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 11, x: 4, color: "green", kind: ItemKind::Cross },
-                    Item { y: 11, x: 4, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 11, x: 6, color: "green", kind: ItemKind::BoldWall },
                     Item { y: 11, x: 8, color: "green", kind: ItemKind::Cross },
-                    Item { y: 11, x: 8, color: "#cccccc", kind: ItemKind::Wall },
                     Item { y: 11, x: 10, color: "green", kind: ItemKind::Line },
-                    Item { y: 11, x: 10, color: "#cccccc", kind: ItemKind::Wall },
                 ],
                 uniqueness: Uniqueness::Unique,
             },

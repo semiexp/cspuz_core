@@ -222,6 +222,7 @@ pub enum BoardKind {
     Grid,
     OuterGrid,
     DotGrid,
+    ColoredGrid(&'static str),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -338,7 +339,7 @@ impl Board {
                             }
                         }
                     }
-                    if need_default_edge {
+                    if need_default_edge && !matches!(self.kind, BoardKind::ColoredGrid(_)) {
                         self.push(Item {
                             y: y * 2 + 2,
                             x: x * 2 + 1,
@@ -366,7 +367,7 @@ impl Board {
                             }
                         }
                     }
-                    if need_default_edge {
+                    if need_default_edge && !matches!(self.kind, BoardKind::ColoredGrid(_)) {
                         self.push(Item {
                             y: y * 2 + 1,
                             x: x * 2 + 2,
@@ -430,6 +431,11 @@ impl Board {
             BoardKind::Grid => "grid",
             BoardKind::OuterGrid => "outer_grid",
             BoardKind::DotGrid => "dots",
+            BoardKind::ColoredGrid(_) => "colored_grid",
+        };
+        let extra_fields = match self.kind {
+            BoardKind::ColoredGrid(color) => format!(",\"gridColor\":\"{}\"", color),
+            _ => String::new(),
         };
         let data = self
             .data
@@ -447,8 +453,8 @@ impl Board {
             _ => true,
         };
         format!(
-            "{{\"kind\":\"{}\",\"height\":{},\"width\":{},\"defaultStyle\":\"{}\",\"hasAnswer\":{},\"data\":[{}]{}}}",
-            kind, height, width, default_style, has_answer, data, uniqueness
+            "{{\"kind\":\"{}\",\"height\":{},\"width\":{},\"defaultStyle\":\"{}\"{},\"hasAnswer\":{},\"data\":[{}]{}}}",
+            kind, height, width, default_style, extra_fields, has_answer, data, uniqueness
         )
     }
 }
