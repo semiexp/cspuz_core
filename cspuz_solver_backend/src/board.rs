@@ -222,6 +222,7 @@ pub enum BoardKind {
     Grid,
     OuterGrid,
     DotGrid,
+    ColoredGrid(&'static str),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -338,7 +339,7 @@ impl Board {
                             }
                         }
                     }
-                    if need_default_edge {
+                    if need_default_edge && !matches!(self.kind, BoardKind::ColoredGrid(_)) {
                         self.push(Item {
                             y: y * 2 + 2,
                             x: x * 2 + 1,
@@ -366,7 +367,7 @@ impl Board {
                             }
                         }
                     }
-                    if need_default_edge {
+                    if need_default_edge && !matches!(self.kind, BoardKind::ColoredGrid(_)) {
                         self.push(Item {
                             y: y * 2 + 1,
                             x: x * 2 + 2,
@@ -430,10 +431,37 @@ impl Board {
             BoardKind::Grid => "grid",
             BoardKind::OuterGrid => "outer_grid",
             BoardKind::DotGrid => "dots",
+            BoardKind::ColoredGrid(_) => "outer_grid",
         };
-        let data = self
-            .data
+        let grid_line_items: Vec<Item> = if let BoardKind::ColoredGrid(color) = self.kind {
+            let mut items = vec![];
+            for y in 0..height {
+                for x in 0..width {
+                    if y < height - 1 {
+                        items.push(Item {
+                            y: y * 2 + 2,
+                            x: x * 2 + 1,
+                            color,
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                    if x < width - 1 {
+                        items.push(Item {
+                            y: y * 2 + 1,
+                            x: x * 2 + 2,
+                            color,
+                            kind: ItemKind::Wall,
+                        });
+                    }
+                }
+            }
+            items
+        } else {
+            vec![]
+        };
+        let data = grid_line_items
             .iter()
+            .chain(self.data.iter())
             .map(|item| item.to_json())
             .collect::<Vec<_>>()
             .join(",");
