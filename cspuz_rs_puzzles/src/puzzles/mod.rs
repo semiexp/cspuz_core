@@ -86,6 +86,7 @@ pub mod move_common;
 pub mod multiplication_link;
 pub mod n_cells;
 pub mod nagenawa;
+pub mod nanameguri;
 pub mod nanro;
 pub mod nikoji;
 pub mod nonogram;
