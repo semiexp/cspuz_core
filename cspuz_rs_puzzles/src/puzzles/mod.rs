@@ -46,6 +46,7 @@ pub mod firefly;
 pub mod firewalk;
 pub mod forestwalk;
 pub mod geradeweg;
+pub mod gokigen;
 pub mod guidearrow;
 pub mod hashi;
 pub mod hebiichigo;
