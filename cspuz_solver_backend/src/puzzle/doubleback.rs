@@ -1,15 +1,23 @@
-use crate::board::{Board, BoardKind};
+use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::doubleback;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let borders = doubleback::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = doubleback::solve_doubleback(&borders);
+    let (borders, holes) = doubleback::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = doubleback::solve_doubleback(&borders, &holes);
 
     let height = borders.vertical.len();
     let width = borders.vertical[0].len() + 1;
     let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
     board.add_borders(&borders, "black");
+
+    for y in 0..height {
+        for x in 0..width {
+            if holes[y][x] {
+                board.push(Item::cell(y, x, "black", ItemKind::Fill));
+            }
+        }
+    }
 
     if let Some(is_line) = &ans {
         board.add_lines_irrefutable_facts(is_line, "green", None);
