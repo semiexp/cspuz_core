@@ -157,6 +157,15 @@ pub enum SlalomCell {
     Horizontal,
 }
 
+impl SlalomCell {
+    fn clue_num(&self) -> i32 {
+        if let SlalomCell::Black(_, n) = self {
+            return *n;
+        }
+        panic!();
+    }
+}
+
 struct SlalomAuxCombinator;
 
 impl Combinator<Vec<Vec<SlalomCell>>> for SlalomAuxCombinator {
@@ -273,17 +282,31 @@ pub fn deserialize_problem_as_primitive(url: &str) -> Option<PrimitiveProblem> {
     Some((cell, (origin as usize / width, origin as usize % width)))
 }
 
-pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
+pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Result<Problem, String> {
+    // Criteria for determining gate order:
+    // - Clues with arrows represent the order of gates which it points to.
+    // - If a gate is between two clues with the same number, the gate's order is the same as that number.
+    // - If a clue without an arrow is adjacent to only one gate with unknown order,
+    //   the gate's order is the same as that clue's number.
+    // - After applying the above criteria, if there is a clue which has not been associated with any gate,
+    //   the problem is ambiguous.
     let (cell, origin) = problem;
     let height = cell.len();
     let width = cell[0].len();
 
-    let mut gates = vec![];
+    // gate cells, dir, candidate clue cells
+    let mut gate_cands: Vec<(Vec<(usize, usize)>, GateDir, Vec<(usize, usize)>)> = vec![];
+    let mut unmatched_clues = vec![];
+
     let mut is_black = vec![vec![false; width]; height];
     for y in 0..height {
         for x in 0..width {
-            if let SlalomCell::Black(_, _) = cell[y][x] {
+            if let SlalomCell::Black(_, n) = cell[y][x] {
                 is_black[y][x] = true;
+
+                if n >= 0 {
+                    unmatched_clues.push((y, x));
+                }
             }
             if cell[y][x] == SlalomCell::Vertical {
                 if y > 0 && cell[y - 1][x] == SlalomCell::Vertical {
@@ -293,44 +316,34 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
                 while y2 < height && cell[y2][x] == SlalomCell::Vertical {
                     y2 += 1;
                 }
-                let mut ord = None;
-                let mut upper = None;
-                let mut lower = None;
+                let mut adj_clues = vec![];
                 if y > 0 {
-                    if let SlalomCell::Black(SlalomBlackCellDir::Down, n) = cell[y - 1][x] {
-                        ord = Some(n);
-                    }
-                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y - 1][x] {
-                        upper = Some(n);
+                    match cell[y - 1][x] {
+                        SlalomCell::Black(SlalomBlackCellDir::Down, n)
+                        | SlalomCell::Black(SlalomBlackCellDir::NoDir, n) => {
+                            if n >= 0 {
+                                adj_clues.push((y - 1, x));
+                            }
+                        }
+                        _ => {}
                     }
                 }
                 if y2 < height {
-                    if let SlalomCell::Black(SlalomBlackCellDir::Up, n) = cell[y2][x] {
-                        ord = Some(n);
-                    }
-                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y2][x] {
-                        lower = Some(n);
-                    }
-                }
-                match (upper, lower) {
-                    (Some(u), Some(l)) => {
-                        if u == l {
-                            ord = Some(u);
+                    match cell[y2][x] {
+                        SlalomCell::Black(SlalomBlackCellDir::Up, n)
+                        | SlalomCell::Black(SlalomBlackCellDir::NoDir, n) => {
+                            if n >= 0 {
+                                adj_clues.push((y2, x));
+                            }
                         }
+                        _ => {}
                     }
-                    (Some(u), None) => {
-                        ord = Some(u);
-                    }
-                    (None, Some(l)) => {
-                        ord = Some(l);
-                    }
-                    (None, None) => {}
                 }
-                gates.push(Gate {
-                    cells: (y..y2).map(|y| (y, x)).collect(),
-                    dir: GateDir::Vertical,
-                    ord,
-                });
+                gate_cands.push((
+                    (y..y2).map(|y| (y, x)).collect(),
+                    GateDir::Vertical,
+                    adj_clues,
+                ));
             } else if cell[y][x] == SlalomCell::Horizontal {
                 // horizontal
                 if x > 0 && cell[y][x - 1] == SlalomCell::Horizontal {
@@ -340,49 +353,149 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Problem {
                 while x2 < width && cell[y][x2] == SlalomCell::Horizontal {
                     x2 += 1;
                 }
-                let mut ord = None;
-                let mut left = None;
-                let mut right = None;
+                let mut adj_clues = vec![];
                 if x > 0 {
-                    if let SlalomCell::Black(SlalomBlackCellDir::Right, n) = cell[y][x - 1] {
-                        ord = Some(n);
-                    }
-                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y][x - 1] {
-                        left = Some(n);
+                    match cell[y][x - 1] {
+                        SlalomCell::Black(SlalomBlackCellDir::Right, _n)
+                        | SlalomCell::Black(SlalomBlackCellDir::NoDir, _n) => {
+                            adj_clues.push((y, x - 1));
+                        }
+                        _ => {}
                     }
                 }
                 if x2 < width {
-                    if let SlalomCell::Black(SlalomBlackCellDir::Left, n) = cell[y][x2] {
-                        ord = Some(n);
-                    }
-                    if let SlalomCell::Black(SlalomBlackCellDir::NoDir, n) = cell[y][x2] {
-                        right = Some(n);
-                    }
-                }
-                match (left, right) {
-                    (Some(l), Some(r)) => {
-                        if l == r {
-                            ord = Some(l);
+                    match cell[y][x2] {
+                        SlalomCell::Black(SlalomBlackCellDir::Left, _n)
+                        | SlalomCell::Black(SlalomBlackCellDir::NoDir, _n) => {
+                            adj_clues.push((y, x2));
                         }
+                        _ => {}
                     }
-                    (Some(l), None) => {
-                        ord = Some(l);
-                    }
-                    (None, Some(r)) => {
-                        ord = Some(r);
-                    }
-                    (None, None) => {}
                 }
-                gates.push(Gate {
-                    cells: (x..x2).map(|x| (y, x)).collect(),
-                    dir: GateDir::Horizontal,
-                    ord,
-                });
+                gate_cands.push((
+                    (x..x2).map(|x| (y, x)).collect(),
+                    GateDir::Horizontal,
+                    adj_clues,
+                ));
             }
         }
     }
 
-    (is_black, gates, *origin)
+    let mut gates = vec![];
+
+    // If a gate is between two clues with the same number, the gate's order is the same as that number.
+    let mut gate_cands = {
+        let mut res = vec![];
+
+        for (cells, dir, adj_clues) in gate_cands {
+            if adj_clues.len() > 2 {
+                return Err("A gate is adjacent to more than 2 clues.".to_string());
+            }
+            if adj_clues.len() == 2 {
+                let (y1, x1) = adj_clues[0];
+                let (y2, x2) = adj_clues[1];
+                let n1 = cell[y1][x1].clue_num();
+                let n2 = cell[y2][x2].clue_num();
+
+                assert!(n1 >= 0 && n2 >= 0);
+                if n1 == n2 {
+                    gates.push(Gate {
+                        cells,
+                        dir,
+                        ord: Some(n1),
+                    });
+
+                    for (ry, rx) in [(y1, x1), (y2, x2)] {
+                        if let Some(idx) = unmatched_clues
+                            .iter()
+                            .position(|&(y, x)| (y, x) == (ry, rx))
+                        {
+                            unmatched_clues.remove(idx);
+                        } else {
+                            return Err(format!(
+                                "Clue at ({}, {}) has been already consumed by another gate.",
+                                ry, rx
+                            ));
+                        }
+                    }
+                }
+                continue;
+            }
+            res.push((cells, dir, adj_clues));
+        }
+        res
+    };
+
+    while !unmatched_clues.is_empty() {
+        let mut gate_num = vec![None; gate_cands.len()];
+
+        let mut unmatched_clues_next = vec![];
+        for (y, x) in unmatched_clues {
+            let mut rel_gate_idx = vec![];
+            for (i, (_, _, adj_clues)) in gate_cands.iter().enumerate() {
+                if adj_clues.contains(&(y, x)) {
+                    rel_gate_idx.push(i);
+                }
+            }
+
+            if rel_gate_idx.is_empty() {
+                return Err(format!(
+                    "Clue at ({}, {}) cannot be matched to any gate.",
+                    y, x
+                ));
+            }
+            if rel_gate_idx.len() == 1 {
+                let idx = rel_gate_idx[0];
+                let n = cell[y][x].clue_num();
+
+                if gate_num[idx].is_some() && gate_num[idx] != Some(n) {
+                    return Err(format!(
+                        "Gate order conflict: {} and {}",
+                        gate_num[idx].unwrap(),
+                        n,
+                    ));
+                }
+                gate_num[idx] = Some(n);
+            } else {
+                unmatched_clues_next.push((y, x));
+            }
+        }
+
+        unmatched_clues = unmatched_clues_next;
+
+        let mut gate_cands_next = vec![];
+        let mut updated = false;
+        for (i, gate_cand) in gate_cands.into_iter().enumerate() {
+            if let Some(n) = gate_num[i] {
+                let (cells, dir, _) = gate_cand;
+                gates.push(Gate {
+                    cells,
+                    dir,
+                    ord: Some(n),
+                });
+                updated = true;
+            } else {
+                gate_cands_next.push(gate_cand);
+            }
+        }
+
+        if !updated {
+            return Err("The problem is ambigious.".to_string());
+        }
+
+        gate_cands = gate_cands_next;
+    }
+
+    for gate_cand in gate_cands {
+        let (cells, dir, _) = gate_cand;
+        gates.push(Gate {
+            cells,
+            dir,
+            ord: None,
+        });
+    }
+
+    Ok((is_black, gates, *origin))
 }
 
 #[cfg(test)]
@@ -454,10 +567,10 @@ mod tests {
     fn test_slalom_serializer() {
         let problem = problem_for_tests();
         let deserialized = deserialize_problem_as_primitive(
-            "https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj11314333h42g/51",
+            "https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj41314333h42g/51",
         );
         assert!(deserialized.is_some());
         let deserialized = parse_primitive_problem(&deserialized.unwrap());
-        assert_eq!(problem, deserialized);
+        assert_eq!(Ok(problem), deserialized);
     }
 }

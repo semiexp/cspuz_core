@@ -6,7 +6,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     use slalom::{SlalomBlackCellDir, SlalomCell};
 
     let problem = slalom::deserialize_problem_as_primitive(url).ok_or("invalid url")?;
-    let (is_black, gates, origin) = slalom::parse_primitive_problem(&problem);
+    let (is_black, gates, origin) =
+        slalom::parse_primitive_problem(&problem).map_err(|_| "problem parse error")?;
     let is_line = slalom::solve_slalom(origin, &is_black, &gates);
 
     let height = is_black.len();
