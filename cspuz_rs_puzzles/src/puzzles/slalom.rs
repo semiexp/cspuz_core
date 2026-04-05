@@ -6,13 +6,13 @@ use cspuz_rs::serializer::{
 };
 use cspuz_rs::solver::{count_true, Solver};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GateDir {
     Horizontal,
     Vertical,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Gate {
     cells: Vec<(usize, usize)>,
     dir: GateDir,
@@ -494,6 +494,8 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Result<Problem, St
             ord: None,
         });
     }
+
+    gates.sort();
 
     Ok((is_black, gates, *origin))
 }
