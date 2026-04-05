@@ -418,8 +418,8 @@ pub fn parse_primitive_problem(problem: &PrimitiveProblem) -> Result<Problem, St
                             ));
                         }
                     }
+                    continue;
                 }
-                continue;
             }
             res.push((cells, dir, adj_clues));
         }
@@ -572,5 +572,181 @@ mod tests {
         assert!(deserialized.is_some());
         let deserialized = parse_primitive_problem(&deserialized.unwrap());
         assert_eq!(Ok(problem), deserialized);
+    }
+
+    #[test]
+    fn test_parse_primitive_problem() {
+        {
+            // gate surrounded by a clue pointing to it
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::Right, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::NoClue, -1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_ok());
+            let (_, gates, _) = parsed.unwrap();
+            assert_eq!(
+                gates,
+                vec![Gate {
+                    cells: vec![(1, 2)],
+                    dir: GateDir::Horizontal,
+                    ord: Some(1),
+                }]
+            );
+        }
+
+        {
+            // gate surrounded by two clues pointing to it
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::Right, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::Left, 1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_ok());
+            let (_, gates, _) = parsed.unwrap();
+            assert_eq!(
+                gates,
+                vec![Gate {
+                    cells: vec![(1, 2)],
+                    dir: GateDir::Horizontal,
+                    ord: Some(1),
+                }]
+            );
+        }
+
+        {
+            // gate surrounded by two clues, but one of them points to an irrelevant direction
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::Right, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::Up, 1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_err());
+            assert_eq!(
+                parsed.err().unwrap(),
+                "Clue at (1, 3) cannot be matched to any gate.".to_string()
+            );
+        }
+
+        {
+            // gate surrounded by two clues but with different numbers
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::Right, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::Left, 2);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_err());
+            assert_eq!(
+                parsed.err().unwrap(),
+                "Gate order conflict: 1 and 2".to_string()
+            );
+        }
+
+        {
+            // gate surrounded by two clues with same numbers, without arrows
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[2][1] = SlalomCell::Vertical;
+            cells[3][1] = SlalomCell::Black(SlalomBlackCellDir::NoClue, -1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_ok());
+            let (_, gates, _) = parsed.unwrap();
+            assert_eq!(
+                gates,
+                vec![
+                    Gate {
+                        cells: vec![(1, 2)],
+                        dir: GateDir::Horizontal,
+                        ord: Some(1),
+                    },
+                    Gate {
+                        cells: vec![(2, 1)],
+                        dir: GateDir::Vertical,
+                        ord: None,
+                    },
+                ]
+            );
+        }
+
+        {
+            // gate surrounded by two clues with different numbers, without arrows
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 2);
+            cells[2][1] = SlalomCell::Vertical;
+            cells[3][1] = SlalomCell::Black(SlalomBlackCellDir::NoClue, -1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_ok());
+            let (_, gates, _) = parsed.unwrap();
+            assert_eq!(
+                gates,
+                vec![
+                    Gate {
+                        cells: vec![(1, 2)],
+                        dir: GateDir::Horizontal,
+                        ord: Some(2),
+                    },
+                    Gate {
+                        cells: vec![(2, 1)],
+                        dir: GateDir::Vertical,
+                        ord: Some(1),
+                    },
+                ]
+            );
+        }
+
+        {
+            // gate surrounded by two clues with different numbers, without arrows
+            // ambigious
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 2);
+            cells[2][1] = SlalomCell::Vertical;
+            cells[3][1] = SlalomCell::Black(SlalomBlackCellDir::NoClue, -1);
+            cells[2][3] = SlalomCell::Vertical;
+            cells[3][3] = SlalomCell::Black(SlalomBlackCellDir::NoClue, -1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_err());
+            assert_eq!(
+                parsed.err().unwrap(),
+                "The problem is ambigious.".to_string()
+            );
+        }
+
+        {
+            // same number appears 3 times
+            let mut cells = vec![vec![SlalomCell::White; 6]; 6];
+            cells[1][1] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[1][2] = SlalomCell::Horizontal;
+            cells[1][3] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+            cells[2][1] = SlalomCell::Vertical;
+            cells[3][1] = SlalomCell::Black(SlalomBlackCellDir::NoDir, 1);
+
+            let problem = (cells, (0, 0));
+            let parsed = parse_primitive_problem(&problem);
+            assert!(parsed.is_err());
+            assert_eq!(
+                parsed.err().unwrap(),
+                "Clue at (1, 1) has been already consumed by another gate.".to_string()
+            );
+        }
     }
 }
