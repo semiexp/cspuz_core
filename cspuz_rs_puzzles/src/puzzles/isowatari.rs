@@ -62,14 +62,14 @@ pub fn solve_isowatari(
                 (is_black.eq(1).slice((1.., ..)) & is_black.eq(1).slice((..(h - 1), ..))).imp(
                     connected
                         .slice((1.., ..))
-                        .imp(connected.slice((..(h - 1), ..))),
+                        .iff(connected.slice((..(h - 1), ..))),
                 ),
             );
             solver.add_expr(
                 (is_black.eq(1).slice((.., 1..)) & is_black.eq(1).slice((.., ..(w - 1)))).imp(
                     connected
                         .slice((.., 1..))
-                        .imp(connected.slice((.., ..(w - 1)))),
+                        .iff(connected.slice((.., ..(w - 1)))),
                 ),
             );
         }
