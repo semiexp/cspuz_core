@@ -4,6 +4,7 @@ use cspuz_rs::serializer::{
     Dict, Map, MultiDigit, Optionalize, Rooms, Size, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
+use std::cmp::min;
 
 pub fn solve_doubleback(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -21,12 +22,12 @@ pub fn solve_doubleback(
 
     // If there are holes, add a border between cells with holes and cells with no holes
     if let Some(is_hole) = holes {
-        for y in 0..h - 1 {
-            for x in 0..w - 1 {
-                if is_hole[y][x] ^ is_hole[y][x + 1] {
+        for y in 0..h {
+            for x in 0..w {
+                if is_hole[y][x] ^ is_hole[y][min(x + 1, w - 1)] {
                     borders_with_holes.vertical[y][x] = true;
                 }
-                if is_hole[y + 1][x] ^ is_hole[y][x] {
+                if is_hole[min(y + 1, h - 1)][x] ^ is_hole[y][x] {
                     borders_with_holes.horizontal[y][x] = true;
                 }
             }
