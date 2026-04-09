@@ -1,8 +1,10 @@
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::serializer::{problem_to_url_with_context_pzprxs, url_to_problem, Combinator, Context, ContextBasedGrid, DecInt, Map, MultiDigit, PrefixAndSuffix, Size, Tuple3};
-use cspuz_rs::solver::{Solver};
-
+use cspuz_rs::serializer::{
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice2, Combinator, Context,
+    ContextBasedGrid, DecInt, Dict, Map, MultiDigit, Optionalize, PrefixAndSuffix, Size, Tuple3,
+};
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IsowatariClue {
@@ -11,11 +13,10 @@ pub enum IsowatariClue {
     Black,
 }
 
-
 pub fn solve_isowatari(
     cluster_size: i32,
     clues: &[Vec<IsowatariClue>],
-    is_hole: &[Vec<bool>]
+    is_hole: &Option<Vec<Vec<bool>>>,
 ) -> Option<Vec<Vec<Option<i32>>>> {
     let (h, w) = util::infer_shape(clues);
     let mut solver = Solver::new();
@@ -35,7 +36,11 @@ pub fn solve_isowatari(
                 IsowatariClue::White => solver.add_expr(is_black.at((y, x)).eq(0)),
                 IsowatariClue::Black => solver.add_expr(is_black.at((y, x)).eq(1)),
             }
-            solver.add_expr(is_black.at((y, x)).eq(-1) ^ !is_hole[y][x]);
+            if let Some(holes) = is_hole {
+                solver.add_expr(is_black.at((y, x)).eq(-1) ^ !holes[y][x]);
+            } else {
+                solver.add_expr(is_black.at((y, x)).ne(-1))
+            }
             let connected = &solver.bool_var_2d((h, w));
             for y2 in 0..h {
                 for x2 in 0..w {
@@ -46,7 +51,8 @@ pub fn solve_isowatari(
                     }
                 }
             }
-            solver.add_expr((is_black.at((y, x)).eq(1)).imp(connected.count_true().eq(cluster_size)));
+            solver
+                .add_expr((is_black.at((y, x)).eq(1)).imp(connected.count_true().eq(cluster_size)));
             graph::active_vertices_connected_2d(&mut solver, connected);
 
             for nb in connected.four_neighbor_indices((y, x)) {
@@ -72,7 +78,7 @@ pub fn solve_isowatari(
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
-pub type Problem = (i32, Vec<Vec<IsowatariClue>>, Vec<Vec<bool>>);
+pub type Problem = (i32, Vec<Vec<IsowatariClue>>, Option<Vec<Vec<bool>>>);
 
 fn combinator() -> impl Combinator<Problem> {
     Size::new(Tuple3::new(
@@ -93,11 +99,14 @@ fn combinator() -> impl Combinator<Problem> {
                 _ => None,
             },
         )),
-        ContextBasedGrid::new(Map::new(
-            MultiDigit::new(2, 5),
-            |x: bool| Some(if x { 1 } else { 0 }),
-            |n: i32| Some(n == 1),
-        ))
+        Choice2::new(
+            Optionalize::new(ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x: bool| Some(if x { 1 } else { 0 }),
+                |n: i32| Some(n == 1),
+            ))),
+            Dict::new(None, ""),
+        ),
     ))
 }
 
@@ -118,7 +127,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         let mut holes = vec![vec![false; 4]; 4];
         holes[0][3] = true;
         holes[1][3] = true;
@@ -126,13 +135,21 @@ mod tests {
         clues[0][2] = IsowatariClue::Black;
         clues[3][0] = IsowatariClue::Black;
         clues[3][1] = IsowatariClue::White;
-        
-        (2, clues, holes)
+
+        (2, clues, Some(holes))
+    }
+
+    fn problem_for_tests2() -> Problem {
+        let mut clues = vec![vec![IsowatariClue::None; 3]; 3];
+        clues[0][0] = IsowatariClue::White;
+        clues[2][1] = IsowatariClue::Black;
+
+        (1, clues, None)
     }
 
     #[test]
-    fn test_isowatari_problem() {
-        let (size, clues, holes) = problem_for_tests();
+    fn test_isowatari_problem1() {
+        let (size, clues, holes) = problem_for_tests1();
         let ans = solve_isowatari(size, &clues, &holes);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -144,13 +161,31 @@ mod tests {
             [1, 0, 0, 0],
         ]);
         assert_eq!(ans, expected);
+    }
 
+    #[test]
+    fn test_isowatari_problem2() {
+        let (size, clues, holes) = problem_for_tests2();
+        let ans = solve_isowatari(size, &clues, &holes);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected = crate::util::tests::to_option_2d([[0, 1, 0], [0, 0, 0], [0, 1, 0]]);
+        assert_eq!(ans, expected);
     }
 
     #[test]
     fn test_isowatari_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://pzprxs.vercel.app/p?isowatari/4/4/2/2000l02400";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://pzprxs.vercel.app/p?isowatari/4/4/2/2000l02400";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://pzprxs.vercel.app/p?isowatari/3/3/1/906";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
     }
 }
