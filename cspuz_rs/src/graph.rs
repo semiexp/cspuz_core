@@ -288,7 +288,6 @@ pub fn graph_slash_connectivity_with_outer_vertex(shape: (usize, usize)) -> Grap
     g
 }
 
-
 ///
 /// Suppose we have a H * W grid. Then, each cell is surrounded by 2 horizontal edges and 2 vertical edges.
 /// Thus we have (H + 1) * W horizontal edges and H * (W + 1) vertical edges in total.
