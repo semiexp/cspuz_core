@@ -3,7 +3,7 @@ use crate::uniqueness::Uniqueness;
 use cspuz_rs_puzzles::puzzles::skyscrapers;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (clues_up, clues_down, clues_left, clues_right, cells) =
+    let ((clues_up, clues_down, clues_left, clues_right), cells) =
         skyscrapers::deserialize_problem(url).ok_or("invalid url")?;
     let ans: Option<Vec<Vec<Option<i32>>>> =
         skyscrapers::solve_skyscrapers(&clues_up, &clues_down, &clues_left, &clues_right, &cells);

@@ -1272,7 +1272,7 @@ where
         let input = &input[0];
 
         let surrounding = [&input.0[..], &input.1[..], &input.2[..], &input.3[..]].concat();
-        let ret = Seq::new(&self.base_serializer, width + height)
+        let ret = Seq::new(&self.base_serializer, 2 * (width + height))
             .serialize(ctx, &[surrounding])?
             .1;
 

@@ -1,6 +1,7 @@
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    DecInt, HexInt, Optionalize, PrefixAndSuffix, Seq, Sequencer, Size, Spaces, Tuple2,
+    problem_to_url_with_context, url_to_problem, Choice, Choice2, Combinator, Context,
+    ContextBasedGrid, DecInt, Dict, HexInt, Optionalize, OutsideCells4, PrefixAndSuffix, Size,
+    Spaces, Tuple3,
 };
 use cspuz_rs::solver::Solver;
 
@@ -72,107 +73,32 @@ pub fn solve_easy_as_abc(
     solver.irrefutable_facts().map(|f| f.get(numbers))
 }
 
-pub type Grid = (
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
+pub type Problem = (
+    i32,
+    (
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+    ),
     Option<Vec<Vec<Option<i32>>>>,
 );
 
-pub type Problem = (i32, Grid);
-
-fn internal_combinator() -> impl Combinator<Option<i32>> {
-    Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])
-}
-
-pub struct GridCombinator;
-
-impl Combinator<Grid> for GridCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[Grid],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let problem = &input[0];
-
-        let surrounding = [
-            &problem.0[..],
-            &problem.1[..],
-            &problem.2[..],
-            &problem.3[..],
-        ]
-        .concat();
-        let mut ret = Seq::new(internal_combinator(), 2 * (width + height))
-            .serialize(ctx, &[surrounding])?
-            .1;
-
-        if let Some(cells) = &problem.4 {
-            ret.extend(
-                ContextBasedGrid::new(internal_combinator())
-                    .serialize(ctx, &[cells.clone()])?
-                    .1,
-            );
-        }
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Grid>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let surrounding =
-            sequencer.deserialize(ctx, Seq::new(internal_combinator(), 2 * (width + height)))?;
-        if surrounding.len() != 1 {
-            return None;
-        }
-        let surrounding = surrounding.into_iter().next().unwrap();
-
-        let clues_up = surrounding[..width].to_vec();
-        let clues_down = surrounding[width..(2 * width)].to_vec();
-        let clues_left = surrounding[(2 * width)..(2 * width + height)].to_vec();
-        let clues_right = surrounding[(2 * width + height)..].to_vec();
-
-        if sequencer.n_remaining() > 0 {
-            let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(internal_combinator()))?;
-            if cells.len() != 1 {
-                return None;
-            }
-            let cells = cells.into_iter().next().unwrap();
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_down, clues_left, clues_right, Some(cells))],
-            ))
-        } else {
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_down, clues_left, clues_right, None)],
-            ))
-        }
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
+    Size::new(Tuple3::new(
         PrefixAndSuffix::new("", DecInt, "/"),
-        GridCombinator,
+        OutsideCells4::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ])),
+        Choice2::new(
+            Optionalize::new(ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Dict::new(Some(-1), ".")),
+                Box::new(Spaces::new(None, 'g')),
+            ]))),
+            Dict::new(None, ""),
+        ),
     ))
 }
 
@@ -205,15 +131,15 @@ mod tests {
                 vec![None, None, None, None],
                 vec![Some(2), None, None, Some(3)],
                 vec![None, Some(3), None, None],
-                None,
             ),
+            None,
         )
     }
 
     #[test]
     fn test_easy_as_abc_problem() {
         {
-            let (range, (clues_up, clues_down, clues_left, clues_right, cells)) =
+            let (range, (clues_up, clues_down, clues_left, clues_right), cells) =
                 problem_for_tests();
             let ans = solve_easy_as_abc(
                 range,

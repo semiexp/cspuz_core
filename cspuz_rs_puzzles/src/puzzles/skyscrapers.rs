@@ -1,6 +1,6 @@
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Optionalize, Seq, Sequencer, Size, Spaces,
+    problem_to_url_with_context, url_to_problem, Choice, Choice2, Combinator, Context,
+    ContextBasedGrid, Dict, HexInt, Optionalize, OutsideCells4, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{count_true, Solver};
 
@@ -91,110 +91,36 @@ pub fn solve_skyscrapers(
     solver.irrefutable_facts().map(|f| f.get(num))
 }
 
-pub type Grid = (
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
+pub type Problem = (
+    (
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+        Vec<Option<i32>>,
+    ),
     Option<Vec<Vec<Option<i32>>>>,
 );
 
-pub type Problem = Grid;
-
-fn internal_combinator() -> impl Combinator<Option<i32>> {
-    Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])
-}
-
-pub struct GridCombinator;
-
-impl Combinator<Grid> for GridCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[Grid],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let problem = &input[0];
-
-        let surrounding = [
-            &problem.0[..],
-            &problem.1[..],
-            &problem.2[..],
-            &problem.3[..],
-        ]
-        .concat();
-        let mut ret = Seq::new(internal_combinator(), 2 * (width + height))
-            .serialize(ctx, &[surrounding])?
-            .1;
-
-        if let Some(cells) = &problem.4 {
-            ret.extend(
-                ContextBasedGrid::new(internal_combinator())
-                    .serialize(ctx, &[cells.clone()])?
-                    .1,
-            );
-        }
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Grid>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let surrounding =
-            sequencer.deserialize(ctx, Seq::new(internal_combinator(), 2 * (width + height)))?;
-        if surrounding.len() != 1 {
-            return None;
-        }
-        let surrounding = surrounding.into_iter().next().unwrap();
-
-        let clues_up = surrounding[..width].to_vec();
-        let clues_down = surrounding[width..(2 * width)].to_vec();
-        let clues_left = surrounding[(2 * width)..(2 * width + height)].to_vec();
-        let clues_right = surrounding[(2 * width + height)..].to_vec();
-
-        if sequencer.n_remaining() > 0 {
-            let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(internal_combinator()))?;
-            if cells.len() != 1 {
-                return None;
-            }
-            let cells = cells.into_iter().next().unwrap();
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_down, clues_left, clues_right, Some(cells))],
-            ))
-        } else {
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_down, clues_left, clues_right, None)],
-            ))
-        }
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(GridCombinator)
+    Size::new(Tuple2::new(
+        OutsideCells4::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ])),
+        Choice2::new(
+            Optionalize::new(ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Dict::new(Some(-1), ".")),
+                Box::new(Spaces::new(None, 'g')),
+            ]))),
+            Dict::new(None, ""),
+        ),
+    ))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.1.len();
-    let width = problem.3.len();
+    let height = problem.0 .1.len();
+    let width = problem.0 .3.len();
 
     problem_to_url_with_context(
         combinator(),
@@ -215,10 +141,12 @@ mod tests {
 
     fn problem_for_tests() -> Problem {
         (
-            vec![None, None, None, None],
-            vec![None, Some(1), Some(3), None],
-            vec![None, Some(4), None, None],
-            vec![None, None, Some(3), None],
+            (
+                vec![None, None, None, None],
+                vec![None, Some(1), Some(3), None],
+                vec![None, Some(4), None, None],
+                vec![None, None, Some(3), None],
+            ),
             None,
         )
     }
@@ -226,7 +154,7 @@ mod tests {
     #[test]
     fn test_skyscrapers_problem() {
         {
-            let (clues_up, clues_down, clues_left, clues_right, cells) = problem_for_tests();
+            let ((clues_up, clues_down, clues_left, clues_right), cells) = problem_for_tests();
             let ans = solve_skyscrapers(&clues_up, &clues_down, &clues_left, &clues_right, &cells);
             assert!(ans.is_some());
             let ans = ans.unwrap();
