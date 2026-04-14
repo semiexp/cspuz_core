@@ -35,18 +35,38 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         if let Some(n) = clues_left[y] {
-            board.push(Item::cell(y + 1, 0, "black", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+            board.push(Item::cell(
+                y + 1,
+                0,
+                "black",
+                ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+            ));
         }
         if let Some(n) = clues_right[y] {
-            board.push(Item::cell(y + 1, width + 1, "black", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+            board.push(Item::cell(
+                y + 1,
+                width + 1,
+                "black",
+                ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+            ));
         }
     }
     for x in 0..width {
         if let Some(n) = clues_up[x] {
-            board.push(Item::cell(0, x + 1, "black", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+            board.push(Item::cell(
+                0,
+                x + 1,
+                "black",
+                ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+            ));
         }
         if let Some(n) = clues_down[x] {
-            board.push(Item::cell(height + 1, x + 1, "black", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+            board.push(Item::cell(
+                height + 1,
+                x + 1,
+                "black",
+                ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+            ));
         }
     }
 
@@ -57,14 +77,24 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             if let Some(clues) = &cells {
                 if let Some(n) = clues[y][x] {
                     if n >= 0 {
-                        board.push(Item::cell(y + 1, x + 1, "black", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+                        board.push(Item::cell(
+                            y + 1,
+                            x + 1,
+                            "black",
+                            ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+                        ));
                     } else {
                         board.push(Item::cell(y + 1, x + 1, "black", ItemKind::Text("?")));
                     }
                 } else if let Some(ans) = &ans {
                     if let Some(n) = ans[y][x] {
                         if n > 0 {
-                            board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+                            board.push(Item::cell(
+                                y + 1,
+                                x + 1,
+                                "green",
+                                ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+                            ));
                         } else {
                             board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
                         }
@@ -73,7 +103,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             } else if let Some(ans) = &ans {
                 if let Some(n) = ans[y][x] {
                     if n > 0 {
-                        board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize])));
+                        board.push(Item::cell(
+                            y + 1,
+                            x + 1,
+                            "green",
+                            ItemKind::Text(&ALPHA[(n - 1) as usize..=(n - 1) as usize]),
+                        ));
                     } else {
                         board.push(Item::cell(y + 1, x + 1, "green", ItemKind::Dot));
                     }
