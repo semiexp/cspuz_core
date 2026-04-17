@@ -568,55 +568,60 @@ impl Board {
             return None;
         }
 
-        fn is_edge_position(y: usize, x: usize) -> bool {
-            y % 2 != x % 2
-        }
-
-        let has_edge = |y: usize, x: usize| -> bool {
-            if y >= h || x >= w {
-                return false;
+        let lines = if is_dot_grid {
+            fn is_edge_position(y: usize, x: usize) -> bool {
+                y % 2 != x % 2
             }
-            is_edge_position(y, x) && grid[y][x] != EMPTY_TOKEN
-        };
 
-        let mut lines = vec![];
-        for y in 0..h {
-            let mut line = String::new();
-            for x in 0..w {
-                if y % 2 == 0 && x % 2 == 0 {
-                    let has_adjacent_edge = (x > 0 && has_edge(y, x - 1))
-                        || (x + 1 < w && has_edge(y, x + 1))
-                        || (y > 0 && has_edge(y - 1, x))
-                        || (y + 1 < h && has_edge(y + 1, x));
-                    if is_dot_grid || has_adjacent_edge {
-                        line.push('+');
-                    } else {
-                        line.push(' ');
-                    }
-                } else if y % 2 == 0 && x % 2 == 1 {
-                    if grid[y][x] == "-" {
-                        line.push_str("---");
-                    } else if grid[y][x] == "x" {
-                        line.push_str(" x ");
-                    } else {
-                        line.push_str("   ");
-                    }
-                } else if y % 2 == 1 && x % 2 == 0 {
-                    if grid[y][x] == "|" || grid[y][x] == "x" {
-                        line.push_str(&grid[y][x]);
-                    } else {
-                        line.push(' ');
-                    }
-                } else {
-                    if grid[y][x] == EMPTY_TOKEN {
+            let has_edge = |y: usize, x: usize| -> bool {
+                if y >= h || x >= w {
+                    return false;
+                }
+                is_edge_position(y, x) && grid[y][x] != EMPTY_TOKEN
+            };
+
+            let mut lines = vec![];
+            for y in 0..h {
+                let mut line = String::new();
+                for x in 0..w {
+                    if y % 2 == 0 && x % 2 == 0 {
+                        let has_adjacent_edge = (x > 0 && has_edge(y, x - 1))
+                            || (x + 1 < w && has_edge(y, x + 1))
+                            || (y > 0 && has_edge(y - 1, x))
+                            || (y + 1 < h && has_edge(y + 1, x));
+                        if has_adjacent_edge {
+                            line.push('+');
+                        } else {
+                            line.push(' ');
+                        }
+                    } else if y % 2 == 0 && x % 2 == 1 {
+                        if grid[y][x] == "-" {
+                            line.push_str("---");
+                        } else if grid[y][x] == "x" {
+                            line.push_str(" x ");
+                        } else {
+                            line.push_str("   ");
+                        }
+                    } else if y % 2 == 1 && x % 2 == 0 {
+                        if grid[y][x] == "|" || grid[y][x] == "x" {
+                            line.push_str(&grid[y][x]);
+                        } else {
+                            line.push(' ');
+                        }
+                    } else if grid[y][x] == EMPTY_TOKEN {
                         line.push_str("   ");
                     } else {
                         line.push_str(&format!("{:^3}", grid[y][x]));
                     }
                 }
+                lines.push(line.trim_end().to_string());
             }
-            lines.push(line.trim_end().to_string());
-        }
+            lines
+        } else {
+            grid.into_iter()
+                .map(|row| row.join(" ").trim_end().to_string())
+                .collect::<Vec<_>>()
+        };
 
         let start = lines.iter().position(|s| !s.is_empty())?;
         let end = lines
@@ -670,5 +675,14 @@ mod tests {
             .expect("decode_and_solve failed for slitherlink regression URL");
         let text = board.to_text().unwrap();
         assert!(text.contains("+---+"), "unexpected text output:\n{}", text);
+    }
+
+    #[test]
+    fn test_to_text_yajilin_does_not_use_dot_grid_vertices() {
+        let board =
+            decode_and_solve("https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g".as_bytes())
+                .expect("decode_and_solve failed for yajilin regression URL");
+        let text = board.to_text().unwrap();
+        assert!(!text.contains('+'), "unexpected text output:\n{}", text);
     }
 }
