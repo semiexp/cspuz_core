@@ -529,7 +529,8 @@ impl Board {
         let h = self.height * 2 + 1;
         let w = self.width * 2 + 1;
         let mut grid = vec![vec![EMPTY_TOKEN.to_string(); w]; h];
-        if matches!(self.kind, BoardKind::DotGrid) {
+        let is_dot_grid = matches!(self.kind, BoardKind::DotGrid);
+        if is_dot_grid {
             for y in (0..h).step_by(2) {
                 for x in (0..w).step_by(2) {
                     grid[y][x] = "+".to_string();
@@ -567,10 +568,55 @@ impl Board {
             return None;
         }
 
-        let lines = grid
-            .into_iter()
-            .map(|row| row.join(" ").trim_end().to_string())
-            .collect::<Vec<_>>();
+        fn is_edge_position(y: usize, x: usize) -> bool {
+            y % 2 != x % 2
+        }
+
+        let has_edge = |y: usize, x: usize| -> bool {
+            if y >= h || x >= w {
+                return false;
+            }
+            is_edge_position(y, x) && grid[y][x] != EMPTY_TOKEN
+        };
+
+        let mut lines = vec![];
+        for y in 0..h {
+            let mut line = String::new();
+            for x in 0..w {
+                if y % 2 == 0 && x % 2 == 0 {
+                    let has_adjacent_edge = (x > 0 && has_edge(y, x - 1))
+                        || (x + 1 < w && has_edge(y, x + 1))
+                        || (y > 0 && has_edge(y - 1, x))
+                        || (y + 1 < h && has_edge(y + 1, x));
+                    if is_dot_grid || has_adjacent_edge {
+                        line.push('+');
+                    } else {
+                        line.push(' ');
+                    }
+                } else if y % 2 == 0 && x % 2 == 1 {
+                    if grid[y][x] == "-" {
+                        line.push_str("---");
+                    } else if grid[y][x] == "x" {
+                        line.push_str(" x ");
+                    } else {
+                        line.push_str("   ");
+                    }
+                } else if y % 2 == 1 && x % 2 == 0 {
+                    if grid[y][x] == "|" || grid[y][x] == "x" {
+                        line.push_str(&grid[y][x]);
+                    } else {
+                        line.push(' ');
+                    }
+                } else {
+                    if grid[y][x] == EMPTY_TOKEN {
+                        line.push_str("   ");
+                    } else {
+                        line.push_str(&format!("{:^3}", grid[y][x]));
+                    }
+                }
+            }
+            lines.push(line.trim_end().to_string());
+        }
 
         let start = lines.iter().position(|s| !s.is_empty())?;
         let end = lines
@@ -616,5 +662,13 @@ mod tests {
         let mut board = Board::new(BoardKind::Grid, 1, 1, Uniqueness::Unique);
         board.push(Item::cell(0, 0, "green", ItemKind::Triangle));
         assert_eq!(board.to_text(), None);
+    }
+
+    #[test]
+    fn test_to_text_slitherlink_has_continuous_border() {
+        let board = decode_and_solve("https://pzprxs.vercel.app/p?slither/4/4/dgdh2c71".as_bytes())
+            .expect("decode_and_solve failed for slitherlink regression URL");
+        let text = board.to_text().unwrap();
+        assert!(text.contains("+---+"), "unexpected text output:\n{}", text);
     }
 }
