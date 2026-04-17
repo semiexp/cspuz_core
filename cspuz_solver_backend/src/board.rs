@@ -231,7 +231,7 @@ pub struct Board {
     pub(crate) height: usize,
     pub(crate) width: usize,
     pub(crate) data: Vec<Item>,
-    pub(crate) uniqueness: Uniqueness,
+    pub uniqueness: Uniqueness,
 }
 
 impl Board {
