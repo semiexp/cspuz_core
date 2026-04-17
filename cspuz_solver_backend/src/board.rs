@@ -481,6 +481,8 @@ impl Board {
     }
 
     pub fn to_text(&self) -> Option<String> {
+        const EMPTY_TOKEN: &str = " ";
+
         fn green_cell_token(kind: &ItemKind) -> Option<String> {
             match kind {
                 ItemKind::Block | ItemKind::Fill => Some("#".to_string()),
@@ -514,7 +516,7 @@ impl Board {
 
         fn set_token(grid: &mut [Vec<String>], y: usize, x: usize, token: String) -> Option<()> {
             let current = &grid[y][x];
-            if current == " " {
+            if current == EMPTY_TOKEN {
                 grid[y][x] = token;
                 Some(())
             } else if current == &token {
@@ -526,7 +528,7 @@ impl Board {
 
         let h = self.height * 2 + 1;
         let w = self.width * 2 + 1;
-        let mut grid = vec![vec![" ".to_string(); w]; h];
+        let mut grid = vec![vec![EMPTY_TOKEN.to_string(); w]; h];
         if matches!(self.kind, BoardKind::DotGrid) {
             for y in (0..h).step_by(2) {
                 for x in (0..w).step_by(2) {
@@ -565,16 +567,18 @@ impl Board {
             return None;
         }
 
-        let mut lines = grid
+        let lines = grid
             .into_iter()
             .map(|row| row.join(" ").trim_end().to_string())
             .collect::<Vec<_>>();
-        while lines.first().map(|s| s.is_empty()).unwrap_or(false) {
-            lines.remove(0);
-        }
-        while lines.last().map(|s| s.is_empty()).unwrap_or(false) {
-            lines.pop();
-        }
+
+        let start = lines.iter().position(|s| !s.is_empty())?;
+        let end = lines
+            .iter()
+            .rposition(|s| !s.is_empty())
+            .expect("start implies at least one non-empty line");
+        let lines = &lines[start..=end];
+
         if lines.is_empty() {
             None
         } else {
