@@ -29,7 +29,7 @@ pub fn solve_nuritwin(
     assert_eq!(rooms.len(), clues.len());
 
     for i in 0..rooms.len() {
-        if (rooms[i].len() as i32) == 1 {
+        if (rooms[i].len() as i32) < 3 {
             return None;
         }
         let block_size = &solver.int_var(1, (rooms[i].len() as i32) / 2);
