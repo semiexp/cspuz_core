@@ -6,7 +6,8 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     use slalom::{SlalomBlackCellDir, SlalomCell};
 
     let problem = slalom::deserialize_problem_as_primitive(url).ok_or("invalid url")?;
-    let (is_black, gates, origin) = slalom::parse_primitive_problem(&problem);
+    let (is_black, gates, origin) =
+        slalom::parse_primitive_problem(&problem).map_err(|_| "problem parse error")?;
     let is_line = slalom::solve_slalom(origin, &is_black, &gates);
 
     let height = is_black.len();
@@ -68,7 +69,7 @@ mod tests {
     #[rustfmt::skip]
     fn test_solve() {
         compare_board_and_check_no_solution_case!(
-            solve("https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj11314333h42g/51"),
+            solve("https://puzz.link/p?slalom/d/10/10/h133316131f131p1333315131f1333351aj41314333h42g/51"),
             Board {
                 kind: BoardKind::Grid,
                 height: 10,
@@ -86,7 +87,7 @@ mod tests {
                     Item { y: 5, x: 9, color: "black", kind: ItemKind::Fill },
                     Item { y: 7, x: 15, color: "black", kind: ItemKind::Fill },
                     Item { y: 7, x: 15, color: "white", kind: ItemKind::Num(1) },
-                    Item { y: 7, x: 15, color: "white", kind: ItemKind::SideArrowUp },
+                    Item { y: 7, x: 15, color: "white", kind: ItemKind::SideArrowRight },
                     Item { y: 7, x: 17, color: "black", kind: ItemKind::DottedHorizontalWall },
                     Item { y: 7, x: 19, color: "black", kind: ItemKind::Fill },
                     Item { y: 7, x: 19, color: "white", kind: ItemKind::Num(1) },

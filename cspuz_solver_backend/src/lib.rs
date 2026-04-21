@@ -12,6 +12,7 @@ pub mod testing;
 use board::Board;
 use cspuz_rs::serializer::{get_kudamono_url_info_detailed, url_to_puzzle_kind};
 pub use puzzle::{list_penpa_edit_puzzles, list_puzzles_for_enumerate, list_puzzles_for_solve};
+pub use uniqueness::Uniqueness;
 
 static mut SHARED_ARRAY: Vec<u8> = vec![];
 
@@ -29,7 +30,7 @@ fn parse_penpa_edit_special_url(url: &str) -> Option<(&str, &str)> {
     Some((kind, url))
 }
 
-fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
+pub fn decode_and_solve(url: &[u8]) -> Result<Board, &'static str> {
     let url = std::str::from_utf8(url).map_err(|_| "failed to decode URL as UTF-8")?;
 
     if let Some(puzzle_kind) = url_to_puzzle_kind(url) {

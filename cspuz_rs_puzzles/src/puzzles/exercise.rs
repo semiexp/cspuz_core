@@ -13,36 +13,12 @@ pub fn solve_exercise(has_block: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrr
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
-    let direction = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
-    let up = &(&is_line.vertical & &direction.vertical);
-    let down = &(&is_line.vertical & !&direction.vertical);
-    let left = &(&is_line.horizontal & &direction.horizontal);
-    let right = &(&is_line.horizontal & !&direction.horizontal);
-
-    for y in 0..h {
-        for x in 0..w {
-            let mut inbound = vec![];
-            let mut outbound = vec![];
-            if y > 0 {
-                inbound.push(down.at((y - 1, x)));
-                outbound.push(up.at((y - 1, x)));
-            }
-            if y < h - 1 {
-                inbound.push(up.at((y, x)));
-                outbound.push(down.at((y, x)));
-            }
-            if x > 0 {
-                inbound.push(right.at((y, x - 1)));
-                outbound.push(left.at((y, x - 1)));
-            }
-            if x < w - 1 {
-                inbound.push(left.at((y, x)));
-                outbound.push(right.at((y, x)));
-            }
-            solver.add_expr(count_true(&inbound).eq(is_passed.at((y, x)).ite(1, 0)));
-            solver.add_expr(count_true(&outbound).eq(is_passed.at((y, x)).ite(1, 0)));
-        }
-    }
+    let graph::DirectedEdges {
+        up,
+        down,
+        left,
+        right,
+    } = &graph::active_edges_directed_cycle_path(&mut solver, is_line, false, false);
 
     for y in 0..h {
         for x in 0..w {

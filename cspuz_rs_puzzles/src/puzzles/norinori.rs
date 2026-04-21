@@ -16,8 +16,7 @@ pub fn solve_norinori(
     let rooms = graph::borders_to_rooms(borders);
 
     for room in &rooms {
-        let cells = room.iter().map(|&p| is_black.at(p)).collect::<Vec<_>>();
-        solver.add_expr(count_true(cells).eq(2));
+        solver.add_expr(is_black.select(room).count_true().eq(2));
     }
     for y in 0..h {
         for x in 0..w {

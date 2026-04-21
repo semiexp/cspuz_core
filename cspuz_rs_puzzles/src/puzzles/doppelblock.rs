@@ -1,6 +1,6 @@
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Optionalize, Seq, Sequencer, Size, Spaces,
+    Dict, HexInt, Optionalize, OutsideCells2, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{sum, IntVarArray1D, Solver};
 
@@ -82,94 +82,29 @@ pub fn solve_doppelblock(
 }
 
 pub type Problem = (
-    Vec<Option<i32>>,
-    Vec<Option<i32>>,
+    (Vec<Option<i32>>, Vec<Option<i32>>),
     Option<Vec<Vec<Option<i32>>>>,
 );
 
-fn internal_combinator() -> impl Combinator<Option<i32>> {
-    Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])
-}
-
-pub struct DoppelblockCombinator;
-
-impl Combinator<Problem> for DoppelblockCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[Problem],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let problem = &input[0];
-
-        let surrounding = [&problem.0[..], &problem.1[..]].concat();
-        let mut ret = Seq::new(internal_combinator(), width + height)
-            .serialize(ctx, &[surrounding])?
-            .1;
-
-        if let Some(cells) = &problem.2 {
-            ret.extend(
-                ContextBasedGrid::new(internal_combinator())
-                    .serialize(ctx, &[cells.clone()])?
-                    .1,
-            );
-        }
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<Problem>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let surrounding =
-            sequencer.deserialize(ctx, Seq::new(internal_combinator(), width + height))?;
-        if surrounding.len() != 1 {
-            return None;
-        }
-        let surrounding = surrounding.into_iter().next().unwrap();
-
-        let clues_up = surrounding[..width].to_vec();
-        let clues_left = surrounding[width..].to_vec();
-
-        if sequencer.n_remaining() > 0 {
-            let cells = sequencer.deserialize(ctx, ContextBasedGrid::new(internal_combinator()))?;
-            if cells.len() != 1 {
-                return None;
-            }
-            let cells = cells.into_iter().next().unwrap();
-            Some((
-                sequencer.n_read(),
-                vec![(clues_up, clues_left, Some(cells))],
-            ))
-        } else {
-            Some((sequencer.n_read(), vec![(clues_up, clues_left, None)]))
-        }
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(DoppelblockCombinator)
+    Size::new(Tuple2::new(
+        OutsideCells2::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ])),
+        Choice::new(vec![
+            Box::new(Optionalize::new(ContextBasedGrid::new(Choice::new(vec![
+                Box::new(Optionalize::new(HexInt)),
+                Box::new(Spaces::new(None, 'g')),
+            ])))),
+            Box::new(Dict::new(None, "")),
+        ]),
+    ))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    let height = problem.1.len();
-    let width = problem.0.len();
+    let height = problem.0 .1.len();
+    let width = problem.0 .0.len();
 
     problem_to_url_with_context(
         combinator(),
@@ -190,16 +125,20 @@ mod tests {
 
     fn problem_for_tests1() -> Problem {
         (
-            vec![Some(6), Some(1), None, None, None],
-            vec![None, Some(4), None, Some(3), Some(5)],
+            (
+                vec![Some(6), Some(1), None, None, None],
+                vec![None, Some(4), None, Some(3), Some(5)],
+            ),
             None,
         )
     }
 
     fn problem_for_tests2() -> Problem {
         (
-            vec![None, Some(1), None, None, Some(3)],
-            vec![Some(1), None, None, Some(1), None],
+            (
+                vec![None, Some(1), None, None, Some(3)],
+                vec![Some(1), None, None, Some(1), None],
+            ),
             Some(vec![
                 vec![None, None, None, None, None],
                 vec![None, Some(2), None, None, None],
@@ -213,7 +152,7 @@ mod tests {
     #[test]
     fn test_doppelblock_problem() {
         {
-            let (clues_up, clues_left, cells) = problem_for_tests1();
+            let ((clues_up, clues_left), cells) = problem_for_tests1();
             let ans = solve_doppelblock(&clues_up, &clues_left, &cells);
             assert!(ans.is_some());
             let ans = ans.unwrap();
@@ -228,7 +167,7 @@ mod tests {
         }
 
         {
-            let (clues_up, clues_left, cells) = problem_for_tests2();
+            let ((clues_up, clues_left), cells) = problem_for_tests2();
             let ans = solve_doppelblock(&clues_up, &clues_left, &cells);
             assert!(ans.is_some());
             let ans = ans.unwrap();

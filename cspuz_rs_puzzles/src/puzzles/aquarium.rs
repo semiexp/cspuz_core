@@ -1,7 +1,7 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
-    Optionalize, PrefixAndSuffix, Rooms, Seq, Sequencer, Size, Spaces, Tuple2,
+    Optionalize, OutsideCells2, PrefixAndSuffix, Rooms, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::Solver;
 
@@ -89,62 +89,6 @@ type Problem = (
     ),
 );
 
-fn internal_combinator() -> impl Combinator<Option<i32>> {
-    Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-    ])
-}
-
-pub struct AquariumCombinator;
-
-impl Combinator<(Vec<Option<i32>>, Vec<Option<i32>>)> for AquariumCombinator {
-    fn serialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[(Vec<Option<i32>>, Vec<Option<i32>>)],
-    ) -> Option<(usize, Vec<u8>)> {
-        if input.is_empty() {
-            return None;
-        }
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let problem = &input[0];
-
-        let surrounding = [&problem.0[..], &problem.1[..]].concat();
-        let ret = Seq::new(internal_combinator(), width + height)
-            .serialize(ctx, &[surrounding])?
-            .1;
-
-        Some((1, ret))
-    }
-
-    fn deserialize(
-        &self,
-        ctx: &cspuz_rs::serializer::Context,
-        input: &[u8],
-    ) -> Option<(usize, Vec<(Vec<Option<i32>>, Vec<Option<i32>>)>)> {
-        let mut sequencer = Sequencer::new(input);
-
-        let height = ctx.height?;
-        let width = ctx.width?;
-
-        let surrounding =
-            sequencer.deserialize(ctx, Seq::new(internal_combinator(), width + height))?;
-        if surrounding.len() != 1 {
-            return None;
-        }
-        let surrounding = surrounding.into_iter().next().unwrap();
-
-        let clues_up = surrounding[..width].to_vec();
-        let clues_left = surrounding[width..].to_vec();
-
-        Some((sequencer.n_read(), vec![(clues_up, clues_left)]))
-    }
-}
-
 fn combinator() -> impl Combinator<Problem> {
     Tuple2::new(
         Choice::new(vec![
@@ -153,7 +97,14 @@ fn combinator() -> impl Combinator<Problem> {
         ]),
         Size::new(Tuple2::new(
             Rooms,
-            PrefixAndSuffix::new("/", AquariumCombinator, ""),
+            PrefixAndSuffix::new(
+                "/",
+                OutsideCells2::new(Choice::new(vec![
+                    Box::new(Optionalize::new(HexInt)),
+                    Box::new(Spaces::new(None, 'g')),
+                ])),
+                "",
+            ),
         )),
     )
 }

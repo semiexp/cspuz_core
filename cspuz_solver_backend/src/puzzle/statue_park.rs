@@ -23,8 +23,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                             ));
                         }
                     }
-                    StatueParkClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
-                    StatueParkClue::Black => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
+                    StatueParkClue::White => {
+                        board.push(Item::cell(y, x, "black", ItemKind::Circle))
+                    }
+                    StatueParkClue::Black => {
+                        board.push(Item::cell(y, x, "black", ItemKind::FilledCircle))
+                    }
                 }
             }
         }
@@ -33,8 +37,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
             for x in 0..width {
                 match problem[y][x] {
                     StatueParkClue::None => {}
-                    StatueParkClue::White => board.push(Item::cell(y, x, "black", ItemKind::Dot)),
-                    StatueParkClue::Black => board.push(Item::cell(y, x, "black", ItemKind::Fill)),
+                    StatueParkClue::White => {
+                        board.push(Item::cell(y, x, "black", ItemKind::Circle))
+                    }
+                    StatueParkClue::Black => {
+                        board.push(Item::cell(y, x, "black", ItemKind::FilledCircle))
+                    }
                 }
             }
         }
@@ -73,15 +81,15 @@ mod tests {
                     Item { y: 3, x: 9, color: "green", kind: ItemKind::Block },
                     Item { y: 3, x: 11, color: "green", kind: ItemKind::Dot },
                     Item { y: 5, x: 1, color: "green", kind: ItemKind::Dot },
-                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Dot },
-                    Item { y: 5, x: 5, color: "black", kind: ItemKind::Fill },
-                    Item { y: 5, x: 7, color: "black", kind: ItemKind::Dot },
+                    Item { y: 5, x: 3, color: "black", kind: ItemKind::Circle },
+                    Item { y: 5, x: 5, color: "black", kind: ItemKind::FilledCircle },
+                    Item { y: 5, x: 7, color: "black", kind: ItemKind::Circle },
                     Item { y: 5, x: 9, color: "green", kind: ItemKind::Dot },
                     Item { y: 5, x: 11, color: "green", kind: ItemKind::Dot },
                     Item { y: 7, x: 1, color: "green", kind: ItemKind::Dot },
                     Item { y: 7, x: 3, color: "green", kind: ItemKind::Dot },
-                    Item { y: 7, x: 5, color: "black", kind: ItemKind::Dot },
-                    Item { y: 7, x: 7, color: "black", kind: ItemKind::Fill },
+                    Item { y: 7, x: 5, color: "black", kind: ItemKind::Circle },
+                    Item { y: 7, x: 7, color: "black", kind: ItemKind::FilledCircle },
                     Item { y: 7, x: 9, color: "green", kind: ItemKind::Block },
                     Item { y: 7, x: 11, color: "green", kind: ItemKind::Dot },
                     Item { y: 9, x: 1, color: "green", kind: ItemKind::Dot },
