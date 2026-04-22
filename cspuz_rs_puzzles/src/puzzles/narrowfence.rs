@@ -2,13 +2,14 @@ use crate::util;
 use cspuz_rs::different_shape::DifferentShape;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
-    Spaces,
+    problem_to_url_with_context_pzprxs, url_to_problem, Choice, Choice2, Combinator, Context,
+    ContextBasedGrid, Dict, HexInt, Map, MultiDigit, Optionalize, Size, Spaces, Tuple2,
 };
 use cspuz_rs::solver::{any, Solver};
 
 pub fn solve_narrowfence(
     clues: &[Vec<Option<i32>>],
+    holes: &Option<Vec<Vec<bool>>>,
 ) -> Option<graph::BoolInnerGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(clues);
 
@@ -40,7 +41,7 @@ pub fn solve_narrowfence(
         }
     }
 
-    let block_id = &solver.int_var_2d((h, w), 0, id - 1);
+    let block_id = &solver.int_var_2d((h, w), if holes.is_some() { -1 } else { 0 }, id - 1);
     solver.add_expr(
         block_id
             .slice((.., ..(w - 1)))
@@ -53,6 +54,18 @@ pub fn solve_narrowfence(
             .ne(block_id.slice((1.., ..)))
             .iff(&is_border.horizontal),
     );
+
+    if let Some(holes) = holes {
+        for y in 0..h {
+            for x in 0..w {
+                if holes[y][x] {
+                    solver.add_expr(block_id.at((y, x)).eq(-1));
+                } else {
+                    solver.add_expr(block_id.at((y, x)).ne(-1));
+                }
+            }
+        }
+    }
 
     for i in 0..=max_clue as usize {
         for &(y, x, id) in &clue_groups[i] {
@@ -132,18 +145,36 @@ pub fn solve_narrowfence(
     solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
 
-type Problem = Vec<Vec<Option<i32>>>;
+type Problem = (Vec<Vec<Option<i32>>>, Option<Vec<Vec<bool>>>);
 
 fn combinator() -> impl Combinator<Problem> {
-    Grid::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ]))
+    Size::new(Tuple2::new(
+        ContextBasedGrid::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(Dict::new(Some(-1), ".")),
+        ])),
+        Choice2::new(
+            Optionalize::new(ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x: bool| Some(if x { 1 } else { 0 }),
+                |n: i32| Some(n == 1),
+            ))),
+            Dict::new(None, ""),
+        ),
+    ))
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url_pzprxs(combinator(), "narrow", problem.clone())
+    let height = problem.0.len();
+    let width = problem.0[0].len();
+
+    problem_to_url_with_context_pzprxs(
+        combinator(),
+        "narrow",
+        problem.clone(),
+        &Context::sized(height, width),
+    )
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
@@ -155,18 +186,21 @@ mod tests {
     use super::*;
 
     fn problem_for_tests() -> Problem {
-        vec![
-            vec![Some(1), Some(1), None, Some(1), None],
-            vec![None, None, None, None, None],
-            vec![None, None, Some(2), Some(2), None],
-            vec![None, None, None, None, None],
-        ]
+        (
+            vec![
+                vec![Some(1), Some(1), None, Some(1), None],
+                vec![None, None, None, None, None],
+                vec![None, None, Some(2), Some(2), None],
+                vec![None, None, None, None, None],
+            ],
+            None,
+        )
     }
 
     #[test]
     fn test_narrowfence_problem() {
-        let problem = problem_for_tests();
-        let ans = solve_narrowfence(&problem);
+        let (clues, is_hole) = problem_for_tests();
+        let ans = solve_narrowfence(&clues, &is_hole);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 

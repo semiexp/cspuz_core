@@ -5,11 +5,11 @@ use cspuz_rs_puzzles::puzzles::narrowfence;
 const ALPHA: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = narrowfence::deserialize_problem(url).ok_or("invalid url")?;
-    let border = narrowfence::solve_narrowfence(&problem);
+    let (clues, holes) = narrowfence::deserialize_problem(url).ok_or("invalid url")?;
+    let border = narrowfence::solve_narrowfence(&clues, &holes);
 
-    let height = problem.len();
-    let width = problem[0].len();
+    let height = clues.len();
+    let width = clues[0].len();
     let mut board = Board::new(
         BoardKind::ColoredGrid("#cccccc"),
         height,
@@ -18,12 +18,22 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     );
     for y in 0..height {
         for x in 0..width {
-            if let Some(clue) = problem[y][x] {
+            if let Some(clue) = clues[y][x] {
                 if (1..=26).contains(&clue) {
                     let p = (clue - 1) as usize;
                     board.push(Item::cell(y, x, "black", ItemKind::Text(&ALPHA[p..=p])));
                 } else {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(clue - 26)));
+                }
+            }
+        }
+    }
+
+    if let Some(holes) = holes {
+        for y in 0..height {
+            for x in 0..width {
+                if holes[y][x] {
+                    board.push(Item::cell(y, x, "black", ItemKind::Fill));
                 }
             }
         }
