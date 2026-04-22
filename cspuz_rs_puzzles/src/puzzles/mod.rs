@@ -91,6 +91,7 @@ pub mod n_cells;
 pub mod nagenawa;
 pub mod nanameguri;
 pub mod nanro;
+pub mod narrowfence;
 pub mod nikoji;
 pub mod nonogram;
 pub mod norinori;
