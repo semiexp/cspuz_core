@@ -43,6 +43,7 @@ pub mod easyasabc;
 pub mod energywalk;
 pub mod evolmino;
 pub mod exercise;
+pub mod fillmat;
 pub mod fillomino;
 pub mod firefly;
 pub mod firewalk;
