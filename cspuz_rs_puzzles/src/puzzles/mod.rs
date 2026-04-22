@@ -35,6 +35,7 @@ pub mod cross_the_streams;
 pub mod crosswall;
 pub mod curvedata;
 pub mod dbchoco;
+pub mod disco;
 pub mod dominion;
 pub mod doppelblock;
 pub mod double_lits;
