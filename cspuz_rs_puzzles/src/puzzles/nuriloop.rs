@@ -15,13 +15,25 @@ pub fn solve_nuriloop(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdges
     solver.add_answer_key_bool(&is_line.vertical);
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
+    let mut has_question_mark = false;
+    let mut sum = 0;
+
     let mut clue_pos = vec![];
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
+                if n < 0 {
+                    has_question_mark = true;
+                }
+                sum += n;
                 clue_pos.push((y, x, n));
             }
         }
+    }
+
+    // Parity check
+    if !has_question_mark && (h as i32 * w as i32 - sum) % 2 != 0 {
+        return None;
     }
 
     let group_id = solver.int_var_2d((h, w), 0, clue_pos.len() as i32);
