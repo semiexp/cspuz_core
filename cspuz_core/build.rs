@@ -45,6 +45,7 @@ fn build_glucose() {
             .include("lib/glucose")
             .flag("-DGLUCOSE_FIX_OPTIONS")
             .flag("-DGLUCOSE_UNUSE_STDIO")
+            .flag("-fPIC")
             .flag(puzzle_solver_minimal_flag)
             .warnings(false)
             .compile("calc");
