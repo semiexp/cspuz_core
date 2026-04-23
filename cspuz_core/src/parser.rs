@@ -5,9 +5,9 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
     character::complete::{alpha1, digit1},
-    combinator::{eof, map, recognize},
+    combinator::{eof, map, map_res, opt, recognize},
     multi::separated_list0,
-    sequence::{delimited, pair, preceded, terminated},
+    sequence::{delimited, pair, terminated},
     Finish, IResult,
 };
 
@@ -63,6 +63,12 @@ fn is_ident_char(c: char) -> bool {
 }
 
 fn parse_to_tree<'a>(input: &str) -> Result<SyntaxTree<'_>, nom::error::Error<&str>> {
+    fn int_literal(input: &str) -> IResult<&str, SyntaxTree<'_>> {
+        map_res(recognize(pair(opt(tag("-")), digit1)), |s: &str| {
+            s.parse::<i32>().map(SyntaxTree::Int)
+        })(input)
+    }
+
     fn rec_parser(input: &str) -> IResult<&str, SyntaxTree<'_>> {
         let ident_or_op = recognize(pair(alpha1, take_while(is_ident_char)));
         let op = alt((
@@ -92,10 +98,7 @@ fn parse_to_tree<'a>(input: &str) -> Result<SyntaxTree<'_>, nom::error::Error<&s
             map(tag("graph-division"), SyntaxTree::Ident),
             map(tag("extension-supports"), SyntaxTree::Ident),
             map(ident_or_op, SyntaxTree::Ident),
-            map(digit1, |s: &str| SyntaxTree::Int(s.parse::<i32>().unwrap())), // TODO
-            map(preceded(tag("-"), digit1), |s: &str| {
-                SyntaxTree::Int(-s.parse::<i32>().unwrap())
-            }), // TODO
+            int_literal,
             map(op, SyntaxTree::Ident),
         ))(input)
     }
@@ -398,6 +401,16 @@ mod tests {
         assert_eq!(parse_to_tree("xyz"), Result::Ok(SyntaxTree::Ident("xyz")));
         assert_eq!(parse_to_tree("12345"), Result::Ok(SyntaxTree::Int(12345)));
         assert_eq!(parse_to_tree("-12345"), Result::Ok(SyntaxTree::Int(-12345)));
+        assert_eq!(
+            parse_to_tree("-2147483648"),
+            Result::Ok(SyntaxTree::Int(i32::MIN))
+        );
+        assert_eq!(
+            parse_to_tree("2147483647"),
+            Result::Ok(SyntaxTree::Int(i32::MAX))
+        );
+        assert!(parse_to_tree("2147483648").is_err());
+        assert!(parse_to_tree("-2147483649").is_err());
         assert!(parse_to_tree("1a").is_err());
         assert_eq!(
             parse_to_tree("(x 1 2)"),
