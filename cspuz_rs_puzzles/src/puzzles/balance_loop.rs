@@ -17,8 +17,6 @@ pub fn solve_balance_loop(
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
-    let max_len = h.max(w) as i32 - 1;
-
     for y in 0..h {
         for x in 0..w {
             let Some((n, is_black)) = clues[y][x] else {
@@ -61,34 +59,51 @@ pub fn solve_balance_loop(
                 .consecutive_prefix_true();
             let down_len = is_line.vertical.slice_fixed_x((y.., x)).consecutive_prefix_true();
 
-            let len_left = &solver.int_var(0, max_len);
-            let len_right = &solver.int_var(0, max_len);
-            let len_up = &solver.int_var(0, max_len);
-            let len_down = &solver.int_var(0, max_len);
+            solver.add_expr(
+                (left_len.clone() + right_len.clone() + up_len.clone() + down_len.clone()).eq(n),
+            );
 
-            solver.add_expr(has_left.clone().imp(len_left.eq(left_len)));
-            solver.add_expr((!has_left.clone()).imp(len_left.eq(0)));
-            solver.add_expr(has_right.clone().imp(len_right.eq(right_len)));
-            solver.add_expr((!has_right.clone()).imp(len_right.eq(0)));
-            solver.add_expr(has_up.clone().imp(len_up.eq(up_len)));
-            solver.add_expr((!has_up.clone()).imp(len_up.eq(0)));
-            solver.add_expr(has_down.clone().imp(len_down.eq(down_len)));
-            solver.add_expr((!has_down.clone()).imp(len_down.eq(0)));
+            let rel_left_right = if is_black {
+                left_len.clone().ne(right_len.clone())
+            } else {
+                left_len.clone().eq(right_len.clone())
+            };
+            solver.add_expr((has_left.clone() & has_right.clone()).imp(rel_left_right));
 
-            solver.add_expr((len_left + len_right + len_up + len_down).eq(n));
+            let rel_left_up = if is_black {
+                left_len.clone().ne(up_len.clone())
+            } else {
+                left_len.clone().eq(up_len.clone())
+            };
+            solver.add_expr((has_left.clone() & has_up.clone()).imp(rel_left_up));
 
-            let dirs = [has_left, has_right, has_up, has_down];
-            let lens = [len_left, len_right, len_up, len_down];
-            for i in 0..4 {
-                for j in (i + 1)..4 {
-                    let rel = if is_black {
-                        lens[i].ne(lens[j])
-                    } else {
-                        lens[i].eq(lens[j])
-                    };
-                    solver.add_expr((dirs[i].clone() & dirs[j].clone()).imp(rel));
-                }
-            }
+            let rel_left_down = if is_black {
+                left_len.clone().ne(down_len.clone())
+            } else {
+                left_len.clone().eq(down_len.clone())
+            };
+            solver.add_expr((has_left.clone() & has_down.clone()).imp(rel_left_down));
+
+            let rel_right_up = if is_black {
+                right_len.clone().ne(up_len.clone())
+            } else {
+                right_len.clone().eq(up_len.clone())
+            };
+            solver.add_expr((has_right.clone() & has_up.clone()).imp(rel_right_up));
+
+            let rel_right_down = if is_black {
+                right_len.clone().ne(down_len.clone())
+            } else {
+                right_len.clone().eq(down_len.clone())
+            };
+            solver.add_expr((has_right.clone() & has_down.clone()).imp(rel_right_down));
+
+            let rel_up_down = if is_black {
+                up_len.clone().ne(down_len.clone())
+            } else {
+                up_len.clone().eq(down_len.clone())
+            };
+            solver.add_expr((has_up & has_down).imp(rel_up_down));
         }
     }
 
