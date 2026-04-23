@@ -63,47 +63,18 @@ pub fn solve_balance_loop(
                 (left_len.clone() + right_len.clone() + up_len.clone() + down_len.clone()).eq(n),
             );
 
-            let rel_left_right = if is_black {
-                left_len.clone().ne(right_len.clone())
-            } else {
-                left_len.clone().eq(right_len.clone())
-            };
-            solver.add_expr((has_left.clone() & has_right.clone()).imp(rel_left_right));
-
-            let rel_left_up = if is_black {
-                left_len.clone().ne(up_len.clone())
-            } else {
-                left_len.clone().eq(up_len.clone())
-            };
-            solver.add_expr((has_left.clone() & has_up.clone()).imp(rel_left_up));
-
-            let rel_left_down = if is_black {
-                left_len.clone().ne(down_len.clone())
-            } else {
-                left_len.clone().eq(down_len.clone())
-            };
-            solver.add_expr((has_left.clone() & has_down.clone()).imp(rel_left_down));
-
-            let rel_right_up = if is_black {
-                right_len.clone().ne(up_len.clone())
-            } else {
-                right_len.clone().eq(up_len.clone())
-            };
-            solver.add_expr((has_right.clone() & has_up.clone()).imp(rel_right_up));
-
-            let rel_right_down = if is_black {
-                right_len.clone().ne(down_len.clone())
-            } else {
-                right_len.clone().eq(down_len.clone())
-            };
-            solver.add_expr((has_right.clone() & has_down.clone()).imp(rel_right_down));
-
-            let rel_up_down = if is_black {
-                up_len.clone().ne(down_len.clone())
-            } else {
-                up_len.clone().eq(down_len.clone())
-            };
-            solver.add_expr((has_up & has_down).imp(rel_up_down));
+            let dirs = [has_left, has_right, has_up, has_down];
+            let lens = [left_len, right_len, up_len, down_len];
+            for i in 0..4 {
+                for j in (i + 1)..4 {
+                    let rel = if is_black {
+                        lens[i].clone().ne(lens[j].clone())
+                    } else {
+                        lens[i].clone().eq(lens[j].clone())
+                    };
+                    solver.add_expr((dirs[i].clone() & dirs[j].clone()).imp(rel));
+                }
+            }
         }
     }
 
