@@ -32,6 +32,21 @@ pub fn solve_nuriloop(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdges
         graph::active_vertices_connected_2d(&mut solver, group_id.eq(i as i32));
     }
 
+    solver.add_expr(
+        (!is_passed.conv2d_or((2, 1))).imp(
+            group_id
+                .slice((..(h - 1), ..))
+                .eq(group_id.slice((1.., ..))),
+        ),
+    );
+    solver.add_expr(
+        (!is_passed.conv2d_or((1, 2))).imp(
+            group_id
+                .slice((.., ..(w - 1)))
+                .eq(group_id.slice((.., 1..))),
+        ),
+    );
+
     for (i, &(y, x, n)) in clue_pos.iter().enumerate() {
         solver.add_expr(group_id.at((y, x)).eq((i + 1) as i32));
         if n > 0 {
