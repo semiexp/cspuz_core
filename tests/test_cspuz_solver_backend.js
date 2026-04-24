@@ -9,6 +9,8 @@
   module.HEAPU8.set(urlEncoded, buf);
 
   const ans = module._solve_problem(buf, urlEncoded.length);
+  // Note: _free is not available in Rust 1.95.0+ wasm32-unknown-emscripten builds,
+  // so buf is intentionally not freed here. This is acceptable for a one-shot test.
 
   const length = module.HEAPU8[ans] | (module.HEAPU8[ans + 1] << 8) | (module.HEAPU8[ans + 2] << 16) | (module.HEAPU8[ans + 3] << 24);
   const actualStr = new TextDecoder().decode(module.HEAPU8.slice(ans + 4, ans + 4 + length));
