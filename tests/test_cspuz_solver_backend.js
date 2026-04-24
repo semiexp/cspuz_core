@@ -9,7 +9,6 @@
   module.HEAPU8.set(urlEncoded, buf);
 
   const ans = module._solve_problem(buf, urlEncoded.length);
-  module._free(buf);
 
   const length = module.HEAPU8[ans] | (module.HEAPU8[ans + 1] << 8) | (module.HEAPU8[ans + 2] << 16) | (module.HEAPU8[ans + 3] << 24);
   const actualStr = new TextDecoder().decode(module.HEAPU8.slice(ans + 4, ans + 4 + length));
