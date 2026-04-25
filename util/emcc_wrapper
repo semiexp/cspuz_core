@@ -20,6 +20,10 @@ def main():
     if os.path.basename(root) == "cspuz_solver_backend":
         extra_args += ["-s", "EXPORTED_FUNCTIONS=_solve_problem,_enumerate_answers_problem,_malloc,_free"]
 
+    remove_arg = "-sSIDE_MODULE=2"
+    if remove_arg in extra_args:
+        extra_args.remove(remove_arg)
+
     args = ["emcc", "-o", output] + extra_args
     subprocess.check_call(args)
 
