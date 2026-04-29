@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use glucose_rs::constraint::{Constraint, ConstraintIdx};
 use glucose_rs::constraints::{
     ActiveVerticesConnected, DirectEncodingExtensionSupports, GraphDivision as RsGraphDivision,
@@ -29,6 +31,7 @@ fn from_raw_lit(lit: RawLit) -> Lit {
 pub struct GlucoseSolverManipulator {
     solver: *mut RawSolver,
     constraint_idx: ConstraintIdx,
+    // Assignment level for each variable tracked through propagate/undo callbacks.
     var_level: *mut BTreeMap<i32, usize>,
 }
 
@@ -153,6 +156,7 @@ impl Solver {
         (0..self.num_var()).map(Var).collect()
     }
 
+    // Not supported by glucose_rs.
     pub fn set_polarity(&mut self, _var: Var, _polarity: bool) {}
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {
@@ -275,10 +279,13 @@ impl Solver {
         }))
     }
 
+    // Not supported by glucose_rs.
     pub fn set_seed(&mut self, _seed: f64) {}
 
+    // Not supported by glucose_rs.
     pub fn set_rnd_init_act(&mut self, _rnd_init_act: bool) {}
 
+    // Not supported by glucose_rs.
     pub fn set_dump_analysis_info(&mut self, _dump_analysis_info: bool) {}
 
     pub fn solve(&mut self) -> Option<Model<'_>> {
@@ -298,14 +305,17 @@ impl Solver {
     }
 
     pub fn stats_decisions(&self) -> u64 {
+        // glucose_rs does not expose these stats in its public API.
         0
     }
 
     pub fn stats_propagations(&self) -> u64 {
+        // glucose_rs does not expose these stats in its public API.
         0
     }
 
     pub fn stats_conflicts(&self) -> u64 {
+        // glucose_rs does not expose these stats in its public API.
         0
     }
 }
@@ -343,4 +353,3 @@ mod tests {
         assert!(solver.solve().is_none());
     }
 }
-use std::collections::BTreeMap;
