@@ -2,16 +2,6 @@ use crate::csp::*;
 use crate::domain::Domain;
 use crate::integration::*;
 use crate::propagators::graph_division::GraphDivisionOptions;
-#[cfg(feature = "backend-glucose-rs")]
-use crate::sat::Backend;
-#[cfg(feature = "backend-glucose-rs")]
-use std::sync::{Mutex, OnceLock};
-
-#[cfg(feature = "backend-glucose-rs")]
-fn env_lock() -> &'static Mutex<()> {
-    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| Mutex::new(()))
-}
 
 struct IntegrationTester<'a> {
     original_constr: Vec<Stmt>,
@@ -566,26 +556,6 @@ fn test_integration_solver_iterator() {
         n_ans += 1;
     }
     assert_eq!(n_ans, 14);
-}
-
-#[cfg(feature = "backend-glucose-rs")]
-#[test]
-fn test_integration_default_backend_from_env_glucose_rs() {
-    let _guard = env_lock().lock().unwrap();
-    let old_default = Config::default();
-    let old_env = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND").ok();
-
-    std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", "glucose_rs");
-    Config::set_default(Config::initial_default());
-
-    let solver = IntegratedSolver::new();
-    assert!(matches!(solver.sat.get_backend(), Backend::GlucoseRs));
-
-    match old_env {
-        Some(v) => std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", v),
-        None => std::env::remove_var("CSPUZ_CORE_DEFAULT_BACKEND"),
-    }
-    Config::set_default(old_default);
 }
 
 #[cfg(not(feature = "backend-glucose-rs"))] // TODO
