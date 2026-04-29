@@ -88,9 +88,7 @@ fn build_cadical() {
 }
 
 fn main() {
-    if env::var("CARGO_FEATURE_BACKEND_GLUCOSE_RS").is_err() {
-        build_glucose();
-    }
+    build_glucose();
 
     if env::var("CARGO_FEATURE_BACKEND_CADICAL").is_ok() {
         build_cadical();

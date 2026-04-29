@@ -175,6 +175,7 @@ impl PyConfig {
             Backend::Glucose => "glucose",
             Backend::CaDiCaL => "cadical",
             Backend::External => "external",
+            _ => "glucose_rs",
         };
         Ok(mode.to_owned())
     }
