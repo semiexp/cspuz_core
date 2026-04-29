@@ -31,6 +31,18 @@ thread_local! {
     };
 }
 
+fn parse_backend(s: &str) -> Option<Backend> {
+    if s == "glucose" {
+        Some(Backend::Glucose)
+    } else if s == "external" {
+        Some(Backend::External)
+    } else if s == "cadical" {
+        Some(Backend::CaDiCaL)
+    } else {
+        None
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 fn default_backend_from_env() -> Backend {
     // In wasm, we cannot use environment variables, so we just return the default backend.
@@ -40,15 +52,9 @@ fn default_backend_from_env() -> Backend {
 #[cfg(not(target_arch = "wasm32"))]
 fn default_backend_from_env() -> Backend {
     if let Ok(s) = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND") {
-        if s == "glucose" {
-            Backend::Glucose
-        } else if s == "external" {
-            Backend::External
-        } else if s == "cadical" {
-            Backend::CaDiCaL
-        } else {
+        parse_backend(&s).unwrap_or_else(|| {
             panic!("error: unknown backend specified in CSPUZ_CORE_DEFAULT_BACKEND");
-        }
+        })
     } else {
         Backend::Glucose
     }
@@ -260,16 +266,10 @@ impl Config {
             config.native_linear_encoding_domain_product_threshold = v;
         }
         if let Some(s) = matches.opt_str("backend") {
-            if s == "glucose" {
-                config.backend = Backend::Glucose;
-            } else if s == "external" {
-                config.backend = Backend::External;
-            } else if s == "cadical" {
-                config.backend = Backend::CaDiCaL;
-            } else {
+            config.backend = parse_backend(&s).unwrap_or_else(|| {
                 println!("error: unknown backend: {}", s);
                 std::process::exit(1);
-            }
+            });
         }
         if let Some(s) = matches.opt_str("order-encoding-linear-mode") {
             if s == "cpp" {
