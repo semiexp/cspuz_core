@@ -1,8 +1,9 @@
 use glucose_rs::constraint::{Constraint, ConstraintIdx};
 use glucose_rs::constraints::{
     ActiveVerticesConnected, DirectEncodingExtensionSupports, GraphDivision as RsGraphDivision,
-    LinearTerm as RsLinearTerm, OptionalOrderEncoding, OrderEncodingLinear as RsOrderEncodingLinear,
+    LinearTerm as RsLinearTerm, OrderEncodingLinear as RsOrderEncodingLinear,
 };
+use glucose_rs::constraints::graph_division::OptionalOrderEncoding;
 use glucose_rs::solver::Solver as RawSolver;
 use glucose_rs::types::{LBool as RawLBool, Lit as RawLit};
 
@@ -28,6 +29,7 @@ fn from_raw_lit(lit: RawLit) -> Lit {
 pub struct GlucoseSolverManipulator {
     solver: *mut RawSolver,
     constraint_idx: ConstraintIdx,
+    var_level: *mut BTreeMap<i32, usize>,
 }
 
 unsafe impl SolverManipulator for GlucoseSolverManipulator {
@@ -48,12 +50,19 @@ unsafe impl SolverManipulator for GlucoseSolverManipulator {
     }
 
     unsafe fn is_current_level(&self, lit: Lit) -> bool {
-        self.value(lit) == Some(true) && (*self.solver).current_level() > 0
+        if self.value(lit) != Some(true) {
+            return false;
+        }
+        (*self.var_level)
+            .get(&lit.var().0)
+            .map(|&level| level == (*self.solver).current_level())
+            .unwrap_or(false)
     }
 }
 
 struct CustomConstraintAdapter {
     propagator: Box<dyn CustomPropagator<GlucoseSolverManipulator>>,
+    var_level: BTreeMap<i32, usize>,
 }
 
 impl Constraint for CustomConstraintAdapter {
@@ -61,14 +70,18 @@ impl Constraint for CustomConstraintAdapter {
         self.propagator.initialize(&mut GlucoseSolverManipulator {
             solver: solver as *mut RawSolver,
             constraint_idx: ci,
+            var_level: &mut self.var_level,
         })
     }
 
     fn propagate(&mut self, solver: &mut RawSolver, p: RawLit, ci: ConstraintIdx) -> bool {
+        solver.register_undo(p.var(), ci);
+        self.var_level.insert(p.var() as i32, solver.current_level());
         self.propagator.propagate(
             &mut GlucoseSolverManipulator {
                 solver: solver as *mut RawSolver,
                 constraint_idx: ci,
+                var_level: &mut self.var_level,
             },
             from_raw_lit(p),
             solver.num_pending(ci),
@@ -86,6 +99,7 @@ impl Constraint for CustomConstraintAdapter {
             &mut GlucoseSolverManipulator {
                 solver: solver as *mut RawSolver,
                 constraint_idx: 0,
+                var_level: &mut self.var_level,
             },
             p.map(from_raw_lit),
             extra.map(from_raw_lit),
@@ -94,10 +108,12 @@ impl Constraint for CustomConstraintAdapter {
     }
 
     fn undo(&mut self, solver: &mut RawSolver, p: RawLit) {
+        self.var_level.remove(&(p.var() as i32));
         self.propagator.undo(
             &mut GlucoseSolverManipulator {
                 solver: solver as *mut RawSolver,
                 constraint_idx: 0,
+                var_level: &mut self.var_level,
             },
             from_raw_lit(p),
         );
@@ -253,7 +269,10 @@ impl Solver {
         &mut self,
         constraint: Box<dyn CustomPropagator<GlucoseSolverManipulator>>,
     ) -> bool {
-        self.solver.add_constraint(Box::new(CustomConstraintAdapter { propagator: constraint }))
+        self.solver.add_constraint(Box::new(CustomConstraintAdapter {
+            propagator: constraint,
+            var_level: BTreeMap::new(),
+        }))
     }
 
     pub fn set_seed(&mut self, _seed: f64) {}
@@ -324,3 +343,4 @@ mod tests {
         assert!(solver.solve().is_none());
     }
 }
+use std::collections::BTreeMap;
