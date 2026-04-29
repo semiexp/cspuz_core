@@ -1,6 +1,5 @@
-#![allow(static_mut_refs)] // TODO: remove this
-
 use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -18,7 +17,7 @@ struct PyConfig {
 #[pymethods]
 impl PyConfig {
     #[new]
-    const fn new() -> PyConfig {
+    fn new() -> PyConfig {
         PyConfig {
             config: Config::initial_default(),
         }
@@ -236,26 +235,30 @@ impl PyConfig {
     }
 }
 
-static mut GLOBAL_CONFIG: PyConfig = PyConfig::new();
+static GLOBAL_CONFIG: OnceLock<Mutex<PyConfig>> = OnceLock::new();
+
+fn get_global_config() -> &'static Mutex<PyConfig> {
+    GLOBAL_CONFIG.get_or_init(|| Mutex::new(PyConfig::new()))
+}
 
 #[pyfunction]
 fn set_config(config: PyConfig) {
-    unsafe {
-        GLOBAL_CONFIG = config;
-    }
+    *get_global_config().lock().unwrap() = config;
 }
 
 #[pyfunction]
 fn solver(input: String) -> String {
     let mut bytes = input.as_bytes();
-    let (res, _) = csugar_cli(&mut bytes, unsafe { GLOBAL_CONFIG.config.clone() });
+    let config = get_global_config().lock().unwrap().config.clone();
+    let (res, _) = csugar_cli(&mut bytes, config);
     res
 }
 
 #[pyfunction]
 fn solver_with_perf(input: String) -> (String, HashMap<String, f64>) {
     let mut bytes = input.as_bytes();
-    let (res, perf) = csugar_cli(&mut bytes, unsafe { GLOBAL_CONFIG.config.clone() });
+    let config = get_global_config().lock().unwrap().config.clone();
+    let (res, perf) = csugar_cli(&mut bytes, config);
 
     let mut perf_map = HashMap::<String, f64>::new();
     perf_map.insert(String::from("time_normalize"), perf.time_normalize());

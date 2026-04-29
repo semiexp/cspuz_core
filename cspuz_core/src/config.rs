@@ -26,9 +26,38 @@ pub struct Config {
 }
 
 thread_local! {
-    static DEFAULT_CONFIG: std::cell::Cell<Config> = const {
+    static DEFAULT_CONFIG: std::cell::Cell<Config> = {
         std::cell::Cell::new(Config::initial_default())
     };
+}
+
+fn parse_backend(s: &str) -> Option<Backend> {
+    if s == "glucose" {
+        Some(Backend::Glucose)
+    } else if s == "external" {
+        Some(Backend::External)
+    } else if s == "cadical" {
+        Some(Backend::CaDiCaL)
+    } else {
+        None
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn default_backend_from_env() -> Backend {
+    // In wasm, we cannot use environment variables, so we just return the default backend.
+    Backend::Glucose
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn default_backend_from_env() -> Backend {
+    if let Ok(s) = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND") {
+        parse_backend(&s).unwrap_or_else(|| {
+            panic!("error: unknown backend specified in CSPUZ_CORE_DEFAULT_BACKEND");
+        })
+    } else {
+        Backend::Glucose
+    }
 }
 
 impl Config {
@@ -40,7 +69,7 @@ impl Config {
         DEFAULT_CONFIG.with(|f| f.set(new_default));
     }
 
-    pub const fn initial_default() -> Config {
+    pub fn initial_default() -> Config {
         Config {
             use_constant_folding: true,
             use_constant_propagation: true,
@@ -58,7 +87,7 @@ impl Config {
             glucose_random_seed: None,
             glucose_rnd_init_act: false,
             dump_analysis_info: false,
-            backend: Backend::Glucose,
+            backend: default_backend_from_env(),
             order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
             graph_division_mode: GraphDivisionMode::Cpp,
             optimize_polarity: false,
@@ -237,16 +266,10 @@ impl Config {
             config.native_linear_encoding_domain_product_threshold = v;
         }
         if let Some(s) = matches.opt_str("backend") {
-            if s == "glucose" {
-                config.backend = Backend::Glucose;
-            } else if s == "external" {
-                config.backend = Backend::External;
-            } else if s == "cadical" {
-                config.backend = Backend::CaDiCaL;
-            } else {
+            config.backend = parse_backend(&s).unwrap_or_else(|| {
                 println!("error: unknown backend: {}", s);
                 std::process::exit(1);
-            }
+            });
         }
         if let Some(s) = matches.opt_str("order-encoding-linear-mode") {
             if s == "cpp" {
