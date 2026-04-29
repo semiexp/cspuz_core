@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use glucose_rs::constraint::{Constraint, ConstraintIdx};
+use glucose_rs::constraints::graph_division::OptionalOrderEncoding;
 use glucose_rs::constraints::{
     ActiveVerticesConnected, DirectEncodingExtensionSupports, GraphDivision as RsGraphDivision,
     LinearTerm as RsLinearTerm, OrderEncodingLinear as RsOrderEncodingLinear,
 };
-use glucose_rs::constraints::graph_division::OptionalOrderEncoding;
 use glucose_rs::solver::Solver as RawSolver;
 use glucose_rs::types::{LBool as RawLBool, Lit as RawLit};
 
@@ -79,7 +79,8 @@ impl Constraint for CustomConstraintAdapter {
 
     fn propagate(&mut self, solver: &mut RawSolver, p: RawLit, ci: ConstraintIdx) -> bool {
         solver.register_undo(p.var(), ci);
-        self.var_level.insert(p.var() as i32, solver.current_level());
+        self.var_level
+            .insert(p.var() as i32, solver.current_level());
         self.propagator.propagate(
             &mut GlucoseSolverManipulator {
                 solver: solver as *mut RawSolver,
@@ -204,7 +205,11 @@ impl Solver {
         }
     }
 
-    pub fn add_active_vertices_connected(&mut self, lits: &[Lit], edges: &[(usize, usize)]) -> bool {
+    pub fn add_active_vertices_connected(
+        &mut self,
+        lits: &[Lit],
+        edges: &[(usize, usize)],
+    ) -> bool {
         let lits = lits.iter().copied().map(to_raw_lit).collect::<Vec<_>>();
         self.solver
             .add_constraint(Box::new(ActiveVerticesConnected::new(lits, edges)))
@@ -228,7 +233,9 @@ impl Solver {
             })
             .collect::<Vec<_>>();
         self.solver
-            .add_constraint(Box::new(DirectEncodingExtensionSupports::new(vars, supports)))
+            .add_constraint(Box::new(DirectEncodingExtensionSupports::new(
+                vars, supports,
+            )))
     }
 
     pub fn add_graph_division(
@@ -242,7 +249,8 @@ impl Solver {
     ) -> bool {
         if mode == GraphDivisionMode::Rust {
             let vertex_weights = vec![1; domains.len()];
-            let constr = GraphDivision::new(domains, dom_lits, &vertex_weights, edges, edge_lits, opts);
+            let constr =
+                GraphDivision::new(domains, dom_lits, &vertex_weights, edges, edge_lits, opts);
             return self.add_custom_constraint(Box::new(constr));
         }
 
@@ -264,7 +272,11 @@ impl Solver {
                 }
             })
             .collect::<Vec<_>>();
-        let edge_lits = edge_lits.iter().copied().map(to_raw_lit).collect::<Vec<_>>();
+        let edge_lits = edge_lits
+            .iter()
+            .copied()
+            .map(to_raw_lit)
+            .collect::<Vec<_>>();
         self.solver
             .add_constraint(Box::new(RsGraphDivision::new(vertices, edges, edge_lits)))
     }
@@ -273,10 +285,11 @@ impl Solver {
         &mut self,
         constraint: Box<dyn CustomPropagator<GlucoseSolverManipulator>>,
     ) -> bool {
-        self.solver.add_constraint(Box::new(CustomConstraintAdapter {
-            propagator: constraint,
-            var_level: BTreeMap::new(),
-        }))
+        self.solver
+            .add_constraint(Box::new(CustomConstraintAdapter {
+                propagator: constraint,
+                var_level: BTreeMap::new(),
+            }))
     }
 
     // Not supported by glucose_rs.
