@@ -4,3 +4,6 @@
 [submodule "enigma_csp/lib/cadical"]
 	path = cspuz_core/lib/cadical
 	url = https://github.com/semiexp/cadical.git
+[submodule "cspuz_core/lib/glucose_rs"]
+	path = cspuz_core/lib/glucose_rs
+	url = https://github.com/semiexp/glucose_rs.git
