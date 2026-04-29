@@ -10,6 +10,7 @@ default = ["csp-extra-constraints", "generator"]
 csp-extra-constraints = ["cspuz_core/csp-extra-constraints"]
 generator = ["rand"]
 test-support = []
+backend-glucose-rs = ["cspuz_core/backend-glucose-rs"]
 
 [dependencies]
 cspuz_core = { path = "../cspuz_core", default-features = false }
