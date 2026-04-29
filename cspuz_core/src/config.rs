@@ -26,9 +26,32 @@ pub struct Config {
 }
 
 thread_local! {
-    static DEFAULT_CONFIG: std::cell::Cell<Config> = const {
+    static DEFAULT_CONFIG: std::cell::Cell<Config> = {
         std::cell::Cell::new(Config::initial_default())
     };
+}
+
+#[cfg(target_arch = "wasm32")]
+fn default_backend_from_env() -> Backend {
+    // In wasm, we cannot use environment variables, so we just return the default backend.
+    Backend::Glucose
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn default_backend_from_env() -> Backend {
+    if let Ok(s) = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND") {
+        if s == "glucose" {
+            Backend::Glucose
+        } else if s == "external" {
+            Backend::External
+        } else if s == "cadical" {
+            Backend::CaDiCaL
+        } else {
+            panic!("error: unknown backend specified in CSPUZ_CORE_DEFAULT_BACKEND");
+        }
+    } else {
+        Backend::Glucose
+    }
 }
 
 impl Config {
@@ -40,7 +63,7 @@ impl Config {
         DEFAULT_CONFIG.with(|f| f.set(new_default));
     }
 
-    pub const fn initial_default() -> Config {
+    pub fn initial_default() -> Config {
         Config {
             use_constant_folding: true,
             use_constant_propagation: true,
@@ -58,7 +81,7 @@ impl Config {
             glucose_random_seed: None,
             glucose_rnd_init_act: false,
             dump_analysis_info: false,
-            backend: Backend::Glucose,
+            backend: default_backend_from_env(),
             order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
             graph_division_mode: GraphDivisionMode::Cpp,
             optimize_polarity: false,
