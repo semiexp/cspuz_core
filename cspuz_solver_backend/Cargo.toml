@@ -7,12 +7,16 @@ edition = "2021"
 name = "cspuz_solver_backend"
 crate-type = ["cdylib", "lib"]
 
+[features]
+default = []
+backend-glucose-rs = ["cspuz_rs/backend-glucose-rs", "cspuz_rs_puzzles/backend-glucose-rs"]
+
 [dependencies]
-cspuz_rs = { path = "../cspuz_rs", default-features = false, features = ["backend-glucose-rs"] }
+cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_rs_puzzles = { path = "../cspuz_rs_puzzles", default-features = false }
 
 [dev-dependencies]
-cspuz_rs = { path = "../cspuz_rs", default-features = false, features = ["test-support", "backend-glucose-rs"] }
+cspuz_rs = { path = "../cspuz_rs", default-features = false, features = ["test-support"] }
 
 [lints.clippy]
 # For better readability, allow loops like `for y in 0..height`
