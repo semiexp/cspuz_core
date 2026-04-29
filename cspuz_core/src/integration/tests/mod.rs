@@ -575,21 +575,15 @@ fn test_integration_default_backend_from_env_glucose_rs() {
     let old_default = Config::default();
     let old_env = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND").ok();
 
-    unsafe {
-        std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", "glucose_rs");
-    }
+    std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", "glucose_rs");
     Config::set_default(Config::initial_default());
 
     let solver = IntegratedSolver::new();
     assert!(matches!(solver.sat.get_backend(), Backend::GlucoseRs));
 
     match old_env {
-        Some(v) => unsafe {
-            std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", v);
-        },
-        None => unsafe {
-            std::env::remove_var("CSPUZ_CORE_DEFAULT_BACKEND");
-        },
+        Some(v) => std::env::set_var("CSPUZ_CORE_DEFAULT_BACKEND", v),
+        None => std::env::remove_var("CSPUZ_CORE_DEFAULT_BACKEND"),
     }
     Config::set_default(old_default);
 }

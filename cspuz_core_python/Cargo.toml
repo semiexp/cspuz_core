@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 
 [features]
 cadical = ["cspuz_core/backend-cadical"]
+backend-glucose-rs = ["cspuz_core/backend-glucose-rs"]
 
 [dependencies]
 cspuz_core = { path = "../cspuz_core", features = ["csp-extra-constraints", "parser", "cli"], default-features = false }

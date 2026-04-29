@@ -173,9 +173,10 @@ impl PyConfig {
     fn get_backend(&self) -> PyResult<String> {
         let mode = match self.config.backend {
             Backend::Glucose => "glucose",
+            #[cfg(feature = "backend-glucose-rs")]
+            Backend::GlucoseRs => "glucose_rs",
             Backend::CaDiCaL => "cadical",
             Backend::External => "external",
-            _ => "glucose_rs",
         };
         Ok(mode.to_owned())
     }
@@ -184,6 +185,18 @@ impl PyConfig {
     fn set_backend(&mut self, backend: String) -> PyResult<()> {
         if backend == "glucose" {
             self.config.backend = Backend::Glucose;
+        } else if backend == "glucose_rs" {
+            #[cfg(feature = "backend-glucose-rs")]
+            {
+                self.config.backend = Backend::GlucoseRs;
+            }
+            #[cfg(not(feature = "backend-glucose-rs"))]
+            {
+                return Err(PyErr::new::<PyValueError, _>(format!(
+                    "unknown backend: {}",
+                    backend
+                )));
+            }
         } else if backend == "cadical" {
             self.config.backend = Backend::CaDiCaL;
         } else if backend == "external" {
