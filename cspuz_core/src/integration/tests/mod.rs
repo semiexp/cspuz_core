@@ -581,7 +581,7 @@ fn test_integration_default_backend_from_env_glucose_rs() {
     Config::set_default(Config::initial_default());
 
     let solver = IntegratedSolver::new();
-    assert_eq!(solver.sat.get_backend(), Backend::GlucoseRs);
+    assert!(matches!(solver.sat.get_backend(), Backend::GlucoseRs));
 
     match old_env {
         Some(v) => unsafe {

@@ -199,8 +199,6 @@ impl SAT {
             Backend::Glucose => SAT::new_glucose(),
             #[cfg(feature = "backend-glucose-rs")]
             Backend::GlucoseRs => SAT::new_glucose_rs(),
-            #[cfg(not(feature = "backend-glucose-rs"))]
-            Backend::GlucoseRs => panic!("glucose_rs backend is not enabled"),
             #[cfg(feature = "backend-external")]
             Backend::External => SAT::new_external(),
             #[cfg(not(feature = "backend-external"))]
@@ -447,12 +445,7 @@ impl SAT {
                 let propagator = constr.generate(inputs);
                 solver.add_custom_constraint(propagator)
             }
-            #[cfg(feature = "backend-glucose-rs")]
-            SAT::GlucoseRs(solver) => {
-                let propagator = constr.generate(inputs);
-                solver.add_custom_constraint(propagator)
-            }
-            _ => todo!("add_custom_constraint is supported only in Glucose backends"),
+            _ => todo!("add_custom_constraint is supported only in Glucose backend"),
         }
     }
 

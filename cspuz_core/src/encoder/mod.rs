@@ -527,16 +527,8 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                     .into_iter()
                     .map(|l| env.convert_bool_lit(l))
                     .collect::<Vec<_>>();
-                let backend = env.sat.get_backend();
-                if backend != Backend::Glucose {
-                    #[cfg(feature = "backend-glucose-rs")]
-                    if backend != Backend::GlucoseRs {
-                        todo!("custom constraints are only supported with Glucose backend");
-                    }
-                    #[cfg(not(feature = "backend-glucose-rs"))]
-                    {
-                        todo!("custom constraints are only supported with Glucose backend");
-                    }
+                if env.sat.get_backend() != Backend::Glucose {
+                    todo!("custom constraints are only supported with Glucose backend");
                 }
                 env.sat.add_custom_constraint(lits, constr);
             }
