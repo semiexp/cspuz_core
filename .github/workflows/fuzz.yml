@@ -19,3 +19,13 @@ jobs:
       run: rustup update
     - name: Run fuzz tests
       run: cargo test --release test_integration_fuzz_long -- --ignored
+  rust-x86-fuzz-glucose-rs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup environment
+      run: rustup update
+    - name: Run fuzz tests
+      run: CSPUZ_CORE_DEFAULT_BACKEND=glucose_rs cargo test --release test_integration_fuzz_long -- --ignored

@@ -5,8 +5,6 @@ pub mod external;
 pub mod cadical;
 
 #[cfg(feature = "backend-glucose-rs")]
-#[path = "glucose_rs.rs"]
-pub mod glucose;
+pub mod glucose_rs;
 
-#[cfg(not(feature = "backend-glucose-rs"))]
 pub mod glucose;

@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 cadical = ["cspuz_core/backend-cadical"]
 
 [dependencies]
-cspuz_core = { path = "../cspuz_core", features = ["csp-extra-constraints", "parser", "cli"], default-features = false }
+cspuz_core = { path = "../cspuz_core", features = ["csp-extra-constraints", "parser", "cli", "backend-glucose-rs"], default-features = false }
 pyo3 = { version = "0.23.4", features = ["extension-module"] }

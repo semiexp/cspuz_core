@@ -34,6 +34,15 @@ thread_local! {
 fn parse_backend(s: &str) -> Option<Backend> {
     if s == "glucose" {
         Some(Backend::Glucose)
+    } else if s == "glucose_rs" {
+        #[cfg(feature = "backend-glucose-rs")]
+        {
+            Some(Backend::GlucoseRs)
+        }
+        #[cfg(not(feature = "backend-glucose-rs"))]
+        {
+            None
+        }
     } else if s == "external" {
         Some(Backend::External)
     } else if s == "cadical" {
