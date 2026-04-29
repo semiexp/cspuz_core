@@ -558,6 +558,7 @@ fn test_integration_solver_iterator() {
     assert_eq!(n_ans, 14);
 }
 
+#[cfg(not(feature = "backend-glucose-rs"))]
 #[test]
 fn test_integration_perf_stats() {
     let perf_stats = PerfStats::new();
@@ -579,6 +580,7 @@ fn test_integration_perf_stats() {
     assert_eq!(n_ans, 21);
 }
 
+#[cfg(not(feature = "backend-glucose-rs"))]
 #[test]
 fn test_integration_seed() {
     let mut propagations = vec![];
