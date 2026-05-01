@@ -12,14 +12,6 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
-            if let Some(clue) = clues[y][x] {
-                if clue >= 0 {
-                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
-                } else {
-                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
-                }
-            }
-
             if let Some(is_black) = &ans {
                 if let Some(b) = is_black[y][x] {
                     board.push(Item::cell(
@@ -28,6 +20,14 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                         "green",
                         if b { ItemKind::Fill } else { ItemKind::Dot },
                     ));
+                }
+            }
+
+            if let Some(clue) = clues[y][x] {
+                if clue >= 0 {
+                    board.push(Item::cell(y, x, "black", ItemKind::Num(clue)));
+                } else {
+                    board.push(Item::cell(y, x, "black", ItemKind::Text("?")));
                 }
             }
         }
@@ -58,8 +58,8 @@ mod tests {
                     Item { y: 1, x: 1, color: "green", kind: ItemKind::Fill },
                     Item { y: 1, x: 3, color: "green", kind: ItemKind::Fill },
                     Item { y: 1, x: 5, color: "green", kind: ItemKind::Fill },
-                    Item { y: 3, x: 1, color: "black", kind: ItemKind::Num(2) },
                     Item { y: 3, x: 1, color: "green", kind: ItemKind::Fill },
+                    Item { y: 3, x: 1, color: "black", kind: ItemKind::Num(2) },
                     Item { y: 3, x: 3, color: "green", kind: ItemKind::Dot },
                     Item { y: 3, x: 5, color: "green", kind: ItemKind::Dot },
                     Item { y: 5, x: 1, color: "green", kind: ItemKind::Fill },

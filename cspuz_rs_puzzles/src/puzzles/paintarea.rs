@@ -48,8 +48,6 @@ pub fn solve_paintarea(
     solver.add_expr(!(is_black.conv2d_and((2, 2))));
     solver.add_expr(is_black.conv2d_or((2, 2)));
 
-    //
-
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
