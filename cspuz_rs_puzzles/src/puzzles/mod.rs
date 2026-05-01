@@ -27,6 +27,7 @@ pub mod city_space;
 pub mod cocktail;
 pub mod coffeemilk;
 pub mod compass;
+pub mod context;
 pub mod coral;
 pub mod country_road;
 pub mod creek;
