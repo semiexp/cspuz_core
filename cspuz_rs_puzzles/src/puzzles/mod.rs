@@ -111,6 +111,7 @@ pub mod polyominous;
 pub mod putteria;
 pub mod pyramid;
 pub mod pyramid_climbers;
+pub mod railpool;
 pub mod reflect;
 pub mod ringring;
 pub mod ripple;
