@@ -25,6 +25,8 @@ pub fn solve_fillmat(
             .ne(num.slice((1.., ..)))
             .iff(&is_border.horizontal),
     );
+
+    // Same numbers cannot be diagonally adjacent. Takes care of the shape constraint
     for i in 1..=4 {
         solver.add_expr(!(num.eq(i).slice((..(h - 1), ..(w - 1))) & num.eq(i).slice((1.., 1..))));
         solver.add_expr(!(num.eq(i).slice((..(h - 1), 1..)) & num.eq(i).slice((1.., ..(w - 1)))));
@@ -41,7 +43,7 @@ pub fn solve_fillmat(
         }
     }
 
-    // No 4 intersections (technically redundant by theory but keeping it for optimization)
+    // No 4 intersections
     for y in 1..h {
         for x in 1..w {
             let left = &is_border.horizontal.at((y - 1, x - 1));
