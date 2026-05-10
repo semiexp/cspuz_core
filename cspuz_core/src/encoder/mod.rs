@@ -1105,13 +1105,52 @@ fn encode_mul_naive(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntVar) {
     }
 }
 
-// TODO: add tests for ClauseSet
 #[cfg(test)]
 mod tests {
     use super::super::{
-        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSP, sat::SAT,
+        config::Config, domain::Domain, norm_csp::IntVarRepresentation, norm_csp::NormCSP,
+        sat::Var, sat::SAT,
     };
     use super::*;
+
+    #[test]
+    fn test_clause_set() {
+        let mut c = ClauseSet::new();
+
+        c.push(&[Lit::new(Var(4), false), Lit::new(Var(2), true)]);
+        c.push(&[
+            Lit::new(Var(1), false),
+            Lit::new(Var(2), false),
+            Lit::new(Var(3), true),
+        ]);
+
+        assert_eq!(c.len(), 2);
+        assert_eq!(&c[0], &[Lit::new(Var(4), false), Lit::new(Var(2), true)]);
+        assert_eq!(
+            &c[1],
+            &[
+                Lit::new(Var(1), false),
+                Lit::new(Var(2), false),
+                Lit::new(Var(3), true)
+            ]
+        );
+
+        let mut c2 = ClauseSet::new();
+        c2.push(&[Lit::new(Var(5), false), Lit::new(Var(1), true)]);
+        c2.append(c);
+
+        assert_eq!(c2.len(), 3);
+        assert_eq!(&c2[0], &[Lit::new(Var(5), false), Lit::new(Var(1), true)]);
+        assert_eq!(&c2[1], &[Lit::new(Var(4), false), Lit::new(Var(2), true)]);
+        assert_eq!(
+            &c2[2],
+            &[
+                Lit::new(Var(1), false),
+                Lit::new(Var(2), false),
+                Lit::new(Var(3), true)
+            ]
+        );
+    }
 
     pub(super) struct EncoderTester {
         norm_csp: NormCSP,
