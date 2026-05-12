@@ -36,9 +36,10 @@ impl Fuzzer {
         num_int_vars: usize,
         num_exprs: usize,
         max_complexity: u32,
+        use_log_encoding: bool,
     ) {
         let mut tester = IntegrationTester::with_config(Config {
-            use_log_encoding: false, // do not use log encoding because negative numbers are not supported
+            use_log_encoding,
             ..Config::default()
         });
 
@@ -337,7 +338,7 @@ impl Fuzzer {
 }
 
 #[test]
-fn test_integration_fuzz_quick() {
+fn test_integration_fuzz_quick_without_log_encoding() {
     let mut fuzzer = Fuzzer::new();
     for _ in 0..1000 {
         let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
@@ -345,7 +346,26 @@ fn test_integration_fuzz_quick() {
         let num_exprs = fuzzer.next_i32(2, 11) as usize;
         let max_complexity = 7;
 
-        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity);
+        fuzzer.run_single_trial(
+            num_bool_vars,
+            num_int_vars,
+            num_exprs,
+            max_complexity,
+            false,
+        );
+    }
+}
+
+#[test]
+fn test_integration_fuzz_quick_with_log_encoding() {
+    let mut fuzzer = Fuzzer::new();
+    for _ in 0..1000 {
+        let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
+        let num_int_vars = fuzzer.next_i32(1, 4) as usize;
+        let num_exprs = fuzzer.next_i32(2, 11) as usize;
+        let max_complexity = 7;
+
+        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, true);
     }
 }
 
@@ -359,6 +379,6 @@ fn test_integration_fuzz_long() {
         let num_exprs = fuzzer.next_i32(2, 12) as usize;
         let max_complexity = 10;
 
-        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity);
+        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, true);
     }
 }
