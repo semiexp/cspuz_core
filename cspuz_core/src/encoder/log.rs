@@ -177,27 +177,36 @@ pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<Li
 }
 
 pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp) -> ClauseSet {
-    // TODO: some clauses should be directly added to `env`
-
+    let mut specs = vec![];
     let mut constant = sum.constant;
     for (&var, &coef) in sum.iter() {
         let encoding = env.map.int_map[var].as_ref().unwrap();
         let log_encoding = encoding.log_encoding.as_ref().unwrap();
+        specs.push((log_encoding.lits.clone(), coef));
         constant += log_encoding.offset * coef;
     }
 
+    encode_linear_log_from_encodings(env, &specs, constant, op)
+}
+
+fn encode_linear_log_from_encodings(
+    env: &mut EncoderEnv,
+    encodings: &[(Vec<Lit>, CheckedInt)],
+    constant: CheckedInt,
+    op: CmpOp,
+) -> ClauseSet {
+    // TODO: some clauses should be directly added to `env`
+
     if op == CmpOp::Eq {
         let mut values = vec![];
-        for (&var, &coef) in sum.iter() {
-            let encoding = env.map.int_map[var].as_ref().unwrap();
-            let log_encoding = encoding.log_encoding.as_ref().unwrap();
-
+        for (lits, coef) in encodings {
+            let coef = *coef;
             if coef > 0 {
                 let mut coef = coef.get() as u32;
                 for i in 0usize.. {
                     if (coef & 1) == 1 {
-                        for j in 0..log_encoding.lits.len() {
-                            values.push((i + j, CheckedInt::new(1), log_encoding.lits[j]));
+                        for j in 0..lits.len() {
+                            values.push((i + j, CheckedInt::new(1), lits[j]));
                         }
                     }
                     coef >>= 1;
@@ -209,8 +218,8 @@ pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp
                 let mut coef = (-coef).get() as u32;
                 for i in 0usize.. {
                     if (coef & 1) == 1 {
-                        for j in 0..log_encoding.lits.len() {
-                            values.push((i + j, CheckedInt::new(-1), log_encoding.lits[j]));
+                        for j in 0..lits.len() {
+                            values.push((i + j, CheckedInt::new(-1), lits[j]));
                         }
                     }
                     coef >>= 1;
@@ -226,15 +235,13 @@ pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp
     let mut values_positive = vec![];
     let mut values_negative = vec![];
 
-    for (&var, &coef) in sum.iter() {
-        let encoding = env.map.int_map[var].as_ref().unwrap();
-        let log_encoding = encoding.log_encoding.as_ref().unwrap();
-
+    for (lits, coef) in encodings {
+        let coef = *coef;
         if coef > 0 {
             let mut coef = coef.get() as u32;
             for i in 0usize.. {
                 if (coef & 1) == 1 {
-                    values_positive.push((i, log_encoding.lits.clone()));
+                    values_positive.push((i, lits.clone()));
                 }
                 coef >>= 1;
                 if coef == 0 {
@@ -246,7 +253,7 @@ pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp
             let mut coef = -coef.get() as u32;
             for i in 0usize.. {
                 if (coef & 1) == 1 {
-                    values_negative.push((i, log_encoding.lits.clone()));
+                    values_negative.push((i, lits.clone()));
                 }
                 coef >>= 1;
                 if coef == 0 {
