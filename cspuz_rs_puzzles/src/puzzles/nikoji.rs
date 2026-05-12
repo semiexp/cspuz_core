@@ -114,21 +114,10 @@ pub fn solve_nikoji(
                 .cloned()
                 .collect::<Vec<_>>();
 
-            #[cfg(not(test))]
-            {
-                solver.add_custom_constraint(Box::new(DifferentShape::new(h, w)), cells);
-            }
-
-            #[cfg(test)]
-            {
-                solver.add_custom_constraint(
-                    Box::new(util::tests::ReasonVerifier::new(
-                        DifferentShape::new(h, w),
-                        DifferentShape::new(h, w),
-                    )),
-                    cells,
-                );
-            }
+            solver.add_custom_constraint(
+                util::wrap_reason_verifier_on_test(DifferentShape::new(h, w)),
+                cells,
+            );
         }
     }
 

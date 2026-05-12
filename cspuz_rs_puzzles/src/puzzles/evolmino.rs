@@ -118,34 +118,12 @@ pub fn solve_evolmino(problem: &Problem) -> Option<Vec<Vec<Option<bool>>>> {
 
     let problem = ProblemWithArrowId::new(problem)?;
 
-    #[cfg(not(test))]
-    {
-        let constraint = EvolminoConstraint {
-            board: BoardManager::new(problem.clone()),
-            problem,
-        };
-        solver.add_custom_constraint(Box::new(constraint), is_square);
-    }
+    let constraint = EvolminoConstraint {
+        board: BoardManager::new(problem.clone()),
+        problem: problem.clone(),
+    };
 
-    #[cfg(test)]
-    {
-        let constraint = EvolminoConstraint {
-            board: BoardManager::new(problem.clone()),
-            problem: problem.clone(),
-        };
-        let cloned_constraint = EvolminoConstraint {
-            board: BoardManager::new(problem.clone()),
-            problem,
-        };
-
-        solver.add_custom_constraint(
-            Box::new(util::tests::ReasonVerifier::new(
-                constraint,
-                cloned_constraint,
-            )),
-            is_square,
-        );
-    }
+    solver.add_custom_constraint(util::wrap_reason_verifier_on_test(constraint), is_square);
 
     solver.irrefutable_facts().map(|f| f.get(is_square))
 }
@@ -537,6 +515,7 @@ struct BoardInfoDetailed {
     floatings: Vec<Vec<(usize, usize)>>,
 }
 
+#[derive(Clone)]
 struct BoardManager {
     height: usize,
     width: usize,
@@ -899,6 +878,7 @@ impl BoardManager {
     }
 }
 
+#[derive(Clone)]
 struct EvolminoConstraint {
     board: BoardManager,
     problem: ProblemWithArrowId,

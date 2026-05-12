@@ -87,21 +87,10 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
         graph::active_vertices_connected(&mut solver, &vertices, &mut aux_graph);
     }
 
-    #[cfg(not(test))]
-    {
-        solver.add_custom_constraint(Box::new(ArchipelagoConstraint::new(h, w)), is_black);
-    }
-
-    #[cfg(test)]
-    {
-        solver.add_custom_constraint(
-            Box::new(util::tests::ReasonVerifier::new(
-                ArchipelagoConstraint::new(h, w),
-                ArchipelagoConstraint::new(h, w),
-            )),
-            is_black,
-        );
-    }
+    solver.add_custom_constraint(
+        util::wrap_reason_verifier_on_test(ArchipelagoConstraint::new(h, w)),
+        is_black,
+    );
 
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
@@ -113,6 +102,7 @@ enum ArchipelagoCell {
     Undecided,
 }
 
+#[derive(Clone)]
 struct ArchipelagoConstraint {
     height: usize,
     width: usize,
