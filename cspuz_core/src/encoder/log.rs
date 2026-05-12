@@ -17,6 +17,7 @@ use crate::sat::{Lit, SAT};
 pub(super) struct LogEncoding {
     pub lits: Vec<Lit>,
     pub range: Range,
+    pub offset: CheckedInt,
 }
 
 pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
@@ -24,9 +25,11 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
         IntVarRepresentation::Domain(domain) => {
             let low = domain.lower_bound_checked();
             let high = domain.upper_bound_checked();
-            if low < 0 {
-                todo!("negative values not supported in log encoding");
-            }
+            let (low, high, offset) = if low < 0 {
+                (CheckedInt::new(0), high - low, low)
+            } else {
+                (low, high, CheckedInt::new(0))
+            };
             let n_bits = (32 - high.get().leading_zeros()) as usize;
             let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
 
@@ -74,6 +77,7 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
             LogEncoding {
                 lits,
                 range: Range::new(low, high),
+                offset,
             }
         }
         IntVarRepresentation::Binary { .. } => {
@@ -174,6 +178,14 @@ pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<Li
 
 pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp) -> ClauseSet {
     // TODO: some clauses should be directly added to `env`
+
+    let mut constant = sum.constant;
+    for (&var, &coef) in sum.iter() {
+        let encoding = env.map.int_map[var].as_ref().unwrap();
+        let log_encoding = encoding.log_encoding.as_ref().unwrap();
+        constant += log_encoding.offset * coef;
+    }
+
     if op == CmpOp::Eq {
         let mut values = vec![];
         for (&var, &coef) in sum.iter() {
@@ -208,7 +220,7 @@ pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp
                 }
             }
         }
-        return log_encoding_adder2(env, values, sum.constant);
+        return log_encoding_adder2(env, values, constant);
     }
 
     let mut values_positive = vec![];
@@ -247,13 +259,13 @@ pub(super) fn encode_linear_log(env: &mut EncoderEnv, sum: &LinearSum, op: CmpOp
     let (aux_clauses1, sum_positive) = log_encoding_adder(
         env,
         values_positive,
-        vec![sum.constant.max(CheckedInt::new(0))],
+        vec![constant.max(CheckedInt::new(0))],
         vec![],
     );
     let (aux_clauses2, sum_negative) = log_encoding_adder(
         env,
         values_negative,
-        vec![(-sum.constant).max(CheckedInt::new(0))],
+        vec![(-constant).max(CheckedInt::new(0))],
         vec![],
     );
 
@@ -725,30 +737,32 @@ fn log_encoding_adder2_direct(
 }
 
 pub(super) fn encode_mul_log(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntVar) -> ClauseSet {
-    let x_repr = env.map.int_map[x]
+    let x_enc = env.map.int_map[x]
         .as_ref()
         .unwrap()
         .log_encoding
         .as_ref()
-        .unwrap()
-        .lits
-        .clone();
-    let y_repr = env.map.int_map[y]
+        .unwrap();
+    let y_enc = env.map.int_map[y]
         .as_ref()
         .unwrap()
         .log_encoding
         .as_ref()
-        .unwrap()
-        .lits
-        .clone();
-    let m_repr = env.map.int_map[m]
+        .unwrap();
+    let m_enc = env.map.int_map[m]
         .as_ref()
         .unwrap()
         .log_encoding
         .as_ref()
-        .unwrap()
-        .lits
-        .clone();
+        .unwrap();
+
+    if x_enc.offset != 0 || y_enc.offset != 0 || m_enc.offset != 0 {
+        todo!("support offset in encode_mul_log");
+    }
+
+    let x_repr = x_enc.lits.clone();
+    let y_repr = y_enc.lits.clone();
+    let m_repr = m_enc.lits.clone();
     let m_repr_len = m_repr.len();
 
     let (mut clause_set, m_all) = log_encoding_multiplier(env, x_repr, y_repr, m_repr);
@@ -807,6 +821,15 @@ mod tests {
     }
 
     #[test]
+    fn test_encode_log_var_negative_domain() {
+        let mut tester = EncoderTester::new();
+
+        let _ = tester.add_int_var_log_encoding(Domain::range(-4, 6));
+
+        tester.run_check();
+    }
+
+    #[test]
     fn test_encode_linear_eq_log_encoding_1() {
         let mut tester = EncoderTester::new();
 
@@ -855,6 +878,24 @@ mod tests {
             linear_sum(&[(x, 1033), (y, 254), (z, 516), (w, -2231)], 0),
             CmpOp::Eq,
         );
+        {
+            let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Eq);
+            tester.add_clause_set(clause_set);
+        }
+
+        tester.add_constraint_linear_lit(lit);
+        tester.run_check();
+    }
+
+    #[test]
+    fn test_encode_linear_eq_log_encoding_4() {
+        let mut tester = EncoderTester::new();
+
+        let x = tester.add_int_var_log_encoding(Domain::range(-10, 10));
+        let y = tester.add_int_var_log_encoding(Domain::range(-5, 8));
+        let z = tester.add_int_var_log_encoding(Domain::range(-7, 17));
+
+        let lit = LinearLit::new(linear_sum(&[(x, 1), (y, 2), (z, -1)], -1), CmpOp::Eq);
         {
             let clause_set = encode_linear_log(&mut tester.env(), &lit.sum, CmpOp::Eq);
             tester.add_clause_set(clause_set);
