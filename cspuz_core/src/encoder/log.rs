@@ -763,13 +763,34 @@ pub(super) fn encode_mul_log(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntV
         .as_ref()
         .unwrap();
 
-    if x_enc.offset != 0 || y_enc.offset != 0 || m_enc.offset != 0 {
-        todo!("support offset in encode_mul_log");
-    }
-
     let x_repr = x_enc.lits.clone();
     let y_repr = y_enc.lits.clone();
     let m_repr = m_enc.lits.clone();
+    let x_ofs = x_enc.offset;
+    let y_ofs = y_enc.offset;
+    let m_ofs = m_enc.offset;
+
+    if x_ofs != 0 || y_ofs != 0 || m_ofs != 0 {
+        // (x + x_ofs) * (y + y_ofs) == m + m_ofs
+        // x * y + x * y_ofs + y * x_ofs + (-1) * m + (x_ofs * y_ofs - m_ofs) == 0
+
+        let (mut clause_set, xy_repr) =
+            log_encoding_multiplier(env, x_repr.clone(), y_repr.clone(), vec![]);
+        let cl = encode_linear_log_from_encodings(
+            env,
+            &[
+                (xy_repr, CheckedInt::new(1)),
+                (x_repr, y_ofs),
+                (y_repr, x_ofs),
+                (m_repr, CheckedInt::new(-1)),
+            ],
+            x_ofs * y_ofs - m_ofs,
+            CmpOp::Eq,
+        );
+        clause_set.append(cl);
+        return clause_set;
+    }
+
     let m_repr_len = m_repr.len();
 
     let (mut clause_set, m_all) = log_encoding_multiplier(env, x_repr, y_repr, m_repr);
@@ -1005,5 +1026,28 @@ mod tests {
 
         tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
         tester.run_check();
+    }
+
+    #[test]
+    fn test_encode_mul_log_negative() {
+        for mode in 0..8 {
+            let mut tester = EncoderTester::new();
+
+            let (xlo, xhi) = if (mode & 1) == 0 { (1, 6) } else { (-5, 6) };
+            let (ylo, yhi) = if (mode & 2) == 0 { (1, 5) } else { (-11, -7) };
+            let (zlo, zhi) = if (mode & 4) == 0 { (1, 27) } else { (-20, 20) };
+
+            let x = tester.add_int_var_log_encoding(Domain::range(xlo, xhi));
+            let y = tester.add_int_var_log_encoding(Domain::range(ylo, yhi));
+            let z = tester.add_int_var_log_encoding(Domain::range(zlo, zhi));
+
+            {
+                let clause_set = encode_mul_log(&mut tester.env(), x, y, z);
+                tester.add_clause_set(clause_set);
+            }
+
+            tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
+            tester.run_check();
+        }
     }
 }
