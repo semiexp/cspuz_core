@@ -23,12 +23,12 @@ pub(super) struct LogEncoding {
 pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
     match repr {
         IntVarRepresentation::Domain(domain) => {
-            let low = domain.lower_bound_checked();
-            let high = domain.upper_bound_checked();
-            let (low, high, offset) = if low < 0 {
-                (CheckedInt::new(0), high - low, low)
+            let ori_low = domain.lower_bound_checked();
+            let ori_high = domain.upper_bound_checked();
+            let (low, high, offset) = if ori_low < 0 {
+                (CheckedInt::new(0), ori_high - ori_low, ori_low)
             } else {
-                (low, high, CheckedInt::new(0))
+                (ori_low, ori_high, CheckedInt::new(0))
             };
             let n_bits = (32 - high.get().leading_zeros()) as usize;
             let lits = new_vars_as_lits!(sat, n_bits, "{}.log", var.id());
@@ -76,7 +76,7 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
 
             LogEncoding {
                 lits,
-                range: Range::new(low, high),
+                range: Range::new(ori_low, ori_high),
                 offset,
             }
         }
