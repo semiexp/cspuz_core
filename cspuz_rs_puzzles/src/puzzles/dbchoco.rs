@@ -46,38 +46,13 @@ pub fn solve_doublechoco(
             .collect::<Vec<_>>()),
     );
 
-    #[cfg(not(test))]
-    {
-        let constraint = DoublechocoConstraint {
-            board: BoardManager::new(color),
-            cell_color: Grid::from_vecs(color),
-            cell_num,
-        };
+    let constraint = DoublechocoConstraint {
+        board: BoardManager::new(color),
+        cell_color: Grid::from_vecs(color),
+        cell_num: cell_num.clone(),
+    };
 
-        solver.add_custom_constraint(Box::new(constraint), edges_flat);
-    }
-
-    #[cfg(test)]
-    {
-        let constraint = DoublechocoConstraint {
-            board: BoardManager::new(color),
-            cell_color: Grid::from_vecs(color),
-            cell_num: cell_num.clone(),
-        };
-        let cloned_constraint = DoublechocoConstraint {
-            board: BoardManager::new(color),
-            cell_color: Grid::from_vecs(color),
-            cell_num,
-        };
-
-        solver.add_custom_constraint(
-            Box::new(util::tests::ReasonVerifier::new(
-                constraint,
-                cloned_constraint,
-            )),
-            edges_flat,
-        );
-    }
+    solver.add_custom_constraint(util::wrap_reason_verifier_on_test(constraint), edges_flat);
 
     solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
@@ -355,6 +330,7 @@ struct BoardInfo {
     potential_units: GroupInfo,
 }
 
+#[derive(Clone)]
 struct BoardManager {
     height: usize,
     width: usize,
@@ -658,6 +634,7 @@ impl BoardManager {
     }
 }
 
+#[derive(Clone)]
 struct DoublechocoConstraint {
     board: BoardManager,
     cell_color: Grid<i32>,

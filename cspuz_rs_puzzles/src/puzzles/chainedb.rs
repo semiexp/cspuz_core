@@ -103,21 +103,10 @@ pub fn solve_chainedb(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
         }
     }
 
-    #[cfg(not(test))]
-    {
-        solver.add_custom_constraint(Box::new(ChainedbConstraint::new(h, w)), is_black);
-    }
-
-    #[cfg(test)]
-    {
-        solver.add_custom_constraint(
-            Box::new(util::tests::ReasonVerifier::new(
-                ChainedbConstraint::new(h, w),
-                ChainedbConstraint::new(h, w),
-            )),
-            is_black,
-        );
-    }
+    solver.add_custom_constraint(
+        util::wrap_reason_verifier_on_test(ChainedbConstraint::new(h, w)),
+        is_black,
+    );
 
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
@@ -129,6 +118,7 @@ enum ChainedbCell {
     Undecided,
 }
 
+#[derive(Clone)]
 struct ChainedbConstraint {
     height: usize,
     width: usize,

@@ -1,5 +1,7 @@
 use std::ops::{Index, IndexMut};
 
+use cspuz_core::custom_constraints::{PropagatorGenerator, SimpleCustomConstraint};
+
 pub fn infer_shape<T>(array: &[Vec<T>]) -> (usize, usize) {
     let height = array.len();
     assert!(height > 0);
@@ -64,6 +66,21 @@ impl<T: Clone> IndexMut<(usize, usize)> for Grid<T> {
         let (y, x) = index;
         assert!(y < self.height && x < self.width);
         unsafe { self.data.get_unchecked_mut(y * self.width + x) }
+    }
+}
+
+pub(crate) fn wrap_reason_verifier_on_test<'a, T: SimpleCustomConstraint + Clone + 'a>(
+    constraint: T,
+) -> Box<dyn PropagatorGenerator + 'a> {
+    #[cfg(not(test))]
+    {
+        Box::new(constraint)
+    }
+
+    #[cfg(test)]
+    {
+        let constraint_cloned = constraint.clone();
+        Box::new(tests::ReasonVerifier::new(constraint, constraint_cloned))
     }
 }
 

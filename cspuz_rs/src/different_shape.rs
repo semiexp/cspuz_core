@@ -49,6 +49,7 @@ fn normalize_block(mut block: Vec<(i32, i32)>) -> Vec<(i32, i32)> {
     ret
 }
 
+#[derive(Clone)]
 pub struct DifferentShape {
     height: usize,
     width: usize,
