@@ -3,6 +3,13 @@ use crate::arithmetic::CmpOp;
 use crate::csp::Stmt;
 use crate::integration::*;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum FuzzerLogEncodingMode {
+    Never,
+    Allow,
+    Force,
+}
+
 struct Fuzzer {
     random_state: u64,
 }
@@ -36,10 +43,11 @@ impl Fuzzer {
         num_int_vars: usize,
         num_exprs: usize,
         max_complexity: u32,
-        use_log_encoding: bool,
+        log_encoding_mode: FuzzerLogEncodingMode,
     ) {
         let mut tester = IntegrationTester::with_config(Config {
-            use_log_encoding,
+            use_log_encoding: !matches!(log_encoding_mode, FuzzerLogEncodingMode::Never),
+            force_use_log_encoding: matches!(log_encoding_mode, FuzzerLogEncodingMode::Force),
             ..Config::default()
         });
 
@@ -351,7 +359,7 @@ fn test_integration_fuzz_quick_without_log_encoding() {
             num_int_vars,
             num_exprs,
             max_complexity,
-            false,
+            FuzzerLogEncodingMode::Never,
         );
     }
 }
@@ -365,7 +373,13 @@ fn test_integration_fuzz_quick_with_log_encoding() {
         let num_exprs = fuzzer.next_i32(2, 11) as usize;
         let max_complexity = 7;
 
-        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, true);
+        fuzzer.run_single_trial(
+            num_bool_vars,
+            num_int_vars,
+            num_exprs,
+            max_complexity,
+            FuzzerLogEncodingMode::Force,
+        );
     }
 }
 
@@ -373,12 +387,18 @@ fn test_integration_fuzz_quick_with_log_encoding() {
 #[ignore] // This test can take a long time to run
 fn test_integration_fuzz_long() {
     let mut fuzzer = Fuzzer::new();
-    for _ in 0..100000 {
-        let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
-        let num_int_vars = fuzzer.next_i32(1, 5) as usize;
-        let num_exprs = fuzzer.next_i32(2, 12) as usize;
-        let max_complexity = 10;
+    for (mode, rep) in [
+        (FuzzerLogEncodingMode::Never, 100000),
+        (FuzzerLogEncodingMode::Allow, 50000),
+        (FuzzerLogEncodingMode::Force, 10000),
+    ] {
+        for _ in 0..rep {
+            let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
+            let num_int_vars = fuzzer.next_i32(1, 5) as usize;
+            let num_exprs = fuzzer.next_i32(2, 12) as usize;
+            let max_complexity = 10;
 
-        fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, true);
+            fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, mode);
+        }
     }
 }
