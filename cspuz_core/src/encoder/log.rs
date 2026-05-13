@@ -63,8 +63,8 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
 
             let domain = domain.enumerate();
             for i in 1..domain.len() {
-                let gap_low = domain[i - 1].get() + 1;
-                let gap_high = domain[i].get();
+                let gap_low = (domain[i - 1].get() + 1) - offset.get();
+                let gap_high = domain[i].get() - offset.get();
                 for n in gap_low..gap_high {
                     let mut clause = vec![];
                     for j in 0..n_bits {
@@ -850,11 +850,21 @@ mod tests {
 
     #[test]
     fn test_encode_log_var_negative_domain() {
-        let mut tester = EncoderTester::new();
+        {
+            let mut tester = EncoderTester::new();
 
-        let _ = tester.add_int_var_log_encoding(Domain::range(-4, 6));
+            let _ = tester.add_int_var_log_encoding(Domain::range(-4, 6));
 
-        tester.run_check();
+            tester.run_check();
+        }
+
+        {
+            let mut tester = EncoderTester::new();
+
+            let _ = tester.add_int_var_log_encoding(Domain::enumerative(vec![-5, -3, -2, 1, 6]));
+
+            tester.run_check();
+        }
     }
 
     #[test]
