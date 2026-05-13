@@ -5,9 +5,9 @@ use super::direct::{
 };
 use super::mixed::{encode_linear_eq_mixed_from_info, encode_linear_ge_mixed_from_info};
 use super::order::{LinearInfoForOrderEncoding, OrderEncoding};
-use super::{new_var, new_vars_as_lits, ClauseSet, EncoderEnv, LinearInfo, LinearLit};
+use super::{new_var, new_vars_as_lits, ClauseSet, EncodeMap, EncoderEnv, LinearInfo, LinearLit};
 use crate::arithmetic::{CheckedInt, CmpOp, Range};
-use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum};
+use crate::norm_csp::{IntVar, IntVarRepresentation, LinearSum, NormCSPVars};
 use crate::sat::{Lit, SAT};
 
 /// Representation of a log-encoded variable.
@@ -20,7 +20,12 @@ pub(super) struct LogEncoding {
     pub offset: CheckedInt,
 }
 
-pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding {
+pub fn encode_var_log(
+    encode_map: &mut EncodeMap,
+    norm_vars: &NormCSPVars,
+    sat: &mut SAT,
+    repr: &IntVarRepresentation,
+) -> LogEncoding {
     match repr {
         IntVarRepresentation::Domain(domain) => {
             let ori_low = domain.lower_bound_checked();
@@ -80,8 +85,49 @@ pub fn encode_var_log(sat: &mut SAT, repr: &IntVarRepresentation) -> LogEncoding
                 offset,
             }
         }
-        IntVarRepresentation::Binary { .. } => {
-            todo!();
+        IntVarRepresentation::Binary {
+            cond,
+            v_false,
+            v_true,
+        } => {
+            assert!(*v_false < *v_true);
+
+            let (vf, vt, offset) = if *v_false < 0 {
+                (CheckedInt::new(0), *v_true - *v_false, *v_false)
+            } else {
+                (*v_false, *v_true, CheckedInt::new(0))
+            };
+
+            let mut lits = vec![];
+            let n_bits = (32 - vt.get().leading_zeros()) as usize;
+
+            for i in 0..n_bits {
+                let bf = (vf.get() >> i) & 1;
+                let bt = (vt.get() >> i) & 1;
+
+                match (bf, bt) {
+                    (0, 0) => {
+                        // TODO: reuse constant lits
+                        let var = sat.new_var();
+                        sat.add_clause(&[!var.as_lit(false)]);
+                        lits.push(var.as_lit(false));
+                    }
+                    (0, 1) => lits.push(encode_map.convert_bool_lit(norm_vars, sat, *cond)),
+                    (1, 0) => lits.push(!encode_map.convert_bool_lit(norm_vars, sat, *cond)),
+                    (1, 1) => {
+                        let var = sat.new_var();
+                        sat.add_clause(&[var.as_lit(false)]);
+                        lits.push(var.as_lit(false));
+                    }
+                    _ => unreachable!(),
+                }
+            }
+
+            LogEncoding {
+                lits,
+                range: Range::new(*v_false, *v_true),
+                offset,
+            }
         }
     }
 }
@@ -837,7 +883,7 @@ mod tests {
     use super::super::encode_constraint;
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::domain::Domain;
-    use crate::norm_csp::{Constraint, ExtraConstraint, LinearLit};
+    use crate::norm_csp::{BoolLit, Constraint, ExtraConstraint, LinearLit};
 
     #[test]
     fn test_encode_log_var() {
@@ -862,6 +908,22 @@ mod tests {
             let mut tester = EncoderTester::new();
 
             let _ = tester.add_int_var_log_encoding(Domain::enumerative(vec![-5, -3, -2, 1, 6]));
+
+            tester.run_check();
+        }
+    }
+
+    #[test]
+    fn test_encode_log_var_binary() {
+        for (vf, vt) in [(0, 1), (2, 7), (-3, 4), (-5, -2)] {
+            let mut tester = EncoderTester::new();
+
+            let cond = tester.add_bool_var();
+            let _ = tester.add_int_var_log_encoding_binary(
+                BoolLit::new(cond, false),
+                CheckedInt::new(vf),
+                CheckedInt::new(vt),
+            );
 
             tester.run_check();
         }

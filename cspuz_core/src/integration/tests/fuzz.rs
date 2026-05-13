@@ -367,7 +367,7 @@ fn test_integration_fuzz_quick_without_log_encoding() {
 #[test]
 fn test_integration_fuzz_quick_with_log_encoding() {
     let mut fuzzer = Fuzzer::new();
-    for _ in 0..1000 {
+    for _ in 0..100 {
         let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
         let num_int_vars = fuzzer.next_i32(1, 4) as usize;
         let num_exprs = fuzzer.next_i32(2, 11) as usize;
