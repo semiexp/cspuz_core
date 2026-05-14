@@ -690,6 +690,44 @@ fn test_integration_exhaustive_mul2() {
     tester.check();
 }
 
+#[cfg(feature = "csp-extra-constraints")]
+#[test]
+fn test_integration_regression_force_log_fuzz_case() {
+    let mut config = Config::default();
+    config.force_use_log_encoding = true;
+    let mut tester = IntegrationTester::with_config(config);
+
+    let b0 = tester.new_bool_var();
+    let b1 = tester.new_bool_var();
+    let _b2 = tester.new_bool_var();
+    let b3 = tester.new_bool_var();
+
+    let i0 = tester.new_int_var(Domain::range(-3, -1));
+    let i1 = tester.new_int_var(Domain::range(0, 3));
+
+    tester.add_constraint(Stmt::AllDifferent(vec![
+        i1.expr() * i1.expr(),
+        i1.expr() * (i0.expr() * i1.expr()),
+        (b3.expr().ite(IntExpr::Const(-3), IntExpr::Const(-3)) * -1) * 1,
+    ]));
+    tester.add_expr((b3.expr().iff(BoolExpr::Const(false))) ^ b1.expr());
+    tester.add_constraint(Stmt::ActiveVerticesConnected(
+        vec![
+            b0.expr(),
+            b1.expr() & b1.expr().iff(b0.expr().imp(b0.expr())),
+            IntExpr::Const(-2).gt(IntExpr::Const(-2)),
+            b3.expr(),
+        ],
+        vec![(0, 1), (0, 3), (2, 3)],
+    ));
+    tester.add_constraint(Stmt::ExtensionSupports(
+        vec![i0.expr(), i1.expr()],
+        vec![vec![None, Some(0)]],
+    ));
+
+    assert!(tester.check_internal(true));
+}
+
 #[test]
 fn test_integration_exhaustive_complex1() {
     let mut tester = IntegrationTester::new();
