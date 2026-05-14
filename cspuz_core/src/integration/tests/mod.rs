@@ -699,7 +699,7 @@ fn test_integration_regression_force_log_fuzz_case() {
 
     let b0 = tester.new_bool_var();
     let b1 = tester.new_bool_var();
-    let _b2 = tester.new_bool_var();
+    let _ = tester.new_bool_var();
     let b3 = tester.new_bool_var();
 
     let i0 = tester.new_int_var(Domain::range(-3, -1));

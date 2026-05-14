@@ -438,9 +438,10 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                     let x_has_zero = x_range.low <= 0 && 0 <= x_range.high;
                     let y_has_zero = y_range.low <= 0 && 0 <= y_range.high;
                     if x_has_zero || y_has_zero {
-                        // TODO: fix soundness issues in `log::encode_mul_log` for force-log mode
-                        // when an operand domain includes zero.
-                        // TODO: constrain the domain of m if m is encoded by order or direct
+                        // TODO: fix soundness in `log::encode_mul_log` for force-log mode when
+                        // multiplicand domains include zero, then restore this fast path.
+                        // TODO: `encode_mul_naive` currently does not tighten m's domain when m is
+                        // encoded by order/direct (only by clauses), which can hurt propagation.
                         encode_mul_naive(&mut env, x, y, m);
                         continue;
                     }
