@@ -425,27 +425,9 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
             }
             #[cfg(feature = "csp-extra-constraints")]
             ExtraConstraint::Mul(x, y, m) => {
-                let x_enc = env.map.int_map[x].as_ref().unwrap();
-                let y_enc = env.map.int_map[y].as_ref().unwrap();
-                let m_enc = env.map.int_map[m].as_ref().unwrap();
-                let x_log = x_enc.log_encoding.is_some();
-                let y_log = y_enc.log_encoding.is_some();
-                let m_log = m_enc.log_encoding.is_some();
-
-                if env.config.force_use_log_encoding && x_log && y_log && m_log {
-                    let x_range = x_enc.range();
-                    let y_range = y_enc.range();
-                    let x_has_zero = x_range.low <= 0 && 0 <= x_range.high;
-                    let y_has_zero = y_range.low <= 0 && 0 <= y_range.high;
-                    if x_has_zero || y_has_zero {
-                        // TODO: fix soundness in `log::encode_mul_log` for force-log mode when
-                        // multiplicand domains include zero, then restore this fast path.
-                        // TODO: `encode_mul_naive` currently does not tighten m's domain when m is
-                        // encoded by order/direct (only by clauses), which can hurt propagation.
-                        encode_mul_naive(&mut env, x, y, m);
-                        continue;
-                    }
-                }
+                let x_log = env.map.int_map[x].as_ref().unwrap().log_encoding.is_some();
+                let y_log = env.map.int_map[y].as_ref().unwrap().log_encoding.is_some();
+                let m_log = env.map.int_map[m].as_ref().unwrap().log_encoding.is_some();
 
                 if x_log && y_log && m_log {
                     let clauses = log::encode_mul_log(&mut env, x, y, m);

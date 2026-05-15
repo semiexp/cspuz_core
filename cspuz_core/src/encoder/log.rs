@@ -816,6 +816,21 @@ pub(super) fn encode_mul_log(env: &mut EncoderEnv, x: IntVar, y: IntVar, m: IntV
     let y_ofs = y_enc.offset;
     let m_ofs = m_enc.offset;
 
+    if x_repr.is_empty() || y_repr.is_empty() {
+        // When one multiplicand is represented by zero bits, it is a constant and
+        // the x*y term disappears. Encode only the linear part directly.
+        return encode_linear_log_from_encodings(
+            env,
+            &[
+                (x_repr, y_ofs),
+                (y_repr, x_ofs),
+                (m_repr, CheckedInt::new(-1)),
+            ],
+            x_ofs * y_ofs - m_ofs,
+            CmpOp::Eq,
+        );
+    }
+
     if x_ofs != 0 || y_ofs != 0 || m_ofs != 0 {
         // (x + x_ofs) * (y + y_ofs) == m + m_ofs
         // x * y + x * y_ofs + y * x_ofs + (-1) * m + (x_ofs * y_ofs - m_ofs) == 0
@@ -1121,5 +1136,22 @@ mod tests {
             tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
             tester.run_check();
         }
+    }
+
+    #[test]
+    fn test_encode_mul_log_constant_zero_operand() {
+        let mut tester = EncoderTester::new();
+
+        let x = tester.add_int_var_log_encoding(Domain::range(0, 0));
+        let y = tester.add_int_var_log_encoding(Domain::range(0, 3));
+        let z = tester.add_int_var_log_encoding(Domain::range(0, 9));
+
+        {
+            let clause_set = encode_mul_log(&mut tester.env(), x, y, z);
+            tester.add_clause_set(clause_set);
+        }
+        tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
+
+        tester.run_check();
     }
 }
