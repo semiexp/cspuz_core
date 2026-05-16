@@ -2,6 +2,10 @@ use super::IntegrationTester;
 use crate::arithmetic::CmpOp;
 use crate::csp::Stmt;
 use crate::integration::*;
+use std::collections::VecDeque;
+use std::env;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum FuzzerLogEncodingMode {
@@ -14,21 +18,32 @@ struct Fuzzer {
     random_state: u64,
 }
 
+const NON_ZERO_FALLBACK_SEED: u64 = 0x9e3779b97f4a7c15;
+const XORSHIFT_SHIFT_A: u32 = 13;
+const XORSHIFT_SHIFT_B: u32 = 7;
+const XORSHIFT_SHIFT_C: u32 = 17;
+
 impl Fuzzer {
-    fn new() -> Self {
+    fn new(seed: u64) -> Self {
         Fuzzer {
-            random_state: 0x123456789abcdef,
+            random_state: if seed == 0 {
+                NON_ZERO_FALLBACK_SEED
+            } else {
+                seed
+            },
         }
     }
 
     fn next_random(&mut self) -> u64 {
-        self.random_state = self.random_state.wrapping_mul(0x123456789);
+        self.random_state ^= self.random_state << XORSHIFT_SHIFT_A;
+        self.random_state ^= self.random_state >> XORSHIFT_SHIFT_B;
+        self.random_state ^= self.random_state << XORSHIFT_SHIFT_C;
         self.random_state
     }
 
     fn next_u32(&mut self, max: u32) -> u32 {
         assert!(0 < max);
-        ((self.next_random() >> 16) % (max as u64)) as u32
+        (((self.next_random() as u128) * (max as u128)) >> 64) as u32
     }
 
     fn next_i32(&mut self, low: i32, high: i32) -> i32 {
@@ -345,60 +360,102 @@ impl Fuzzer {
     }
 }
 
-#[test]
-fn test_integration_fuzz_quick_without_log_encoding() {
-    let mut fuzzer = Fuzzer::new();
-    for _ in 0..1000 {
-        let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
-        let num_int_vars = fuzzer.next_i32(1, 4) as usize;
-        let num_exprs = fuzzer.next_i32(2, 11) as usize;
-        let max_complexity = 7;
+const DEFAULT_FUZZ_PARALLELISM: usize = 4;
+const FUZZ_PARALLELISM_ENV: &str = "CSPUZ_FUZZ_PARALLELISM";
 
-        fuzzer.run_single_trial(
-            num_bool_vars,
-            num_int_vars,
-            num_exprs,
-            max_complexity,
-            FuzzerLogEncodingMode::Never,
-        );
+fn fuzz_parallelism() -> usize {
+    env::var(FUZZ_PARALLELISM_ENV)
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|v| *v > 0)
+        .unwrap_or(DEFAULT_FUZZ_PARALLELISM)
+}
+
+fn generate_seeds(base_seed: u64, num_trials: usize) -> Vec<u64> {
+    let mut seed_gen = Fuzzer::new(base_seed);
+    (0..num_trials).map(|_| seed_gen.next_random()).collect()
+}
+
+fn run_single_fuzz_trial(seed: u64, mode: FuzzerLogEncodingMode, long_mode: bool) {
+    let mut fuzzer = Fuzzer::new(seed);
+    let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = if long_mode {
+        (
+            fuzzer.next_i32(3, 7) as usize,
+            fuzzer.next_i32(1, 5) as usize,
+            fuzzer.next_i32(2, 12) as usize,
+            10,
+        )
+    } else {
+        (
+            fuzzer.next_i32(3, 6) as usize,
+            fuzzer.next_i32(1, 4) as usize,
+            fuzzer.next_i32(2, 11) as usize,
+            7,
+        )
+    };
+    fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, mode);
+}
+
+fn run_fuzz_trials_parallel(
+    base_seed: u64,
+    num_trials: usize,
+    mode: FuzzerLogEncodingMode,
+    long_mode: bool,
+) {
+    if num_trials == 0 {
+        return;
+    }
+    let queue = Arc::new(Mutex::new(VecDeque::from(generate_seeds(
+        base_seed, num_trials,
+    ))));
+    let num_workers = fuzz_parallelism().min(num_trials);
+    let mut handles = vec![];
+
+    for _ in 0..num_workers {
+        let queue = Arc::clone(&queue);
+        handles.push(thread::spawn(move || loop {
+            let seed = {
+                let mut queue = queue.lock().unwrap();
+                queue.pop_front()
+            };
+            let Some(seed) = seed else {
+                break;
+            };
+            run_single_fuzz_trial(seed, mode, long_mode);
+        }));
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
     }
 }
 
 #[test]
-fn test_integration_fuzz_quick_with_log_encoding() {
-    let mut fuzzer = Fuzzer::new();
-    for _ in 0..100 {
-        let num_bool_vars = fuzzer.next_i32(3, 6) as usize;
-        let num_int_vars = fuzzer.next_i32(1, 4) as usize;
-        let num_exprs = fuzzer.next_i32(2, 11) as usize;
-        let max_complexity = 7;
+fn test_integration_fuzz_quick_without_log_encoding() {
+    run_fuzz_trials_parallel(
+        0x9f6abcde12345678,
+        1000,
+        FuzzerLogEncodingMode::Never,
+        false,
+    );
+}
 
-        fuzzer.run_single_trial(
-            num_bool_vars,
-            num_int_vars,
-            num_exprs,
-            max_complexity,
-            FuzzerLogEncodingMode::Force,
-        );
-    }
+#[test]
+fn test_integration_fuzz_quick_with_log_encoding() {
+    run_fuzz_trials_parallel(0x3b1dd8e4a5f9c217, 100, FuzzerLogEncodingMode::Force, false);
 }
 
 #[test]
 #[ignore] // This test can take a long time to run
 fn test_integration_fuzz_long() {
-    let mut fuzzer = Fuzzer::new();
-    for (mode, rep) in [
+    for (i, (mode, rep)) in [
         (FuzzerLogEncodingMode::Never, 100000),
         (FuzzerLogEncodingMode::Allow, 50000),
         (FuzzerLogEncodingMode::Force, 1000),
-    ] {
-        for _ in 0..rep {
-            let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
-            let num_int_vars = fuzzer.next_i32(1, 5) as usize;
-            let num_exprs = fuzzer.next_i32(2, 12) as usize;
-            let max_complexity = 10;
-
-            fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, mode);
-        }
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        run_fuzz_trials_parallel(0x6ad0c8f1e2457b39 ^ i as u64, rep, mode, true);
     }
 }
