@@ -451,6 +451,11 @@ fn log_encoding_adder(
         }
     }
 
+    while pos_vars.len() < result.len() {
+        pos_vars.push(vec![]);
+        pos_constant.push(CheckedInt::new(0));
+    }
+
     let mut clause_set = ClauseSet::new();
     let mut result = result;
 
@@ -1121,5 +1126,39 @@ mod tests {
             tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
             tester.run_check();
         }
+    }
+
+    #[test]
+    fn test_encode_mul_log_single_domain() {
+        let mut tester = EncoderTester::new();
+
+        let x = tester.add_int_var_log_encoding(Domain::range(0, 0));
+        let y = tester.add_int_var_log_encoding(Domain::range(1, 4));
+        let z = tester.add_int_var_log_encoding(Domain::range(0, 6));
+
+        {
+            let clause_set = encode_mul_log(&mut tester.env(), x, y, z);
+            tester.add_clause_set(clause_set);
+        }
+
+        tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
+        tester.run_check();
+    }
+
+    #[test]
+    fn test_encode_mul_log_too_large_domain() {
+        let mut tester = EncoderTester::new();
+
+        let x = tester.add_int_var_log_encoding(Domain::range(1, 2));
+        let y = tester.add_int_var_log_encoding(Domain::range(1, 4));
+        let z = tester.add_int_var_log_encoding(Domain::range(0, 63));
+
+        {
+            let clause_set = encode_mul_log(&mut tester.env(), x, y, z);
+            tester.add_clause_set(clause_set);
+        }
+
+        tester.add_extra_constraint(ExtraConstraint::Mul(x, y, z));
+        tester.run_check();
     }
 }
