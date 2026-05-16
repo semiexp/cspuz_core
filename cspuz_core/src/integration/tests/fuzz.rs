@@ -26,7 +26,11 @@ const XORSHIFT_SHIFT_C: u32 = 17;
 impl Fuzzer {
     fn new(seed: u64) -> Self {
         Fuzzer {
-            random_state: if seed == 0 { NON_ZERO_FALLBACK_SEED } else { seed },
+            random_state: if seed == 0 {
+                NON_ZERO_FALLBACK_SEED
+            } else {
+                seed
+            },
         }
     }
 
@@ -401,7 +405,9 @@ fn run_fuzz_trials_parallel(
     if num_trials == 0 {
         return;
     }
-    let queue = Arc::new(Mutex::new(VecDeque::from(generate_seeds(base_seed, num_trials))));
+    let queue = Arc::new(Mutex::new(VecDeque::from(generate_seeds(
+        base_seed, num_trials,
+    ))));
     let num_workers = fuzz_parallelism().min(num_trials);
     let mut handles = vec![];
 
@@ -436,12 +442,7 @@ fn test_integration_fuzz_quick_without_log_encoding() {
 
 #[test]
 fn test_integration_fuzz_quick_with_log_encoding() {
-    run_fuzz_trials_parallel(
-        0x3b1dd8e4a5f9c217,
-        100,
-        FuzzerLogEncodingMode::Force,
-        false,
-    );
+    run_fuzz_trials_parallel(0x3b1dd8e4a5f9c217, 100, FuzzerLogEncodingMode::Force, false);
 }
 
 #[test]
