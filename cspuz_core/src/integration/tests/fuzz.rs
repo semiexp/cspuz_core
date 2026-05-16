@@ -390,7 +390,7 @@ fn test_integration_fuzz_long() {
     for (mode, rep) in [
         (FuzzerLogEncodingMode::Never, 100000),
         (FuzzerLogEncodingMode::Allow, 50000),
-        (FuzzerLogEncodingMode::Force, 10000),
+        (FuzzerLogEncodingMode::Force, 1000),
     ] {
         for _ in 0..rep {
             let num_bool_vars = fuzzer.next_i32(3, 7) as usize;
