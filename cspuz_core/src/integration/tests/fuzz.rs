@@ -18,21 +18,22 @@ struct Fuzzer {
     random_state: u64,
 }
 
+const NON_ZERO_FALLBACK_SEED: u64 = 0x9e3779b97f4a7c15;
+const XORSHIFT_SHIFT_A: u32 = 13;
+const XORSHIFT_SHIFT_B: u32 = 7;
+const XORSHIFT_SHIFT_C: u32 = 17;
+
 impl Fuzzer {
     fn new(seed: u64) -> Self {
         Fuzzer {
-            random_state: if seed == 0 {
-                0x9e3779b97f4a7c15
-            } else {
-                seed
-            },
+            random_state: if seed == 0 { NON_ZERO_FALLBACK_SEED } else { seed },
         }
     }
 
     fn next_random(&mut self) -> u64 {
-        self.random_state ^= self.random_state << 13;
-        self.random_state ^= self.random_state >> 7;
-        self.random_state ^= self.random_state << 17;
+        self.random_state ^= self.random_state << XORSHIFT_SHIFT_A;
+        self.random_state ^= self.random_state >> XORSHIFT_SHIFT_B;
+        self.random_state ^= self.random_state << XORSHIFT_SHIFT_C;
         self.random_state
     }
 
@@ -397,8 +398,11 @@ fn run_fuzz_trials_parallel(
     mode: FuzzerLogEncodingMode,
     long_mode: bool,
 ) {
+    if num_trials == 0 {
+        return;
+    }
     let queue = Arc::new(Mutex::new(VecDeque::from(generate_seeds(base_seed, num_trials))));
-    let num_workers = fuzz_parallelism().min(num_trials.max(1));
+    let num_workers = fuzz_parallelism().min(num_trials);
     let mut handles = vec![];
 
     for _ in 0..num_workers {
