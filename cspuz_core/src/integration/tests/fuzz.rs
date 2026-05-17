@@ -59,6 +59,7 @@ impl Fuzzer {
         num_exprs: usize,
         max_complexity: u32,
         log_encoding_mode: FuzzerLogEncodingMode,
+        encode_only: bool,
     ) {
         let mut tester = IntegrationTester::with_config(Config {
             use_log_encoding: !matches!(log_encoding_mode, FuzzerLogEncodingMode::Never),
@@ -101,6 +102,11 @@ impl Fuzzer {
             let _ = stmt.pretty_print(&mut buf);
             stmt_descs.push(String::from_utf8(buf).unwrap_or_default());
             tester.add_constraint(stmt);
+        }
+
+        if encode_only {
+            let _ = tester.solver.encode();
+            return;
         }
 
         if !tester.check_internal(true) {
@@ -376,7 +382,12 @@ fn generate_seeds(base_seed: u64, num_trials: usize) -> Vec<u64> {
     (0..num_trials).map(|_| seed_gen.next_random()).collect()
 }
 
-fn run_single_fuzz_trial(seed: u64, mode: FuzzerLogEncodingMode, long_mode: bool) {
+fn run_single_fuzz_trial(
+    seed: u64,
+    mode: FuzzerLogEncodingMode,
+    long_mode: bool,
+    encode_only: bool,
+) {
     let mut fuzzer = Fuzzer::new(seed);
     let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = if long_mode {
         (
@@ -393,7 +404,14 @@ fn run_single_fuzz_trial(seed: u64, mode: FuzzerLogEncodingMode, long_mode: bool
             7,
         )
     };
-    fuzzer.run_single_trial(num_bool_vars, num_int_vars, num_exprs, max_complexity, mode);
+    fuzzer.run_single_trial(
+        num_bool_vars,
+        num_int_vars,
+        num_exprs,
+        max_complexity,
+        mode,
+        encode_only,
+    );
 }
 
 fn run_fuzz_trials_parallel(
@@ -401,6 +419,7 @@ fn run_fuzz_trials_parallel(
     num_trials: usize,
     mode: FuzzerLogEncodingMode,
     long_mode: bool,
+    encode_only: bool,
 ) {
     if num_trials == 0 {
         return;
@@ -421,7 +440,7 @@ fn run_fuzz_trials_parallel(
             let Some(seed) = seed else {
                 break;
             };
-            run_single_fuzz_trial(seed, mode, long_mode);
+            run_single_fuzz_trial(seed, mode, long_mode, encode_only);
         }));
     }
 
@@ -437,12 +456,30 @@ fn test_integration_fuzz_quick_without_log_encoding() {
         1000,
         FuzzerLogEncodingMode::Never,
         false,
+        false,
     );
 }
 
 #[test]
 fn test_integration_fuzz_quick_with_log_encoding() {
-    run_fuzz_trials_parallel(0x3b1dd8e4a5f9c217, 100, FuzzerLogEncodingMode::Force, false);
+    run_fuzz_trials_parallel(
+        0x3b1dd8e4a5f9c217,
+        100,
+        FuzzerLogEncodingMode::Force,
+        false,
+        false,
+    );
+}
+
+#[test]
+fn test_integration_fuzz_quick_with_log_encoding_encode_only() {
+    run_fuzz_trials_parallel(
+        0x79fa3908126dbec3,
+        1000,
+        FuzzerLogEncodingMode::Force,
+        false,
+        true,
+    );
 }
 
 #[test]
@@ -456,6 +493,6 @@ fn test_integration_fuzz_long() {
     .into_iter()
     .enumerate()
     {
-        run_fuzz_trials_parallel(0x6ad0c8f1e2457b39 ^ i as u64, rep, mode, true);
+        run_fuzz_trials_parallel(0x6ad0c8f1e2457b39 ^ i as u64, rep, mode, true, false);
     }
 }
