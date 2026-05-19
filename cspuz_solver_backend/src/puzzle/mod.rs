@@ -82,6 +82,64 @@ macro_rules! puzzle_list {
     };
 }
 
+macro_rules! dispatch_pzpr_aliases_for_kudamono {
+    ( $mod:ident, $aliases:expr, $puzzle_kind:expr, $url:expr ) => {};
+    ( $mod:ident, $aliases:expr, $puzzle_kind:expr, $url:expr, $pzpr_aliases:expr ) => {
+        for alias in $pzpr_aliases {
+            if $puzzle_kind == alias {
+                return Some(super::$mod::solve($url));
+            }
+        }
+    };
+}
+
+macro_rules! kudamono_puzzle_list {
+    ( $mod_name:ident, $( ($mod:ident, $aliases: expr, $en_name:expr, $ja_name:expr $(, $pzpr_aliases: expr )? ) ),* $(,)? ) => {
+        $(
+            pub mod $mod;
+        )*
+
+        mod $mod_name {
+            pub fn dispatch_kudamono(puzzle_kind: &str, url: &str) -> Option<Result<super::Board, &'static str>> {
+                $(
+                    for alias in $aliases {
+                        if puzzle_kind == alias {
+                            return Some(super::$mod::solve(url));
+                        }
+                    }
+                )*
+
+                None
+            }
+
+            pub fn dispatch_pzpr(puzzle_kind: &str, url: &str) -> Option<Result<super::Board, &'static str>> {
+                $(
+                    dispatch_pzpr_aliases_for_kudamono!($mod, $aliases, puzzle_kind, url $(, $pzpr_aliases)?);
+                )*
+
+                None
+            }
+
+            pub fn list_puzzles() -> Vec<(String, String)> {
+                vec![
+                    $(
+                        (String::from($en_name), String::from($ja_name)),
+                    )*
+                ]
+            }
+
+            #[allow(unused)]
+            pub fn list_puzzles_with_key() -> Vec<(String, String, String)> {
+                vec![
+                    $(
+                        (String::from($aliases[0]), String::from($en_name), String::from($ja_name)),
+                    )*
+                ]
+            }
+        }
+    };
+}
+
 pub mod heyawake_internal;
 
 #[rustfmt::skip]
@@ -229,7 +287,7 @@ puzzle_list!(puzz_link,
 );
 
 #[rustfmt::skip]
-puzzle_list!(kudamono,
+kudamono_puzzle_list!(kudamono,
     (akari_regions, ["akari-regional"], "Regional Akari", "Regional Akari"),
     (akari_rgb, ["akari-rgb"], "Akari RGB", "Akari RGB"),
     (cross_border_parity_loop, ["cross-border-parity-loop"], "Cross Border Parity Loop", "Cross Border Parity Loop"),
@@ -264,7 +322,15 @@ puzzle_list!(penpa_edit,
 pub mod double_lits;
 
 pub fn dispatch_puzz_link(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
-    puzz_link::dispatch(puzzle_kind, url)
+    if let Some(res) = puzz_link::dispatch(puzzle_kind, url) {
+        return Some(res);
+    }
+
+    if let Some(res) = kudamono::dispatch_pzpr(puzzle_kind, url) {
+        return Some(res);
+    }
+
+    None
 }
 
 pub fn dispatch_puzz_link_enumerate(
@@ -280,7 +346,7 @@ pub fn dispatch_kudamono(
     puzzle_variant: &str,
     url: &str,
 ) -> Option<Result<Board, &'static str>> {
-    if let Some(res) = kudamono::dispatch(puzzle_kind, url) {
+    if let Some(res) = kudamono::dispatch_kudamono(puzzle_kind, url) {
         return Some(res);
     }
 
