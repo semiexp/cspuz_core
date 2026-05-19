@@ -306,7 +306,7 @@ kudamono_puzzle_list!(kudamono,
     (spokes, ["spokes"], "Spokes", "Spokes"),
     (tamago_town, ["tamago-town"], "Tamago Town", "Tamago Town"),
     (tetrochain_ctb, ["tetrochain-ctb"], "Tetrochain CTB", "Tetrochain CTB", ["tetroctb"]),
-    (the_longest, ["the-longest"], "The Longest", "短辺消失"),
+    (the_longest, ["the-longest"], "The Longest", "短辺消失", ["longest"]),
     (tricklayer, ["tricklayer"], "Tricklayer", "Tricklayer"),
     (windows, ["windows"], "Windows", "Windows"),
 );
