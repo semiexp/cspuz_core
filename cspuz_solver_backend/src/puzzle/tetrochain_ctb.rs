@@ -1,13 +1,18 @@
 use crate::board::{Board, BoardKind, Item, ItemKind};
 use crate::uniqueness::check_uniqueness;
+use cspuz_rs::graph;
 use cspuz_rs_puzzles::puzzles::tetrochain_ctb;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
     let (borders, clues) = tetrochain_ctb::deserialize_problem(url).ok_or("invalid url")?;
     let ans = tetrochain_ctb::solve_tetrochain_ctb(&borders, &clues);
 
-    let height = clues.len();
-    let width = clues[0].len();
+    let height = borders.vertical.len();
+    let width = if height > 0 {
+        borders.horizontal[0].len()
+    } else {
+        0
+    };
     let mut board = Board::new(BoardKind::Grid, height, width, check_uniqueness(&ans));
 
     board.add_borders(&borders, "black");
@@ -24,9 +29,15 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
                     ));
                 }
             }
-            if let Some(n) = clues[y][x] {
-                board.push(Item::cell(y, x, "black", ItemKind::NumUpperLeft(n)));
-            }
+        }
+    }
+
+    let rooms = graph::borders_to_rooms(&borders);
+    assert_eq!(rooms.len(), clues.len());
+    for i in 0..rooms.len() {
+        if let Some(n) = clues[i] {
+            let (y, x) = rooms[i][0];
+            board.push(Item::cell(y, x, "black", ItemKind::NumUpperLeft(n)));
         }
     }
 
@@ -74,25 +85,20 @@ mod tests {
                     Item { y: 8, x: 5, color: "black", kind: ItemKind::BoldWall },
                     Item { y: 9, x: 6, color: "black", kind: ItemKind::BoldWall },
                     Item { y: 1, x: 1, color: "green", kind: ItemKind::Block },
-                    Item { y: 1, x: 1, color: "black", kind: ItemKind::NumUpperLeft(4) },
                     Item { y: 1, x: 3, color: "green", kind: ItemKind::Block },
                     Item { y: 1, x: 5, color: "green", kind: ItemKind::Dot },
                     Item { y: 1, x: 7, color: "green", kind: ItemKind::Block },
                     Item { y: 1, x: 9, color: "green", kind: ItemKind::Dot },
-                    Item { y: 1, x: 9, color: "black", kind: ItemKind::NumUpperLeft(1) },
                     Item { y: 1, x: 11, color: "green", kind: ItemKind::Block },
-                    Item { y: 1, x: 11, color: "black", kind: ItemKind::NumUpperLeft(3) },
                     Item { y: 1, x: 13, color: "green", kind: ItemKind::Block },
                     Item { y: 3, x: 1, color: "green", kind: ItemKind::Block },
                     Item { y: 3, x: 3, color: "green", kind: ItemKind::Dot },
-                    Item { y: 3, x: 3, color: "black", kind: ItemKind::NumUpperLeft(0) },
                     Item { y: 3, x: 5, color: "green", kind: ItemKind::Dot },
                     Item { y: 3, x: 7, color: "green", kind: ItemKind::Block },
                     Item { y: 3, x: 9, color: "green", kind: ItemKind::Dot },
                     Item { y: 3, x: 11, color: "green", kind: ItemKind::Block },
                     Item { y: 3, x: 13, color: "green", kind: ItemKind::Block },
                     Item { y: 5, x: 1, color: "green", kind: ItemKind::Block },
-                    Item { y: 5, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
                     Item { y: 5, x: 3, color: "green", kind: ItemKind::Dot },
                     Item { y: 5, x: 5, color: "green", kind: ItemKind::Dot },
                     Item { y: 5, x: 7, color: "green", kind: ItemKind::Block },
@@ -107,13 +113,18 @@ mod tests {
                     Item { y: 7, x: 11, color: "green", kind: ItemKind::Dot },
                     Item { y: 7, x: 13, color: "green", kind: ItemKind::Dot },
                     Item { y: 9, x: 1, color: "green", kind: ItemKind::Dot },
-                    Item { y: 9, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
                     Item { y: 9, x: 3, color: "green", kind: ItemKind::Dot },
                     Item { y: 9, x: 5, color: "green", kind: ItemKind::Block },
                     Item { y: 9, x: 7, color: "green", kind: ItemKind::Block },
                     Item { y: 9, x: 9, color: "green", kind: ItemKind::Dot },
                     Item { y: 9, x: 11, color: "green", kind: ItemKind::Dot },
                     Item { y: 9, x: 13, color: "green", kind: ItemKind::Dot },
+                    Item { y: 1, x: 1, color: "black", kind: ItemKind::NumUpperLeft(4) },
+                    Item { y: 1, x: 9, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 1, x: 11, color: "black", kind: ItemKind::NumUpperLeft(3) },
+                    Item { y: 3, x: 3, color: "black", kind: ItemKind::NumUpperLeft(0) },
+                    Item { y: 5, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
+                    Item { y: 9, x: 1, color: "black", kind: ItemKind::NumUpperLeft(1) },
                 ],
                 uniqueness: Uniqueness::Unique,
             },
