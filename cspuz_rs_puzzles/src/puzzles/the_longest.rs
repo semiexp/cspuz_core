@@ -1,6 +1,9 @@
+use std::collections::BTreeMap;
+
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context,
+    get_kudamono_url_info_detailed, parse_kudamono_dimension, url_to_problem, Combinator, Context,
+    MultiDigit, Size, Tuple2, UnlimitedSeq,
 };
 use cspuz_rs::solver::{int_constant, BoolExpr, BoolVarArray1D, IntExpr, Solver, FALSE, TRUE};
 
@@ -307,8 +310,79 @@ impl Combinator<graph::GridEdges<Vec<Vec<bool>>>> for KudamonoInnerBorder {
     }
 }
 
+struct SizeRetriever;
+
+impl Combinator<(usize, usize)> for SizeRetriever {
+    fn deserialize(&self, ctx: &Context, _input: &[u8]) -> Option<(usize, Vec<(usize, usize)>)> {
+        Some((0, vec![(ctx.height?, ctx.width?)]))
+    }
+
+    fn serialize(&self, _ctx: &Context, _input: &[(usize, usize)]) -> Option<(usize, Vec<u8>)> {
+        unimplemented!();
+    }
+}
+
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
-    let parsed = get_kudamono_url_info_detailed(url)?;
+    if let Some(info) = get_kudamono_url_info_detailed(url) {
+        return deserialize_problem_kudamono(&info);
+    }
+
+    let combinator = Size::new(Tuple2::new(
+        SizeRetriever,
+        UnlimitedSeq::new(MultiDigit::new(2, 5)),
+    ));
+    let ((height, width), proxy) = url_to_problem(combinator, &["longest"], url)?;
+
+    let mut res = graph::GridEdges {
+        vertical: vec![vec![false; width + 1]; height],
+        horizontal: vec![vec![false; width]; height + 1],
+    };
+
+    let mut pos = 0;
+    for y in 0..height {
+        for x in 0..(width - 1) {
+            if proxy[pos] == 1 {
+                res.vertical[y][x + 1] = true;
+            }
+            pos += 1;
+        }
+    }
+    for y in 0..(height - 1) {
+        for x in 0..width {
+            if proxy[pos] == 1 {
+                res.horizontal[y + 1][x] = true;
+            }
+            pos += 1;
+        }
+    }
+    for x in 0..width {
+        if pos < proxy.len() && proxy[pos] == 1 {
+            res.horizontal[0][x] = true;
+        }
+        pos += 1;
+    }
+    for x in 0..width {
+        if pos < proxy.len() && proxy[pos] == 1 {
+            res.horizontal[height][x] = true;
+        }
+        pos += 1;
+    }
+    for y in 0..height {
+        if pos < proxy.len() && proxy[pos] == 1 {
+            res.vertical[y][0] = true;
+        }
+        pos += 1;
+    }
+    for y in 0..height {
+        if pos < proxy.len() && proxy[pos] == 1 {
+            res.vertical[y][width] = true;
+        }
+        pos += 1;
+    }
+    Some(res)
+}
+
+pub fn deserialize_problem_kudamono(parsed: &BTreeMap<String, &str>) -> Option<Problem> {
     let (width, height) = parse_kudamono_dimension(parsed.get("W")?)?;
 
     let ctx = Context::sized_with_kudamono_mode(height, width, true);
@@ -367,6 +441,13 @@ mod tests {
 
     #[test]
     fn test_the_longest_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://pzprxs.vercel.app/p?longest/5/4/0h00007ecs";
+        assert_eq!(deserialize_problem(url), Some(problem));
+    }
+
+    #[test]
+    fn test_the_longest_serializer_kudamono() {
         let problem = problem_for_tests();
         let url =
             "https://pedros.works/paper-puzzle-player?W=5x4&SIE=0RRR2UU7RRR2UU15UUU&G=the-longest";
