@@ -1,7 +1,8 @@
 use crate::util;
 use cspuz_rs::serializer::{
-    get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, AlphaToNum,
-    Choice, Combinator, DecInt, KudamonoGrid, Optionalize, PrefixAndSuffix,
+    get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_url_pzprxs, url_to_problem,
+    AlphaToNum, Choice, Combinator, DecInt, Dict, Grid, HexInt, KudamonoGrid, Optionalize,
+    PrefixAndSuffix, Spaces,
 };
 use cspuz_rs::solver::Solver;
 
@@ -109,6 +110,14 @@ pub fn solve_soulmates(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>
 type Problem = Vec<Vec<Option<i32>>>;
 
 fn combinator() -> impl Combinator<Problem> {
+    Grid::new(Choice::new(vec![
+        Box::new(Optionalize::new(HexInt)),
+        Box::new(Spaces::new(None, 'g')),
+        Box::new(Dict::new(Some(-1), ".")),
+    ]))
+}
+
+fn kudamono_combinator() -> impl Combinator<Problem> {
     KudamonoGrid::new(
         Optionalize::new(Choice::new(vec![
             Box::new(PrefixAndSuffix::new("(", DecInt, ")")),
@@ -119,12 +128,14 @@ fn combinator() -> impl Combinator<Problem> {
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_kudamono_url_grid(combinator(), "soulmates", problem.clone())
+    problem_to_url_pzprxs(combinator(), "soulmates", problem.clone())
 }
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
-    let info = get_kudamono_url_info(url)?;
-    kudamono_url_info_to_problem(combinator(), info)
+    if let Some(info) = get_kudamono_url_info(url) {
+        return kudamono_url_info_to_problem(kudamono_combinator(), info);
+    }
+    url_to_problem(combinator(), &["soulmates"], url)
 }
 
 #[cfg(test)]
@@ -159,7 +170,14 @@ mod tests {
     #[test]
     fn test_soulmates_serializer() {
         let problem = problem_for_tests();
-        let url = "https://pedros.works/paper-puzzle-player?W=4x4&L=(3)0(10)3(1)4&G=soulmates";
+        let url = "https://pzprxs.vercel.app/p?soulmates/4/4/a1p3i";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_soulmates_kudamono_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://pedros.works/paper-puzzle-player?W=4x4&L=(3)0(10)3(1)4&G=soulmates";
+        assert_eq!(deserialize_problem(url), Some(problem));
     }
 }
