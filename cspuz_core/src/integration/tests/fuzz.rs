@@ -389,21 +389,33 @@ fn run_single_fuzz_trial(
     encode_only: bool,
 ) {
     let mut fuzzer = Fuzzer::new(seed);
-    let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = if long_mode {
-        (
-            fuzzer.next_i32(3, 7) as usize,
-            fuzzer.next_i32(1, 5) as usize,
+    let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = match (mode, long_mode) {
+        (FuzzerLogEncodingMode::Force, false) => (
+            fuzzer.next_i32(3, 6) as usize,
+            fuzzer.next_i32(1, 4) as usize,
+            fuzzer.next_i32(2, 8) as usize,
+            7,
+        ),
+        (FuzzerLogEncodingMode::Force, true) => (
+            fuzzer.next_i32(3, 6) as usize,
+            fuzzer.next_i32(1, 4) as usize,
             fuzzer.next_i32(2, 12) as usize,
-            10,
-        )
-    } else {
-        (
+            7,
+        ),
+        (_, false) => (
             fuzzer.next_i32(3, 6) as usize,
             fuzzer.next_i32(1, 4) as usize,
             fuzzer.next_i32(2, 11) as usize,
             7,
-        )
+        ),
+        (_, true) => (
+            fuzzer.next_i32(3, 7) as usize,
+            fuzzer.next_i32(1, 5) as usize,
+            fuzzer.next_i32(2, 12) as usize,
+            10,
+        ),
     };
+
     fuzzer.run_single_trial(
         num_bool_vars,
         num_int_vars,
@@ -488,7 +500,7 @@ fn test_integration_fuzz_long() {
     for (i, (mode, rep)) in [
         (FuzzerLogEncodingMode::Never, 100000),
         (FuzzerLogEncodingMode::Allow, 50000),
-        (FuzzerLogEncodingMode::Force, 1000),
+        (FuzzerLogEncodingMode::Force, 10000),
     ]
     .into_iter()
     .enumerate()
