@@ -3,6 +3,10 @@ name = "cspuz_rs_puzzles"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+experimental-backend-glucose-rs = ["cspuz_rs/experimental-backend-glucose-rs"]
+
 [dependencies]
 cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_core = { path = "../cspuz_core", default-features = false }

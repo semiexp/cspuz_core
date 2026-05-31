@@ -39,6 +39,18 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+  rust-x86-latest-glucose-rs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup environment
+      run: rustup update
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: CSPUZ_CORE_DEFAULT_BACKEND=glucose_rs cargo test --verbose --features experimental-backend-glucose-rs
   rust-x86-latest-no-default-features:
     runs-on: ubuntu-latest
     steps:

@@ -173,6 +173,7 @@ impl PyConfig {
     fn get_backend(&self) -> PyResult<String> {
         let mode = match self.config.backend {
             Backend::Glucose => "glucose",
+            Backend::GlucoseRs => "glucose_rs",
             Backend::CaDiCaL => "cadical",
             Backend::External => "external",
         };
@@ -183,6 +184,8 @@ impl PyConfig {
     fn set_backend(&mut self, backend: String) -> PyResult<()> {
         if backend == "glucose" {
             self.config.backend = Backend::Glucose;
+        } else if backend == "glucose_rs" {
+            self.config.backend = Backend::GlucoseRs;
         } else if backend == "cadical" {
             self.config.backend = Backend::CaDiCaL;
         } else if backend == "external" {
