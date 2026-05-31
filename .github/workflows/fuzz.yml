@@ -28,4 +28,4 @@ jobs:
     - name: Setup environment
       run: rustup update
     - name: Run fuzz tests
-      run: CSPUZ_CORE_DEFAULT_BACKEND=glucose_rs cargo test --release test_integration_fuzz_long -- --ignored
+      run: CSPUZ_CORE_DEFAULT_BACKEND=glucose_rs cargo test --release test_integration_fuzz_long --features experimental-backend-glucose-rs -- --ignored
