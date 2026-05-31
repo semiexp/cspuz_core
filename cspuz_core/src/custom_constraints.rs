@@ -1,5 +1,5 @@
 use crate::backend::glucose::GlucoseSolverManipulator;
-#[cfg(feature = "backend-glucose-rs")]
+#[cfg(feature = "experimental-backend-glucose-rs")]
 use crate::backend::glucose_rs::GlucoseSolverManipulator as GlucoseRsSolverManipulator;
 use crate::sat::Lit;
 use crate::sat::{CustomPropagator, SolverManipulator};
@@ -53,7 +53,7 @@ pub trait PropagatorGenerator {
     where
         Self: 'a;
 
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     fn generate_for_glucose_rs<'a>(
         self: Box<Self>,
         proxy_map: Vec<Lit>,
@@ -84,7 +84,7 @@ impl<T: SimpleCustomConstraint> PropagatorGenerator for T {
         Box::new(CustomConstraintWrapperForGlucose::new(*self, proxy_map))
     }
 
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     fn generate_for_glucose_rs<'a>(
         self: Box<Self>,
         proxy_map: Vec<Lit>,

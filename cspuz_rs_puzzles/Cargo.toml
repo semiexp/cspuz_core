@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-backend-glucose-rs = ["cspuz_rs/backend-glucose-rs"]
+experimental-backend-glucose-rs = ["cspuz_rs/experimental-backend-glucose-rs"]
 
 [dependencies]
 cspuz_rs = { path = "../cspuz_rs", default-features = false }

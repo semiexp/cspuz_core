@@ -5,7 +5,7 @@ use crate::backend::cadical;
 #[cfg(feature = "backend-external")]
 use crate::backend::external;
 use crate::backend::glucose;
-#[cfg(feature = "backend-glucose-rs")]
+#[cfg(feature = "experimental-backend-glucose-rs")]
 use crate::backend::glucose_rs;
 
 use crate::custom_constraints::PropagatorGenerator;
@@ -57,7 +57,7 @@ pub struct SATSolverStats {
 /// using `glucose::Solver` directly from the encoder.
 pub enum SAT {
     Glucose(glucose::Solver),
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     GlucoseRs(glucose_rs::Solver),
     #[cfg(feature = "backend-external")]
     External(external::Solver),
@@ -68,7 +68,7 @@ pub enum SAT {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Backend {
     Glucose,
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     GlucoseRs,
     External,
     CaDiCaL,
@@ -179,7 +179,7 @@ impl SAT {
         SAT::Glucose(glucose::Solver::new())
     }
 
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     pub fn new_glucose_rs() -> SAT {
         SAT::GlucoseRs(glucose_rs::Solver::new())
     }
@@ -197,7 +197,7 @@ impl SAT {
     pub fn new_with_backend(backend: Backend) -> SAT {
         match backend {
             Backend::Glucose => SAT::new_glucose(),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             Backend::GlucoseRs => SAT::new_glucose_rs(),
             #[cfg(feature = "backend-external")]
             Backend::External => SAT::new_external(),
@@ -213,7 +213,7 @@ impl SAT {
     pub fn get_backend(&self) -> Backend {
         match self {
             SAT::Glucose(_) => Backend::Glucose,
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(_) => Backend::GlucoseRs,
             #[cfg(feature = "backend-external")]
             SAT::External(_) => Backend::External,
@@ -225,7 +225,7 @@ impl SAT {
     pub fn num_var(&self) -> usize {
         match self {
             SAT::Glucose(solver) => solver.num_var() as usize,
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.num_var() as usize,
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => solver.num_var() as usize,
@@ -237,7 +237,7 @@ impl SAT {
     pub fn all_vars(&self) -> Vec<Var> {
         match self {
             SAT::Glucose(solver) => solver.all_vars(),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.all_vars(),
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => solver.all_vars(),
@@ -250,7 +250,7 @@ impl SAT {
     pub fn new_var(&mut self, name: &str) -> Var {
         match self {
             SAT::Glucose(solver) => solver.new_named_var(name),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.new_named_var(name),
             SAT::External(_) => panic!("new_var is not supported in external backend"),
             SAT::CaDiCaL(_) => panic!("new_var is not supported in cadical backend"),
@@ -261,7 +261,7 @@ impl SAT {
     pub fn new_var(&mut self) -> Var {
         match self {
             SAT::Glucose(solver) => solver.new_var(),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.new_var(),
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => solver.new_var(),
@@ -303,7 +303,7 @@ impl SAT {
     pub fn set_polarity(&mut self, var: Var, polarity: bool) {
         match self {
             SAT::Glucose(solver) => solver.set_polarity(var, polarity),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.set_polarity(var, polarity),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => {
@@ -321,7 +321,7 @@ impl SAT {
             SAT::Glucose(solver) => {
                 solver.add_clause(clause);
             }
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => {
                 solver.add_clause(clause);
             }
@@ -348,7 +348,7 @@ impl SAT {
             SAT::Glucose(solver) => {
                 solver.add_order_encoding_linear(&lits, &domain, &coefs, constant, mode)
             }
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => {
                 solver.add_order_encoding_linear(&lits, &domain, &coefs, constant, mode)
             }
@@ -368,7 +368,7 @@ impl SAT {
     ) -> bool {
         match self {
             SAT::Glucose(solver) => solver.add_active_vertices_connected(&lits, &edges),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.add_active_vertices_connected(&lits, &edges),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => {
@@ -399,7 +399,7 @@ impl SAT {
     ) -> bool {
         match self {
             SAT::Glucose(solver) => solver.add_direct_encoding_extension_supports(vars, supports),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.add_direct_encoding_extension_supports(vars, supports),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => panic!(
@@ -423,7 +423,7 @@ impl SAT {
             SAT::Glucose(solver) => {
                 solver.add_graph_division(domains, dom_lits, edges, edge_lits, mode, opts)
             }
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => {
                 solver.add_graph_division(domains, dom_lits, edges, edge_lits, mode, opts)
             }
@@ -445,7 +445,7 @@ impl SAT {
                 let propagator = constr.generate(inputs);
                 solver.add_custom_constraint(propagator)
             }
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => {
                 let propagator = constr.generate_for_glucose_rs(inputs);
                 solver.add_custom_constraint(propagator)
@@ -457,7 +457,7 @@ impl SAT {
     pub fn set_seed(&mut self, seed: f64) {
         match self {
             SAT::Glucose(solver) => solver.set_seed(seed),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.set_seed(seed),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => (), // TODO: add warning
@@ -469,7 +469,7 @@ impl SAT {
     pub fn set_rnd_init_act(&mut self, rnd_init_act: bool) {
         match self {
             SAT::Glucose(solver) => solver.set_rnd_init_act(rnd_init_act),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.set_rnd_init_act(rnd_init_act),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => (), // TODO: add warning
@@ -481,7 +481,7 @@ impl SAT {
     pub fn set_dump_analysis_info(&mut self, dump_analysis_info: bool) {
         match self {
             SAT::Glucose(solver) => solver.set_dump_analysis_info(dump_analysis_info),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.set_dump_analysis_info(dump_analysis_info),
             #[cfg(feature = "backend-external")]
             SAT::External(_) => (), // TODO: add warning
@@ -493,7 +493,7 @@ impl SAT {
     pub fn solve(&mut self) -> Option<SATModel<'_>> {
         match self {
             SAT::Glucose(solver) => solver.solve().map(SATModel::Glucose),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.solve().map(SATModel::GlucoseRs),
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => solver.solve().map(SATModel::External),
@@ -505,7 +505,7 @@ impl SAT {
     pub fn solve_without_model(&mut self) -> bool {
         match self {
             SAT::Glucose(solver) => solver.solve_without_model(),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => solver.solve_without_model(),
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => solver.solve_without_model(),
@@ -517,7 +517,7 @@ impl SAT {
     pub(crate) unsafe fn model(&self) -> SATModel<'_> {
         match self {
             SAT::Glucose(solver) => SATModel::Glucose(solver.model()),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => SATModel::GlucoseRs(solver.model()),
             #[cfg(feature = "backend-external")]
             SAT::External(solver) => SATModel::External(solver.model()),
@@ -533,7 +533,7 @@ impl SAT {
                 propagations: Some(solver.stats_propagations()),
                 conflicts: Some(solver.stats_conflicts()),
             },
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SAT::GlucoseRs(solver) => SATSolverStats {
                 decisions: Some(solver.stats_decisions()),
                 propagations: Some(solver.stats_propagations()),
@@ -557,7 +557,7 @@ impl SAT {
 
 pub enum SATModel<'a> {
     Glucose(glucose::Model<'a>),
-    #[cfg(feature = "backend-glucose-rs")]
+    #[cfg(feature = "experimental-backend-glucose-rs")]
     GlucoseRs(glucose_rs::Model<'a>),
     #[cfg(feature = "backend-external")]
     External(external::Model<'a>),
@@ -569,7 +569,7 @@ impl SATModel<'_> {
     pub fn assignment(&self, var: Var) -> bool {
         match self {
             SATModel::Glucose(model) => model.assignment(var),
-            #[cfg(feature = "backend-glucose-rs")]
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             SATModel::GlucoseRs(model) => model.assignment(var),
             #[cfg(feature = "backend-external")]
             SATModel::External(model) => model.assignment(var),

@@ -534,7 +534,7 @@ pub fn encode(norm: &mut NormCSP, sat: &mut SAT, map: &mut EncodeMap, config: &C
                     Backend::Glucose => {
                         env.sat.add_custom_constraint(lits, constr);
                     }
-                    #[cfg(feature = "backend-glucose-rs")]
+                    #[cfg(feature = "experimental-backend-glucose-rs")]
                     Backend::GlucoseRs => {
                         env.sat.add_custom_constraint(lits, constr);
                     }

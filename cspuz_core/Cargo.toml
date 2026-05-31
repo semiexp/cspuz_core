@@ -10,13 +10,13 @@ name = "cspuz_core"
 crate-type = ["lib"]
 
 [features]
-default = ["csp-extra-constraints", "parser", "cli", "backend-external", "backend-cadical", "backend-glucose-rs"]
+default = ["csp-extra-constraints", "parser", "cli", "backend-external", "backend-cadical"]
 sat-analyzer = []
 parser = ["dep:nom"]
 cli = ["parser", "dep:getopts"]
 backend-external = []
 backend-cadical = []
-backend-glucose-rs = ["dep:glucose_rs"]
+experimental-backend-glucose-rs = ["dep:glucose_rs"]
 
 # Enable support for extra CSP constraints which are not used in puzzle solvers.
 csp-extra-constraints = []

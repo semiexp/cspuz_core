@@ -35,11 +35,11 @@ fn parse_backend(s: &str) -> Option<Backend> {
     if s == "glucose" {
         Some(Backend::Glucose)
     } else if s == "glucose_rs" {
-        #[cfg(feature = "backend-glucose-rs")]
+        #[cfg(feature = "experimental-backend-glucose-rs")]
         {
             Some(Backend::GlucoseRs)
         }
-        #[cfg(not(feature = "backend-glucose-rs"))]
+        #[cfg(not(feature = "experimental-backend-glucose-rs"))]
         {
             None
         }
