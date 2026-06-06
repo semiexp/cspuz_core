@@ -318,18 +318,15 @@ impl Solver {
     }
 
     pub fn stats_decisions(&self) -> u64 {
-        // glucose_rs does not expose these stats in its public API.
-        0
+        self.solver.num_decisions()
     }
 
     pub fn stats_propagations(&self) -> u64 {
-        // glucose_rs does not expose these stats in its public API.
-        0
+        self.solver.num_propagations()
     }
 
     pub fn stats_conflicts(&self) -> u64 {
-        // glucose_rs does not expose these stats in its public API.
-        0
+        self.solver.num_conflicts()
     }
 }
 
