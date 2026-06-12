@@ -29,16 +29,16 @@ pub fn solve_snake(
     graph::active_vertices_connected_2d(&mut solver, is_snake);
     // No checkerboards
     solver.add_expr(
-        !(is_snake.slice((..(h - 1), ..(h - 1)))
+        !(is_snake.slice((..(h - 1), ..(w - 1)))
             & is_snake.slice((1.., 1..))
             & !is_snake.slice((..(h - 1), 1..))
-            & !is_snake.slice((1.., ..(h - 1)))),
+            & !is_snake.slice((1.., ..(w - 1)))),
     );
     solver.add_expr(
-        !(!is_snake.slice((..(h - 1), ..(h - 1)))
+        !(!is_snake.slice((..(h - 1), ..(w - 1)))
             & !is_snake.slice((1.., 1..))
             & is_snake.slice((..(h - 1), 1..))
-            & is_snake.slice((1.., ..(h - 1)))),
+            & is_snake.slice((1.., ..(w - 1)))),
     );
 
     for y in 0..h {
