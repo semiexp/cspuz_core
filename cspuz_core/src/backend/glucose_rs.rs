@@ -157,8 +157,9 @@ impl Solver {
         (0..self.num_var()).map(Var).collect()
     }
 
-    // Not supported by glucose_rs.
-    pub fn set_polarity(&mut self, _var: Var, _polarity: bool) {}
+    pub fn set_polarity(&mut self, var: Var, polarity: bool) {
+        self.solver.set_polarity(var.0 as u32, polarity);
+    }
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {
         let clause = clause.iter().copied().map(to_raw_lit).collect::<Vec<_>>();
