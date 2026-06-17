@@ -118,6 +118,7 @@ pub mod railpool;
 pub mod reflect;
 pub mod ringring;
 pub mod ripple;
+pub mod road_planning;
 pub mod roma;
 pub mod sansaroad;
 pub mod sasahigane;

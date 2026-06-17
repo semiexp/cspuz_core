@@ -220,6 +220,23 @@ impl<'a> Solver<'a> {
         }
     }
 
+    pub fn int_var_2d_from_domains(
+        &mut self,
+        shape: (usize, usize),
+        domains: &[Vec<Vec<i32>>],
+    ) -> IntVarArray2D {
+        let (h, w) = shape;
+        NdArray {
+            shape,
+            data: (0..(h * w))
+                .map(|i| {
+                    let domain = &domains[i / w][i % w];
+                    self.solver.new_int_var_from_list(domain.clone())
+                })
+                .collect(),
+        }
+    }
+
     /// Adds a constraint that the specified boolean expression(s) is true.
     ///
     /// You can pass multiple boolean expressions to this method, and the solver will add a constraint that all of them are true.

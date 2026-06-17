@@ -317,6 +317,7 @@ puzzle_list!(penpa_edit,
     (exercise, ["exercise"], "Exercise", "Exercise"),
     (pyramid, ["pyramid"], "Pyramid", "ピラミッド"),
     (pyramid_climbers, ["pyramid_climbers"], "Pyramid Climbers", "Pyramid Climbers"),
+    (road_planning, ["road_planning"], "Road Planning", "道路計画"),
 );
 
 pub mod double_lits;

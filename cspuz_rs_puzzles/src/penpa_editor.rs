@@ -29,6 +29,7 @@ pub struct PenpaEditorSquare {
     height: usize,
     width: usize,
     cells: Vec<Vec<Vec<Item>>>,
+    vertices: Vec<Vec<Vec<Item>>>,
 }
 
 impl PenpaEditorSquare {
@@ -37,6 +38,7 @@ impl PenpaEditorSquare {
             height,
             width,
             cells: vec![vec![vec![]; width]; height],
+            vertices: vec![vec![vec![]; width + 1]; height + 1],
         }
     }
 
@@ -54,6 +56,14 @@ impl PenpaEditorSquare {
 
     pub fn add_cell_item(&mut self, y: usize, x: usize, item: Item) {
         self.cells[y][x].push(item);
+    }
+
+    pub fn get_vertex(&self, y: usize, x: usize) -> &[Item] {
+        &self.vertices[y][x]
+    }
+
+    pub fn add_vertex_item(&mut self, y: usize, x: usize, item: Item) {
+        self.vertices[y][x].push(item);
     }
 }
 
@@ -247,6 +257,20 @@ fn decode_penpa_editor_data_square(
         }
     };
 
+    let vertex_position = |ki: usize| -> Option<(usize, usize)> {
+        let lo = 4 * height + (5 + height) * width + 21;
+        if ki < lo {
+            return None;
+        }
+        let y = (ki - lo) / (width + 4);
+        let x = (ki - lo) % (width + 4);
+        if y <= height && x <= width {
+            Some((y, x))
+        } else {
+            None
+        }
+    };
+
     {
         // fills
         let fill_data = &body["zS"];
@@ -309,6 +333,20 @@ fn decode_penpa_editor_data_square(
                 let style_id = v[2].as_i32().ok_or("Invalid style_id")?;
 
                 ret.add_cell_item(
+                    y,
+                    x,
+                    Item::Symbol(Symbol {
+                        color_id,
+                        name,
+                        style_id,
+                    }),
+                );
+            } else if let Some((y, x)) = vertex_position(ki) {
+                let color_id = v[0].as_i32().ok_or("Invalid color_id")?;
+                let name = v[1].as_str().ok_or("Invalid symbol_name")?.to_string();
+                let style_id = v[2].as_i32().ok_or("Invalid style_id")?;
+
+                ret.add_vertex_item(
                     y,
                     x,
                     Item::Symbol(Symbol {
