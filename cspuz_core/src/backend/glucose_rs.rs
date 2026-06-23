@@ -274,14 +274,17 @@ impl Solver {
             }))
     }
 
-    // Not supported by glucose_rs.
-    pub fn set_seed(&mut self, _seed: f64) {}
+    pub fn set_seed(&mut self, seed: f64) {
+        self.solver.random_seed = seed;
+    }
 
-    // Not supported by glucose_rs.
-    pub fn set_rnd_init_act(&mut self, _rnd_init_act: bool) {}
+    pub fn set_rnd_init_act(&mut self, rnd_init_act: bool) {
+        self.solver.rnd_init_act = rnd_init_act;
+    }
 
-    // Not supported by glucose_rs.
-    pub fn set_dump_analysis_info(&mut self, _dump_analysis_info: bool) {}
+    pub fn set_dump_analysis_info(&mut self, dump_analysis_info: bool) {
+        self.solver.dump_analysis_info = dump_analysis_info;
+    }
 
     pub fn solve(&mut self) -> Option<Model<'_>> {
         if self.solve_without_model() {
