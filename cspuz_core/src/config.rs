@@ -123,8 +123,8 @@ impl Config {
 
     #[cfg(feature = "cli")]
     pub fn parse_from_args() -> Config {
-        use std::str::FromStr;
         use getopts::Options;
+        use std::str::FromStr;
 
         let args = std::env::args().collect::<Vec<_>>();
         let mut config = Config::default();
@@ -222,9 +222,21 @@ impl Config {
             }
         }
 
-        maybe_set_option(&matches, &mut config.domain_product_threshold, "domain-product-threshold");
-        maybe_set_option(&matches, &mut config.native_linear_encoding_terms, "native-linear-encoding-terms");
-        maybe_set_option(&matches, &mut config.native_linear_encoding_domain_product_threshold, "native-linear-encoding-domain-product");
+        maybe_set_option(
+            &matches,
+            &mut config.domain_product_threshold,
+            "domain-product-threshold",
+        );
+        maybe_set_option(
+            &matches,
+            &mut config.native_linear_encoding_terms,
+            "native-linear-encoding-terms",
+        );
+        maybe_set_option(
+            &matches,
+            &mut config.native_linear_encoding_domain_product_threshold,
+            "native-linear-encoding-domain-product",
+        );
 
         if let Some(s) = matches.opt_str("backend") {
             config.backend = parse_backend(&s).unwrap_or_else(|| {
