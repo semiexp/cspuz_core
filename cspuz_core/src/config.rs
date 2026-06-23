@@ -123,7 +123,7 @@ impl Config {
 
     #[cfg(feature = "cli")]
     pub fn parse_from_args() -> Config {
-        extern crate getopts;
+        use std::str::FromStr;
         use getopts::Options;
 
         let args = std::env::args().collect::<Vec<_>>();
@@ -210,42 +210,22 @@ impl Config {
             }
         }
 
-        if let Some(s) = matches.opt_str("domain-product-threshold") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!("error: parse failed for --domain-product-threshold: {}", f,);
-                    std::process::exit(1);
+        fn maybe_set_option<T: FromStr>(matches: &getopts::Matches, store: &mut T, arg_name: &str) {
+            if let Some(s) = matches.opt_str(arg_name) {
+                match s.parse::<T>() {
+                    Ok(v) => *store = v,
+                    Err(_) => {
+                        println!("error: parse failed for --{}: {}", arg_name, s);
+                        std::process::exit(1);
+                    }
                 }
-            };
-            config.domain_product_threshold = v;
+            }
         }
-        if let Some(s) = matches.opt_str("native-linear-encoding-terms") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!(
-                        "error: parse failed for --native-linear-encoding-terms: {}",
-                        f,
-                    );
-                    std::process::exit(1);
-                }
-            };
-            config.native_linear_encoding_terms = v;
-        }
-        if let Some(s) = matches.opt_str("native-linear-encoding-domain-product") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!(
-                        "error: parse failed for --native-linear-encoding-domain-product: {}",
-                        f,
-                    );
-                    std::process::exit(1);
-                }
-            };
-            config.native_linear_encoding_domain_product_threshold = v;
-        }
+
+        maybe_set_option(&matches, &mut config.domain_product_threshold, "domain-product-threshold");
+        maybe_set_option(&matches, &mut config.native_linear_encoding_terms, "native-linear-encoding-terms");
+        maybe_set_option(&matches, &mut config.native_linear_encoding_domain_product_threshold, "native-linear-encoding-domain-product");
+
         if let Some(s) = matches.opt_str("backend") {
             config.backend = parse_backend(&s).unwrap_or_else(|| {
                 println!("error: unknown backend: {}", s);
