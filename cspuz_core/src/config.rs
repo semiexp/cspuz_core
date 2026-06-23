@@ -1,55 +1,73 @@
 pub use crate::sat::{Backend, GraphDivisionMode, OrderEncodingLinearMode};
 
-#[derive(Clone, Copy)]
-pub struct Config {
-    pub use_constant_folding: bool,
-    pub use_constant_propagation: bool,
-    pub use_norm_domain_refinement: bool,
-    pub domain_product_threshold: usize,
-    pub native_linear_encoding_terms: usize,
-    pub native_linear_encoding_domain_product_threshold: usize,
-    pub use_direct_encoding: bool,
-    pub use_log_encoding: bool,
-    pub force_use_log_encoding: bool,
-    pub use_native_extension_supports: bool,
-    pub direct_encoding_for_binary_vars: bool,
-    pub merge_equivalent_variables: bool,
-    pub alldifferent_bijection_constraints: bool,
-    pub glucose_random_seed: Option<f64>,
-    pub glucose_rnd_init_act: bool,
-    pub dump_analysis_info: bool,
-    pub backend: Backend,
-    pub order_encoding_linear_mode: OrderEncodingLinearMode,
-    pub graph_division_mode: GraphDivisionMode,
-    pub optimize_polarity: bool,
-    pub verbose: bool,
+// Single source of truth for `bool` config options that have been migrated to the
+// macro-based definition below (currently just `use_constant_folding`, as a trial).
+// Each row here drives the `Config` struct field, its default in `initial_default()`,
+// and its entry in the `bool_flags` table in `parse_from_args()` simultaneously.
+// To migrate another option, move its hand-written entry out of `__config_struct_def!`,
+// `__config_initial_default_impl!` and `__config_cli_bool_flags!` below and add a row here.
+macro_rules! bool_config_options {
+    ($mac:ident) => {
+        $mac! {
+            use_constant_folding: bool = true, doc = "constant folding";
+            use_constant_propagation: bool = true, doc = "constant propagation";
+            use_norm_domain_refinement: bool = true, doc = "domain refinement in normalized CSP";
+            use_direct_encoding: bool = true, doc = "use direct encoding if applicable";
+            use_log_encoding: bool = true, doc = "use log encoding if applicable";
+            force_use_log_encoding: bool = false, doc = "use log encoding for all int variables";
+            use_native_extension_supports: bool = false, doc = "use native propagator for extension (supports) constraints";
+            direct_encoding_for_binary_vars: bool = false, doc = "use direct encoding for binary variables";
+            merge_equivalent_variables: bool = false, doc = "merge equivalent variables (which is caused by, for example, (iff x y))";
+            alldifferent_bijection_constraints: bool = false, doc = "add auxiliary constraints for bijective alldifferent constraints";
+            dump_analysis_info: bool = false, doc = "dump analysis info in Glucose";
+            glucose_rnd_init_act: bool = false, doc = "rnd_init_act in Glucose";
+            optimize_polarity: bool = false, doc = "use polarity-based optimization in decide_irrefutable_facts";
+            verbose: bool = false, doc = "show verbose outputs";
+        }
+    };
 }
+
+macro_rules! __config_struct_def {
+    ( $( $field:ident : bool = $default:expr, doc = $doc:literal ; )* ) => {
+        #[derive(Clone, Copy)]
+        pub struct Config {
+            $( pub $field: bool, )*
+            pub domain_product_threshold: usize,
+            pub native_linear_encoding_terms: usize,
+            pub native_linear_encoding_domain_product_threshold: usize,
+            pub glucose_random_seed: Option<f64>,
+            pub backend: Backend,
+            pub order_encoding_linear_mode: OrderEncodingLinearMode,
+            pub graph_division_mode: GraphDivisionMode,
+        }
+    };
+}
+bool_config_options!(__config_struct_def);
+
+macro_rules! __config_initial_default_impl {
+    ( $( $field:ident : bool = $default:expr, doc = $doc:literal ; )* ) => {
+        impl Config {
+            pub fn initial_default() -> Config {
+                Config {
+                    $( $field: $default, )*
+                    domain_product_threshold: 1000,
+                    native_linear_encoding_terms: 4,
+                    native_linear_encoding_domain_product_threshold: 20,
+                    glucose_random_seed: None,
+                    backend: default_backend_from_env(),
+                    order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
+                    graph_division_mode: GraphDivisionMode::Cpp,
+                }
+            }
+        }
+    };
+}
+bool_config_options!(__config_initial_default_impl);
 
 thread_local! {
     static DEFAULT_CONFIG: std::cell::Cell<Config> = {
         std::cell::Cell::new(Config::initial_default())
     };
-}
-
-fn parse_backend(s: &str) -> Option<Backend> {
-    if s == "glucose" {
-        Some(Backend::Glucose)
-    } else if s == "glucose_rs" {
-        #[cfg(feature = "experimental-backend-glucose-rs")]
-        {
-            Some(Backend::GlucoseRs)
-        }
-        #[cfg(not(feature = "experimental-backend-glucose-rs"))]
-        {
-            None
-        }
-    } else if s == "external" {
-        Some(Backend::External)
-    } else if s == "cadical" {
-        Some(Backend::CaDiCaL)
-    } else {
-        None
-    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -61,12 +79,16 @@ fn default_backend_from_env() -> Backend {
 #[cfg(not(target_arch = "wasm32"))]
 fn default_backend_from_env() -> Backend {
     if let Ok(s) = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND") {
-        parse_backend(&s).unwrap_or_else(|| {
+        s.parse().unwrap_or_else(|_| {
             panic!("error: unknown backend specified in CSPUZ_CORE_DEFAULT_BACKEND");
         })
     } else {
         Backend::Glucose
     }
+}
+
+fn to_config_name(s: &str) -> String {
+    s.replace('-', "_")
 }
 
 impl Config {
@@ -78,94 +100,23 @@ impl Config {
         DEFAULT_CONFIG.with(|f| f.set(new_default));
     }
 
-    pub fn initial_default() -> Config {
-        Config {
-            use_constant_folding: true,
-            use_constant_propagation: true,
-            use_norm_domain_refinement: true,
-            domain_product_threshold: 1000,
-            native_linear_encoding_terms: 4,
-            native_linear_encoding_domain_product_threshold: 20,
-            use_direct_encoding: true,
-            use_log_encoding: true,
-            force_use_log_encoding: false,
-            use_native_extension_supports: false,
-            direct_encoding_for_binary_vars: false,
-            merge_equivalent_variables: false,
-            alldifferent_bijection_constraints: false,
-            glucose_random_seed: None,
-            glucose_rnd_init_act: false,
-            dump_analysis_info: false,
-            backend: default_backend_from_env(),
-            order_encoding_linear_mode: OrderEncodingLinearMode::Cpp,
-            graph_division_mode: GraphDivisionMode::Cpp,
-            optimize_polarity: false,
-            verbose: false,
-        }
-    }
-
     #[cfg(feature = "cli")]
     pub fn parse_from_args() -> Config {
-        extern crate getopts;
         use getopts::Options;
+        use std::str::FromStr;
 
         let args = std::env::args().collect::<Vec<_>>();
         let mut config = Config::default();
         let mut opts = Options::new();
 
-        let mut bool_flags = [
-            (
-                &mut config.use_constant_folding,
-                "constant-folding",
-                "constant folding",
-            ),
-            (
-                &mut config.use_constant_propagation,
-                "constant-propagation",
-                "constant propagation",
-            ),
-            (
-                &mut config.use_norm_domain_refinement,
-                "norm-domain-refinement",
-                "domain refinement in normalized CSP",
-            ),
-            (
-                &mut config.use_direct_encoding,
-                "direct-encoding",
-                "use direct encoding if applicable",
-            ),
-            (
-                &mut config.use_log_encoding,
-                "log-encoding",
-                "use log encoding if applicable",
-            ),
-            (
-                &mut config.force_use_log_encoding,
-                "force-log-encoding",
-                "use log encoding for all int variables",
-            ),
-            (
-                &mut config.use_native_extension_supports,
-                "use-native-extension-supports",
-                "use native propagator for extension (supports) constraints",
-            ),
-            (
-                &mut config.merge_equivalent_variables,
-                "merge-equivalent-variables",
-                "merge equivalent variables (which is caused by, for example, (iff x y))",
-            ),
-            (
-                &mut config.alldifferent_bijection_constraints,
-                "alldifferent-bijection-constraints",
-                "add auxiliary constraints for bijective alldifferent constraints",
-            ),
-            (
-                &mut config.dump_analysis_info,
-                "dump-analysis-info",
-                "dump analysis info in Glucose",
-            ),
-            (&mut config.verbose, "verbose", "show verbose outputs"),
-        ];
+        macro_rules! __config_cli_bool_flags {
+            ( $( $field:ident : bool = $default:expr, doc = $doc:literal ; )* ) => {
+                [
+                    $( (&mut config.$field, to_config_name(stringify!($field)), $doc), )*
+                ]
+            };
+        }
+        let mut bool_flags = bool_config_options!(__config_cli_bool_flags);
         for (opt, name, desc) in &mut bool_flags {
             if **opt {
                 opts.optflag(
@@ -238,60 +189,39 @@ impl Config {
             }
         }
 
-        if let Some(s) = matches.opt_str("domain-product-threshold") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!("error: parse failed for --domain-product-threshold: {}", f,);
-                    std::process::exit(1);
+        fn maybe_set_option<T: FromStr>(matches: &getopts::Matches, store: &mut T, arg_name: &str) {
+            if let Some(s) = matches.opt_str(arg_name) {
+                match s.parse::<T>() {
+                    Ok(v) => *store = v,
+                    Err(_) => {
+                        println!("error: parse failed for --{}: {}", arg_name, s);
+                        std::process::exit(1);
+                    }
                 }
-            };
-            config.domain_product_threshold = v;
-        }
-        if let Some(s) = matches.opt_str("native-linear-encoding-terms") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!(
-                        "error: parse failed for --native-linear-encoding-terms: {}",
-                        f,
-                    );
-                    std::process::exit(1);
-                }
-            };
-            config.native_linear_encoding_terms = v;
-        }
-        if let Some(s) = matches.opt_str("native-linear-encoding-domain-product") {
-            let v = match s.parse::<usize>() {
-                Ok(v) => v,
-                Err(f) => {
-                    println!(
-                        "error: parse failed for --native-linear-encoding-domain-product: {}",
-                        f,
-                    );
-                    std::process::exit(1);
-                }
-            };
-            config.native_linear_encoding_domain_product_threshold = v;
-        }
-        if let Some(s) = matches.opt_str("backend") {
-            config.backend = parse_backend(&s).unwrap_or_else(|| {
-                println!("error: unknown backend: {}", s);
-                std::process::exit(1);
-            });
-        }
-        if let Some(s) = matches.opt_str("order-encoding-linear-mode") {
-            if s == "cpp" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::Cpp;
-            } else if s == "rust" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::Rust;
-            } else if s == "rust-optimized" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::RustOptimized;
-            } else {
-                println!("error: unknown linear implementation: {}", s);
-                std::process::exit(1);
             }
         }
+
+        maybe_set_option(
+            &matches,
+            &mut config.domain_product_threshold,
+            "domain-product-threshold",
+        );
+        maybe_set_option(
+            &matches,
+            &mut config.native_linear_encoding_terms,
+            "native-linear-encoding-terms",
+        );
+        maybe_set_option(
+            &matches,
+            &mut config.native_linear_encoding_domain_product_threshold,
+            "native-linear-encoding-domain-product",
+        );
+        maybe_set_option(&matches, &mut config.backend, "backend");
+        maybe_set_option(
+            &matches,
+            &mut config.order_encoding_linear_mode,
+            "order-encoding-linear-mode",
+        );
 
         config
     }

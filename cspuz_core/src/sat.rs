@@ -1,4 +1,5 @@
 use std::ops::Not;
+use std::str::FromStr;
 
 #[cfg(feature = "backend-cadical")]
 use crate::backend::cadical;
@@ -74,11 +75,39 @@ pub enum Backend {
     CaDiCaL,
 }
 
+impl FromStr for Backend {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "glucose" => Ok(Backend::Glucose),
+            #[cfg(feature = "experimental-backend-glucose-rs")]
+            "glucose_rs" => Ok(Backend::GlucoseRs),
+            "external" => Ok(Backend::External),
+            "cadical" => Ok(Backend::CaDiCaL),
+            _ => Err(format!("Unknown backend: {}", s)),
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum OrderEncodingLinearMode {
     Cpp,
     Rust,
     RustOptimized,
+}
+
+impl FromStr for OrderEncodingLinearMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cpp" => Ok(OrderEncodingLinearMode::Cpp),
+            "rust" => Ok(OrderEncodingLinearMode::Rust),
+            "rust-optimized" => Ok(OrderEncodingLinearMode::RustOptimized),
+            _ => Err(format!("Unknown order encoding linear mode: {}", s)),
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
