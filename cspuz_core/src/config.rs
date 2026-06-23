@@ -70,27 +70,6 @@ thread_local! {
     };
 }
 
-fn parse_backend(s: &str) -> Option<Backend> {
-    if s == "glucose" {
-        Some(Backend::Glucose)
-    } else if s == "glucose_rs" {
-        #[cfg(feature = "experimental-backend-glucose-rs")]
-        {
-            Some(Backend::GlucoseRs)
-        }
-        #[cfg(not(feature = "experimental-backend-glucose-rs"))]
-        {
-            None
-        }
-    } else if s == "external" {
-        Some(Backend::External)
-    } else if s == "cadical" {
-        Some(Backend::CaDiCaL)
-    } else {
-        None
-    }
-}
-
 #[cfg(target_arch = "wasm32")]
 fn default_backend_from_env() -> Backend {
     // In wasm, we cannot use environment variables, so we just return the default backend.
@@ -100,7 +79,7 @@ fn default_backend_from_env() -> Backend {
 #[cfg(not(target_arch = "wasm32"))]
 fn default_backend_from_env() -> Backend {
     if let Ok(s) = std::env::var("CSPUZ_CORE_DEFAULT_BACKEND") {
-        parse_backend(&s).unwrap_or_else(|| {
+        s.parse().unwrap_or_else(|_| {
             panic!("error: unknown backend specified in CSPUZ_CORE_DEFAULT_BACKEND");
         })
     } else {
@@ -237,25 +216,12 @@ impl Config {
             &mut config.native_linear_encoding_domain_product_threshold,
             "native-linear-encoding-domain-product",
         );
-
-        if let Some(s) = matches.opt_str("backend") {
-            config.backend = parse_backend(&s).unwrap_or_else(|| {
-                println!("error: unknown backend: {}", s);
-                std::process::exit(1);
-            });
-        }
-        if let Some(s) = matches.opt_str("order-encoding-linear-mode") {
-            if s == "cpp" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::Cpp;
-            } else if s == "rust" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::Rust;
-            } else if s == "rust-optimized" {
-                config.order_encoding_linear_mode = OrderEncodingLinearMode::RustOptimized;
-            } else {
-                println!("error: unknown linear implementation: {}", s);
-                std::process::exit(1);
-            }
-        }
+        maybe_set_option(&matches, &mut config.backend, "backend");
+        maybe_set_option(
+            &matches,
+            &mut config.order_encoding_linear_mode,
+            "order-encoding-linear-mode",
+        );
 
         config
     }
