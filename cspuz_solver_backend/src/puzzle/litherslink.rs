@@ -18,30 +18,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
         }
     }
     if let Some(is_line) = &ans {
-        for y in 0..height {
-            for x in 0..=width {
-                if let Some(b) = is_line.vertical[y][x] {
-                    board.push(Item {
-                        y: y * 2 + 1,
-                        x: x * 2,
-                        color: "green",
-                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                    })
-                }
-            }
-        }
-        for y in 0..=height {
-            for x in 0..width {
-                if let Some(b) = is_line.horizontal[y][x] {
-                    board.push(Item {
-                        y: y * 2,
-                        x: x * 2 + 1,
-                        color: "green",
-                        kind: if b { ItemKind::Wall } else { ItemKind::Cross },
-                    })
-                }
-            }
-        }
+        board.add_grid_edges(is_line, "green", ItemKind::Wall, ItemKind::Cross);
     }
 
     Ok(board)

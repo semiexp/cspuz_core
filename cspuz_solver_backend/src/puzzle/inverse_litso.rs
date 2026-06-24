@@ -17,18 +17,7 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
     board.add_borders(&borders, "black");
 
     if let Some(is_black) = &is_black {
-        for y in 0..height {
-            for x in 0..width {
-                if let Some(b) = is_black[y][x] {
-                    board.push(Item::cell(
-                        y,
-                        x,
-                        "green",
-                        if b { ItemKind::Block } else { ItemKind::Dot },
-                    ));
-                }
-            }
-        }
+        board.add_block_dot_answer(is_black, "green");
     }
 
     Ok(board)
