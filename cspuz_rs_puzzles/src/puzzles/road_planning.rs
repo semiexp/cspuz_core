@@ -1,6 +1,7 @@
 use crate::penpa_editor::{decode_penpa_editor_url, Item, PenpaEditorPuzzle};
+use cspuz_core::propagators::graph_division::GraphDivisionOptions;
 use cspuz_rs::graph;
-use cspuz_rs::solver::{count_true, Solver};
+use cspuz_rs::solver::{count_true, Config, GraphDivisionMode, Solver};
 
 pub fn solve_road_planning(
     clues: &[Vec<bool>],
@@ -8,7 +9,10 @@ pub fn solve_road_planning(
     let h = clues.len() - 1;
     let w = clues[0].len() - 1;
 
-    let mut solver = Solver::new();
+    let mut config = Config::default();
+    config.graph_division_mode = GraphDivisionMode::Rust;
+
+    let mut solver = Solver::with_config(config);
     let is_border = graph::BoolInnerGridEdges::new(&mut solver, (h, w));
     solver.add_answer_key_bool(&is_border.horizontal);
     solver.add_answer_key_bool(&is_border.vertical);
@@ -24,7 +28,11 @@ pub fn solve_road_planning(
     let num = &solver.int_var_2d_from_domains((h, w), &vec![vec![domain; w]; h]);
     solver.add_expr(num.eq(global_num));
 
-    graph::graph_division_2d(&mut solver, num, &is_border);
+    let opts = GraphDivisionOptions {
+        allow_extra_walls: true,
+        ..Default::default()
+    };
+    graph::graph_division_2d_with_options(&mut solver, num, &is_border, opts);
 
     for y in 0..=h {
         for x in 0..=w {
@@ -51,8 +59,9 @@ pub fn solve_road_planning(
                     is_border.vertical.at((y - 1, x - 1)),
                 ];
                 if clues[y][x] {
-                    solver.add_expr(count_true(adj).ge(3));
+                    solver.add_expr(count_true(&adj).ge(3));
                 } else {
+                    solver.add_expr(count_true(&adj).ne(1));
                     solver.add_expr(count_true(adj).le(2));
                 }
             }
