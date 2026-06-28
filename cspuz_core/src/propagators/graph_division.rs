@@ -103,6 +103,7 @@ enum Reason {
 #[derive(Clone, Copy)]
 pub struct GraphDivisionOptions {
     pub disallow_adjacent_same_size_regions: bool,
+    pub allow_extra_walls: bool,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -110,13 +111,14 @@ impl Default for GraphDivisionOptions {
     fn default() -> Self {
         GraphDivisionOptions {
             disallow_adjacent_same_size_regions: false,
+            allow_extra_walls: false,
         }
     }
 }
 
 impl GraphDivisionOptions {
     pub fn require_extra_constraints(&self) -> bool {
-        self.disallow_adjacent_same_size_regions
+        self.disallow_adjacent_same_size_regions || self.allow_extra_walls
     }
 }
 
@@ -379,68 +381,70 @@ impl GraphDivision {
         let (potential_region_id, potential_regions) = self.compute_regions(true);
 
         // 1.  Both sides of a "disconnected" edge should be in different regions.
-        let mut disconnected_groups = vec![];
-        for i in 0..num_edges {
-            let (u, v) = self.edges[i];
+        if !self.opts.allow_extra_walls {
+            let mut disconnected_groups = vec![];
+            for i in 0..num_edges {
+                let (u, v) = self.edges[i];
 
-            if decided_region_id[u] == decided_region_id[v] {
-                match self.edge_state[i] {
-                    EdgeState::Disconnected => {
-                        let mut reason = self.reason_connected_path(u, v);
-                        reason.push(self.edge_lits[i]);
-                        self.inconsistency_reason = reason;
-                        return false;
+                if decided_region_id[u] == decided_region_id[v] {
+                    match self.edge_state[i] {
+                        EdgeState::Disconnected => {
+                            let mut reason = self.reason_connected_path(u, v);
+                            reason.push(self.edge_lits[i]);
+                            self.inconsistency_reason = reason;
+                            return false;
+                        }
+                        EdgeState::Connected => (),
+                        EdgeState::Undecided => {
+                            self.register_propagation(
+                                !self.edge_lits[i],
+                                Reason::EdgeInSameGroup { edge_idx: i },
+                            );
+                        }
                     }
-                    EdgeState::Connected => (),
-                    EdgeState::Undecided => {
-                        self.register_propagation(
-                            !self.edge_lits[i],
-                            Reason::EdgeInSameGroup { edge_idx: i },
-                        );
+                } else if self.edge_state[i] == EdgeState::Disconnected {
+                    let ui = decided_region_id[u];
+                    let vi = decided_region_id[v];
+
+                    if ui > vi {
+                        disconnected_groups.push(((vi, ui), i));
+                    } else {
+                        disconnected_groups.push(((ui, vi), i));
                     }
                 }
-            } else if self.edge_state[i] == EdgeState::Disconnected {
+            }
+
+            disconnected_groups.sort_unstable();
+            for i in 0..num_edges {
+                let (u, v) = self.edges[i];
+
                 let ui = decided_region_id[u];
                 let vi = decided_region_id[v];
 
-                if ui > vi {
-                    disconnected_groups.push(((vi, ui), i));
-                } else {
-                    disconnected_groups.push(((ui, vi), i));
+                if ui == vi {
+                    continue;
                 }
-            }
-        }
+                if self.edge_state[i] != EdgeState::Undecided {
+                    continue;
+                }
 
-        disconnected_groups.sort_unstable();
-        for i in 0..num_edges {
-            let (u, v) = self.edges[i];
+                let pair = if ui > vi { (vi, ui) } else { (ui, vi) };
+                if let Ok(idx) = disconnected_groups.binary_search_by_key(&pair, |x| x.0) {
+                    let (_, edge_idx) = disconnected_groups[idx];
 
-            let ui = decided_region_id[u];
-            let vi = decided_region_id[v];
+                    let (eu, ev) = self.edges[edge_idx];
+                    assert!(ui == decided_region_id[eu] || ui == decided_region_id[ev]);
+                    assert!(vi == decided_region_id[eu] || vi == decided_region_id[ev]);
 
-            if ui == vi {
-                continue;
-            }
-            if self.edge_state[i] != EdgeState::Undecided {
-                continue;
-            }
-
-            let pair = if ui > vi { (vi, ui) } else { (ui, vi) };
-            if let Ok(idx) = disconnected_groups.binary_search_by_key(&pair, |x| x.0) {
-                let (_, edge_idx) = disconnected_groups[idx];
-
-                let (eu, ev) = self.edges[edge_idx];
-                assert!(ui == decided_region_id[eu] || ui == decided_region_id[ev]);
-                assert!(vi == decided_region_id[eu] || vi == decided_region_id[ev]);
-
-                self.register_propagation(
-                    self.edge_lits[i],
-                    Reason::EdgeBetweenDifferentGroups {
-                        disconnected_edge_idx: edge_idx,
-                        newly_decided_edge_idx: i,
-                        flip: ui == decided_region_id[ev],
-                    },
-                );
+                    self.register_propagation(
+                        self.edge_lits[i],
+                        Reason::EdgeBetweenDifferentGroups {
+                            disconnected_edge_idx: edge_idx,
+                            newly_decided_edge_idx: i,
+                            flip: ui == decided_region_id[ev],
+                        },
+                    );
+                }
             }
         }
 
