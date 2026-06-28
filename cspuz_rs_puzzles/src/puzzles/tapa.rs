@@ -242,6 +242,20 @@ mod tests {
         ret
     }
 
+    fn problem_for_tests3() -> Problem {
+        let height = 5;
+        let width = 5;
+        let mut ret: Problem = vec![vec![None; width]; height];
+
+        ret[0][2] = Some([5, -1, -1, -1]);
+        ret[2][0] = Some([5, -1, -1, -1]);
+        ret[2][2] = Some([-2, -1, -1, -1]);
+        ret[2][4] = Some([5, -1, -1, -1]);
+        ret[4][2] = Some([5, -1, -1, -1]);
+
+        ret
+    }
+
     #[test]
     fn test_tapa_problem1() {
         let problem = problem_for_tests1();
@@ -284,6 +298,22 @@ mod tests {
             [1, 1, 1, 0, 1, 1],
             [1, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1],
+        ]);
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
+    fn test_tapa_problem3() {
+        let problem = problem_for_tests3();
+        let ans = solve_tapa(&problem);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+        let expected = crate::util::tests::to_option_bool_2d([
+            [0, 1, 0, 1, 0],
+            [1, 1, 1, 1, 1],
+            [0, 1, 0, 1, 0],
+            [1, 1, 1, 1, 1],
+            [0, 1, 0, 1, 0],
         ]);
         assert_eq!(ans, expected);
     }
