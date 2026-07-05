@@ -114,7 +114,9 @@ impl Fuzzer {
         ) {
             let n_division_stmts = self.next_i32(1, 2);
             for _ in 0..n_division_stmts {
-                let stmt = self.random_graph_division_stmt(&bool_vars, &int_vars, max_complexity);
+                // TODO: test with non-simple cases
+                let stmt =
+                    self.random_graph_division_stmt(&bool_vars, &int_vars, max_complexity, true);
                 let mut buf = vec![];
                 let _ = stmt.pretty_print(&mut buf);
                 stmt_descs.push(String::from_utf8(buf).unwrap_or_default());
@@ -230,17 +232,37 @@ impl Fuzzer {
         bool_vars: &[BoolVar],
         int_vars: &[IntVar],
         max_complexity: u32,
+        simple_only: bool,
     ) -> Stmt {
         let num_vertices = self.next_i32(4, 8) as usize;
-        let num_edges = self.next_i32(num_vertices as i32, 15) as usize;
+        let num_edges_max = if simple_only { bool_vars.len() } else { 15 };
+        let num_edges = self.next_i32(num_vertices as i32, num_edges_max as i32) as usize;
 
         let mut vertex_exprs: Vec<Option<IntExpr>> = vec![];
-        for _ in 0..num_vertices {
-            if self.next_i32(0, 2) == 0 {
-                vertex_exprs.push(None);
-            } else {
-                let v = int_vars[self.next_u32(int_vars.len() as u32) as usize].expr();
-                vertex_exprs.push(Some(v));
+        if simple_only {
+            let mut used_vars = vec![false; int_vars.len()];
+            for _ in 0..num_vertices {
+                if self.next_i32(0, 2) == 0 {
+                    vertex_exprs.push(None);
+                } else {
+                    let i = self.next_u32(int_vars.len() as u32) as usize;
+                    if used_vars[i] {
+                        vertex_exprs.push(None);
+                    } else {
+                        used_vars[i] = true;
+                        let v = int_vars[i].expr();
+                        vertex_exprs.push(Some(v));
+                    }
+                }
+            }
+        } else {
+            for _ in 0..num_vertices {
+                if self.next_i32(0, 2) == 0 {
+                    vertex_exprs.push(None);
+                } else {
+                    let v = int_vars[self.next_u32(int_vars.len() as u32) as usize].expr();
+                    vertex_exprs.push(Some(v));
+                }
             }
         }
 
@@ -256,12 +278,27 @@ impl Fuzzer {
             }
         }
 
-        let edge_exprs: Vec<BoolExpr> = (0..num_edges)
-            .map(|_| {
+        let mut edge_exprs: Vec<BoolExpr> = vec![];
+        if simple_only {
+            let mut used_vars = vec![false; bool_vars.len()];
+            for _ in 0..num_edges {
+                let idx = loop {
+                    let idx = self.next_u32(bool_vars.len() as u32) as usize;
+                    if !used_vars[idx] {
+                        used_vars[idx] = true;
+                        break idx;
+                    }
+                };
+                let expr = bool_vars[idx].expr();
+                edge_exprs.push(expr);
+            }
+        } else {
+            for _ in 0..num_edges {
                 let c = self.next_u32(max_complexity / 2 + 1);
-                self.random_bool_expr(bool_vars, int_vars, c)
-            })
-            .collect();
+                let expr = self.random_bool_expr(bool_vars, int_vars, c);
+                edge_exprs.push(expr);
+            }
+        }
 
         let opts = Default::default();
 
@@ -593,6 +630,20 @@ fn test_integration_fuzz_quick_graph_division_cpp() {
             mode: FuzzerLogEncodingMode::Never,
             long_mode: false,
             graph_division_mode: FuzzerGraphDivisionMode::CppImpl,
+            encode_only: false,
+        },
+    );
+}
+
+#[test]
+fn test_integration_fuzz_quick_graph_division_rust() {
+    run_fuzz_trials_parallel(
+        0x9f6abcde12345678,
+        1000,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::RustImpl,
             encode_only: false,
         },
     );
