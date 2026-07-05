@@ -382,12 +382,19 @@ fn generate_seeds(base_seed: u64, num_trials: usize) -> Vec<u64> {
     (0..num_trials).map(|_| seed_gen.next_random()).collect()
 }
 
-fn run_single_fuzz_trial(
-    seed: u64,
+#[derive(Debug, Clone, Copy)]
+struct FuzzTrialConfig {
     mode: FuzzerLogEncodingMode,
     long_mode: bool,
     encode_only: bool,
-) {
+}
+
+fn run_single_fuzz_trial(seed: u64, config: FuzzTrialConfig) {
+    let FuzzTrialConfig {
+        mode,
+        long_mode,
+        encode_only,
+    } = config;
     let mut fuzzer = Fuzzer::new(seed);
     let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = match (mode, long_mode) {
         (FuzzerLogEncodingMode::Force, false) => (
@@ -426,13 +433,7 @@ fn run_single_fuzz_trial(
     );
 }
 
-fn run_fuzz_trials_parallel(
-    base_seed: u64,
-    num_trials: usize,
-    mode: FuzzerLogEncodingMode,
-    long_mode: bool,
-    encode_only: bool,
-) {
+fn run_fuzz_trials_parallel(base_seed: u64, num_trials: usize, config: FuzzTrialConfig) {
     if num_trials == 0 {
         return;
     }
@@ -452,7 +453,7 @@ fn run_fuzz_trials_parallel(
             let Some(seed) = seed else {
                 break;
             };
-            run_single_fuzz_trial(seed, mode, long_mode, encode_only);
+            run_single_fuzz_trial(seed, config);
         }));
     }
 
@@ -466,9 +467,11 @@ fn test_integration_fuzz_quick_without_log_encoding() {
     run_fuzz_trials_parallel(
         0x9f6abcde12345678,
         1000,
-        FuzzerLogEncodingMode::Never,
-        false,
-        false,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            encode_only: false,
+        },
     );
 }
 
@@ -477,9 +480,11 @@ fn test_integration_fuzz_quick_with_log_encoding() {
     run_fuzz_trials_parallel(
         0x3b1dd8e4a5f9c217,
         100,
-        FuzzerLogEncodingMode::Force,
-        false,
-        false,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Force,
+            long_mode: false,
+            encode_only: false,
+        },
     );
 }
 
@@ -488,9 +493,11 @@ fn test_integration_fuzz_quick_with_log_encoding_encode_only() {
     run_fuzz_trials_parallel(
         0x79fa3908126dbec3,
         1000,
-        FuzzerLogEncodingMode::Force,
-        false,
-        true,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Force,
+            long_mode: false,
+            encode_only: true,
+        },
     );
 }
 
@@ -505,6 +512,14 @@ fn test_integration_fuzz_long() {
     .into_iter()
     .enumerate()
     {
-        run_fuzz_trials_parallel(0x6ad0c8f1e2457b39 ^ i as u64, rep, mode, true, false);
+        run_fuzz_trials_parallel(
+            0x6ad0c8f1e2457b39 ^ i as u64,
+            rep,
+            FuzzTrialConfig {
+                mode,
+                long_mode: true,
+                encode_only: false,
+            },
+        );
     }
 }
