@@ -2,6 +2,7 @@ use super::IntegrationTester;
 use crate::arithmetic::CmpOp;
 use crate::csp::Stmt;
 use crate::integration::*;
+use crate::sat::GraphDivisionMode;
 use std::collections::VecDeque;
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -72,6 +73,10 @@ impl Fuzzer {
         let mut tester = IntegrationTester::with_config(Config {
             use_log_encoding: !matches!(log_encoding_mode, FuzzerLogEncodingMode::Never),
             force_use_log_encoding: matches!(log_encoding_mode, FuzzerLogEncodingMode::Force),
+            graph_division_mode: match graph_division_mode {
+                FuzzerGraphDivisionMode::RustImpl => GraphDivisionMode::Rust,
+                _ => GraphDivisionMode::Cpp,
+            },
             ..Config::default()
         });
 
