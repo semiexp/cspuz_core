@@ -2,6 +2,7 @@ use super::IntegrationTester;
 use crate::arithmetic::CmpOp;
 use crate::csp::Stmt;
 use crate::integration::*;
+use crate::sat::GraphDivisionMode;
 use std::collections::VecDeque;
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -12,6 +13,13 @@ enum FuzzerLogEncodingMode {
     Never,
     Allow,
     Force,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FuzzerGraphDivisionMode {
+    None,
+    CppImpl,
+    RustImpl,
 }
 
 struct Fuzzer {
@@ -59,11 +67,16 @@ impl Fuzzer {
         num_exprs: usize,
         max_complexity: u32,
         log_encoding_mode: FuzzerLogEncodingMode,
+        graph_division_mode: FuzzerGraphDivisionMode,
         encode_only: bool,
     ) {
         let mut tester = IntegrationTester::with_config(Config {
             use_log_encoding: !matches!(log_encoding_mode, FuzzerLogEncodingMode::Never),
             force_use_log_encoding: matches!(log_encoding_mode, FuzzerLogEncodingMode::Force),
+            graph_division_mode: match graph_division_mode {
+                FuzzerGraphDivisionMode::RustImpl => GraphDivisionMode::Rust,
+                _ => GraphDivisionMode::Cpp,
+            },
             ..Config::default()
         });
 
@@ -74,21 +87,25 @@ impl Fuzzer {
 
         let mut int_vars = vec![];
         let mut int_var_descs = vec![];
+        let (domain_low, domain_high) = match graph_division_mode {
+            FuzzerGraphDivisionMode::None => (-3, 4),
+            FuzzerGraphDivisionMode::CppImpl | FuzzerGraphDivisionMode::RustImpl => (0, 5),
+        };
         for _ in 0..num_int_vars {
             if self.next_u32(2) == 0 {
-                let a = self.next_i32(-3, 4);
-                let b = self.next_i32(-3, 4);
+                let a = self.next_i32(domain_low, domain_high);
+                let b = self.next_i32(domain_low, domain_high);
                 int_vars.push(tester.new_int_var(Domain::range(a.min(b), a.max(b))));
                 int_var_descs.push(format!("{}..{}", a.min(b), a.max(b)));
             } else {
                 let mut domain = vec![];
-                for n in -3..=3 {
+                for n in domain_low..domain_high {
                     if self.next_u32(2) == 0 {
                         domain.push(n);
                     }
                 }
                 if domain.is_empty() {
-                    domain.push(self.next_i32(-3, 4));
+                    domain.push(self.next_i32(domain_low, domain_high));
                 }
                 int_var_descs.push(format!("{:?}", domain));
                 int_vars.push(tester.new_int_var_from_list(domain));
@@ -96,6 +113,22 @@ impl Fuzzer {
         }
 
         let mut stmt_descs = vec![];
+        if matches!(
+            graph_division_mode,
+            FuzzerGraphDivisionMode::CppImpl | FuzzerGraphDivisionMode::RustImpl
+        ) {
+            let n_division_stmts = self.next_i32(1, 2);
+            for _ in 0..n_division_stmts {
+                // TODO: test with non-simple cases
+                let stmt =
+                    self.random_graph_division_stmt(&bool_vars, &int_vars, max_complexity, true);
+                let mut buf = vec![];
+                let _ = stmt.pretty_print(&mut buf);
+                stmt_descs.push(String::from_utf8(buf).unwrap_or_default());
+                tester.add_constraint(stmt);
+            }
+        }
+
         for _ in 0..num_exprs {
             let stmt = self.random_stmt(&bool_vars, &int_vars, max_complexity);
             let mut buf = vec![];
@@ -197,6 +230,84 @@ impl Fuzzer {
             }
         }
         Stmt::ActiveVerticesConnected(vertex_exprs, edges)
+    }
+
+    fn random_graph_division_stmt(
+        &mut self,
+        bool_vars: &[BoolVar],
+        int_vars: &[IntVar],
+        max_complexity: u32,
+        simple_only: bool,
+    ) -> Stmt {
+        let num_vertices = self.next_i32(4, 8) as usize;
+        let num_edges_max = if simple_only { bool_vars.len() } else { 15 };
+        let num_edges = self.next_i32(num_vertices as i32, num_edges_max as i32) as usize;
+
+        let mut vertex_exprs: Vec<Option<IntExpr>> = vec![];
+        if simple_only {
+            let mut used_vars = vec![false; int_vars.len()];
+            for _ in 0..num_vertices {
+                if self.next_i32(0, 2) == 0 {
+                    vertex_exprs.push(None);
+                } else {
+                    let i = self.next_u32(int_vars.len() as u32) as usize;
+                    if used_vars[i] {
+                        vertex_exprs.push(None);
+                    } else {
+                        used_vars[i] = true;
+                        let v = int_vars[i].expr();
+                        vertex_exprs.push(Some(v));
+                    }
+                }
+            }
+        } else {
+            for _ in 0..num_vertices {
+                if self.next_i32(0, 2) == 0 {
+                    vertex_exprs.push(None);
+                } else {
+                    let v = int_vars[self.next_u32(int_vars.len() as u32) as usize].expr();
+                    vertex_exprs.push(Some(v));
+                }
+            }
+        }
+
+        let mut edges = vec![];
+        for _ in 0..num_edges {
+            loop {
+                let u = self.next_u32(num_vertices as u32) as usize;
+                let v = self.next_u32(num_vertices as u32) as usize;
+                if u != v {
+                    edges.push((u, v));
+                    break;
+                }
+            }
+        }
+
+        let mut edge_exprs: Vec<BoolExpr> = vec![];
+        if simple_only {
+            let mut used_vars = vec![false; bool_vars.len()];
+            for _ in 0..num_edges {
+                let idx = loop {
+                    let idx = self.next_u32(bool_vars.len() as u32) as usize;
+                    if !used_vars[idx] {
+                        used_vars[idx] = true;
+                        break idx;
+                    }
+                };
+                let expr = bool_vars[idx].expr();
+                edge_exprs.push(expr);
+            }
+        } else {
+            for _ in 0..num_edges {
+                let c = self.next_u32(max_complexity / 2 + 1);
+                let expr = self.random_bool_expr(bool_vars, int_vars, c);
+                edge_exprs.push(expr);
+            }
+        }
+
+        let opts = Default::default();
+
+        Stmt::GraphDivision(vertex_exprs, edges, edge_exprs, opts)
     }
 
     #[cfg(feature = "csp-extra-constraints")]
@@ -382,57 +493,69 @@ fn generate_seeds(base_seed: u64, num_trials: usize) -> Vec<u64> {
     (0..num_trials).map(|_| seed_gen.next_random()).collect()
 }
 
-fn run_single_fuzz_trial(
-    seed: u64,
+#[derive(Debug, Clone, Copy)]
+struct FuzzTrialConfig {
     mode: FuzzerLogEncodingMode,
     long_mode: bool,
+    graph_division_mode: FuzzerGraphDivisionMode,
     encode_only: bool,
-) {
+}
+
+fn run_single_fuzz_trial(seed: u64, config: FuzzTrialConfig) {
+    let FuzzTrialConfig {
+        mode: log_encoding_mode,
+        long_mode,
+        graph_division_mode,
+        encode_only,
+    } = config;
     let mut fuzzer = Fuzzer::new(seed);
-    let (num_bool_vars, num_int_vars, num_exprs, max_complexity) = match (mode, long_mode) {
-        (FuzzerLogEncodingMode::Force, false) => (
-            fuzzer.next_i32(3, 6) as usize,
-            fuzzer.next_i32(1, 4) as usize,
-            fuzzer.next_i32(2, 8) as usize,
-            7,
-        ),
-        (FuzzerLogEncodingMode::Force, true) => (
-            fuzzer.next_i32(3, 6) as usize,
-            fuzzer.next_i32(1, 4) as usize,
-            fuzzer.next_i32(2, 12) as usize,
-            7,
-        ),
-        (_, false) => (
-            fuzzer.next_i32(3, 6) as usize,
-            fuzzer.next_i32(1, 4) as usize,
-            fuzzer.next_i32(2, 11) as usize,
-            7,
-        ),
-        (_, true) => (
-            fuzzer.next_i32(3, 7) as usize,
-            fuzzer.next_i32(1, 5) as usize,
-            fuzzer.next_i32(2, 12) as usize,
-            10,
-        ),
-    };
+    let (num_bool_vars, num_int_vars, num_exprs, max_complexity) =
+        match (log_encoding_mode, graph_division_mode, long_mode) {
+            (_, FuzzerGraphDivisionMode::CppImpl, _)
+            | (_, FuzzerGraphDivisionMode::RustImpl, _) => (
+                10,
+                fuzzer.next_i32(1, 3) as usize,
+                fuzzer.next_i32(2, 5) as usize,
+                5,
+            ),
+            (FuzzerLogEncodingMode::Force, _, false) => (
+                fuzzer.next_i32(3, 6) as usize,
+                fuzzer.next_i32(1, 4) as usize,
+                fuzzer.next_i32(2, 8) as usize,
+                7,
+            ),
+            (FuzzerLogEncodingMode::Force, _, true) => (
+                fuzzer.next_i32(3, 6) as usize,
+                fuzzer.next_i32(1, 4) as usize,
+                fuzzer.next_i32(2, 12) as usize,
+                7,
+            ),
+            (_, _, false) => (
+                fuzzer.next_i32(3, 6) as usize,
+                fuzzer.next_i32(1, 4) as usize,
+                fuzzer.next_i32(2, 11) as usize,
+                7,
+            ),
+            (_, _, true) => (
+                fuzzer.next_i32(3, 7) as usize,
+                fuzzer.next_i32(1, 5) as usize,
+                fuzzer.next_i32(2, 12) as usize,
+                10,
+            ),
+        };
 
     fuzzer.run_single_trial(
         num_bool_vars,
         num_int_vars,
         num_exprs,
         max_complexity,
-        mode,
+        log_encoding_mode,
+        graph_division_mode,
         encode_only,
     );
 }
 
-fn run_fuzz_trials_parallel(
-    base_seed: u64,
-    num_trials: usize,
-    mode: FuzzerLogEncodingMode,
-    long_mode: bool,
-    encode_only: bool,
-) {
+fn run_fuzz_trials_parallel(base_seed: u64, num_trials: usize, config: FuzzTrialConfig) {
     if num_trials == 0 {
         return;
     }
@@ -452,7 +575,7 @@ fn run_fuzz_trials_parallel(
             let Some(seed) = seed else {
                 break;
             };
-            run_single_fuzz_trial(seed, mode, long_mode, encode_only);
+            run_single_fuzz_trial(seed, config);
         }));
     }
 
@@ -466,9 +589,12 @@ fn test_integration_fuzz_quick_without_log_encoding() {
     run_fuzz_trials_parallel(
         0x9f6abcde12345678,
         1000,
-        FuzzerLogEncodingMode::Never,
-        false,
-        false,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::None,
+            encode_only: false,
+        },
     );
 }
 
@@ -477,9 +603,12 @@ fn test_integration_fuzz_quick_with_log_encoding() {
     run_fuzz_trials_parallel(
         0x3b1dd8e4a5f9c217,
         100,
-        FuzzerLogEncodingMode::Force,
-        false,
-        false,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Force,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::None,
+            encode_only: false,
+        },
     );
 }
 
@@ -488,9 +617,40 @@ fn test_integration_fuzz_quick_with_log_encoding_encode_only() {
     run_fuzz_trials_parallel(
         0x79fa3908126dbec3,
         1000,
-        FuzzerLogEncodingMode::Force,
-        false,
-        true,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Force,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::None,
+            encode_only: true,
+        },
+    );
+}
+
+#[test]
+fn test_integration_fuzz_quick_graph_division_cpp() {
+    run_fuzz_trials_parallel(
+        0x9f6abcde12345678,
+        1000,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::CppImpl,
+            encode_only: false,
+        },
+    );
+}
+
+#[test]
+fn test_integration_fuzz_quick_graph_division_rust() {
+    run_fuzz_trials_parallel(
+        0x9f6abcde12345678,
+        1000,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::RustImpl,
+            encode_only: false,
+        },
     );
 }
 
@@ -505,6 +665,35 @@ fn test_integration_fuzz_long() {
     .into_iter()
     .enumerate()
     {
-        run_fuzz_trials_parallel(0x6ad0c8f1e2457b39 ^ i as u64, rep, mode, true, false);
+        run_fuzz_trials_parallel(
+            0x6ad0c8f1e2457b39 ^ i as u64,
+            rep,
+            FuzzTrialConfig {
+                mode,
+                long_mode: true,
+                graph_division_mode: FuzzerGraphDivisionMode::None,
+                encode_only: false,
+            },
+        );
+    }
+}
+
+#[test]
+#[ignore] // This test can take a long time to run
+fn test_integration_fuzz_long_graph_division() {
+    for mode in [
+        FuzzerGraphDivisionMode::CppImpl,
+        FuzzerGraphDivisionMode::RustImpl,
+    ] {
+        run_fuzz_trials_parallel(
+            0x9f6abcde12345678,
+            1000,
+            FuzzTrialConfig {
+                mode: FuzzerLogEncodingMode::Never,
+                long_mode: false,
+                graph_division_mode: mode,
+                encode_only: false,
+            },
+        );
     }
 }
