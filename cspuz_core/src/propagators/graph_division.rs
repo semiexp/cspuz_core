@@ -1050,7 +1050,13 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
                 // or during the initialization phase.
                 if self.initialize_done {
                     assert!(i > 0);
-                    assert!(self.propagations[i - 1] == !*p, "propagations={:?}, i={}, p={:?}", self.propagations, i, p);
+                    assert!(
+                        self.propagations[i - 1] == !*p,
+                        "propagations={:?}, i={}, p={:?}",
+                        self.propagations,
+                        i,
+                        p
+                    );
                 }
 
                 // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
