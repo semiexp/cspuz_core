@@ -677,3 +677,23 @@ fn test_integration_fuzz_long() {
         );
     }
 }
+
+#[test]
+#[ignore] // This test can take a long time to run
+fn test_integration_fuzz_long_graph_division() {
+    for mode in [
+        FuzzerGraphDivisionMode::CppImpl,
+        FuzzerGraphDivisionMode::RustImpl,
+    ] {
+        run_fuzz_trials_parallel(
+            0x9f6abcde12345678,
+            1000,
+            FuzzTrialConfig {
+                mode: FuzzerLogEncodingMode::Never,
+                long_mode: false,
+                graph_division_mode: mode,
+                encode_only: false,
+            },
+        );
+    }
+}

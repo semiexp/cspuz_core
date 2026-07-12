@@ -193,6 +193,8 @@ pub struct GraphDivision {
 
     undo_stack: Vec<UndoInfo>,
 
+    initialize_done: bool,
+
     opts: GraphDivisionOptions,
 }
 
@@ -297,6 +299,7 @@ impl GraphDivision {
             inconsistency_reason: vec![],
             propagation_failure_lit: None,
             undo_stack: vec![],
+            initialize_done: false,
             opts: *opts,
         }
     }
@@ -999,6 +1002,7 @@ impl GraphDivision {
 
 unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
     fn initialize(&mut self, solver: &mut T) -> bool {
+        assert!(!self.initialize_done);
         for &lit in &self.unique_lits {
             unsafe {
                 solver.add_watch(lit);
@@ -1017,6 +1021,7 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         if !self.analyze() {
             return false;
         }
+        self.initialize_done = true;
 
         true
     }
@@ -1038,31 +1043,22 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         }
 
         self.propagations.sort();
-        for i in 1..self.propagations.len() {
-            if self.propagations[i - 1] == !self.propagations[i] {
-                let idx1 = self
-                    .unique_lits
-                    .binary_search(&self.propagations[i - 1])
-                    .unwrap();
-                let idx2 = self
-                    .unique_lits
-                    .binary_search(&self.propagations[i])
-                    .unwrap();
-
-                let mut reason = self.get_reason_lits(&self.propagation_reasons[idx1]);
-                reason.extend(self.get_reason_lits(&self.propagation_reasons[idx2]));
-
-                reason.sort();
-                reason.dedup();
-                self.inconsistency_reason = reason;
-                return false;
-            }
-        }
-
-        for p in &self.propagations {
+        self.propagations.dedup();
+        for (i, p) in self.propagations.iter().enumerate() {
             if unsafe { solver.value(*p) } == Some(false) {
-                self.propagation_failure_lit = Some(*p);
-                return false;
+                // This should happen only when a conflicting propagation is found during this propagation,
+                // or during the initialization phase.
+                if self.initialize_done {
+                    assert!(i > 0);
+                    assert!(self.propagations[i - 1] == !*p, "propagations={:?}, i={}, p={:?}", self.propagations, i, p);
+                }
+
+                // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
+                // with the conflicting literal, the inconsistency will be detected again.
+
+                // self.propagation_failure_lit = Some(*p);
+                // return false;
+                continue;
             }
 
             assert!(unsafe { solver.enqueue(*p) });
