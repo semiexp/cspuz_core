@@ -1044,30 +1044,17 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
         self.propagations.sort();
         self.propagations.dedup();
-        for (i, p) in self.propagations.iter().enumerate() {
-            if unsafe { solver.value(*p) } == Some(false) {
-                // This should happen only when a conflicting propagation is found during this propagation,
-                // or during the initialization phase.
-                if self.initialize_done {
-                    assert!(i > 0);
-                    assert!(
-                        self.propagations[i - 1] == !*p,
-                        "propagations={:?}, i={}, p={:?}",
-                        self.propagations,
-                        i,
-                        p
-                    );
-                }
-
-                // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
-                // with the conflicting literal, the inconsistency will be detected again.
-
-                // self.propagation_failure_lit = Some(*p);
-                // return false;
-                continue;
+        for &p in &self.propagations {
+            if unsafe { solver.value(p) } == Some(false) {
+                let idx = self.unique_lits.binary_search(&p).unwrap();
+                let mut reason = self.get_reason_lits(&self.propagation_reasons[idx]);
+                reason.push(!p);
+                self.inconsistency_reason = reason;
+                return false;
             }
-
-            assert!(unsafe { solver.enqueue(*p) });
+        }
+        for &p in &self.propagations {
+            assert!(unsafe { solver.enqueue(p) });
         }
 
         true

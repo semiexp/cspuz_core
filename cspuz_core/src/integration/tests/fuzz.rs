@@ -119,9 +119,13 @@ impl Fuzzer {
         ) {
             let n_division_stmts = self.next_i32(1, 2);
             for _ in 0..n_division_stmts {
-                // TODO: test with non-simple cases
-                let stmt =
-                    self.random_graph_division_stmt(&bool_vars, &int_vars, max_complexity, true);
+                let simple_only = matches!(graph_division_mode, FuzzerGraphDivisionMode::CppImpl);
+                let stmt = self.random_graph_division_stmt(
+                    &bool_vars,
+                    &int_vars,
+                    max_complexity,
+                    simple_only,
+                );
                 let mut buf = vec![];
                 let _ = stmt.pretty_print(&mut buf);
                 stmt_descs.push(String::from_utf8(buf).unwrap_or_default());
@@ -645,6 +649,19 @@ fn test_integration_fuzz_quick_graph_division_rust() {
     run_fuzz_trials_parallel(
         0x9f6abcde12345678,
         1000,
+        FuzzTrialConfig {
+            mode: FuzzerLogEncodingMode::Never,
+            long_mode: false,
+            graph_division_mode: FuzzerGraphDivisionMode::RustImpl,
+            encode_only: false,
+        },
+    );
+}
+
+#[test]
+fn test_integration_fuzz_quick_graph_division_rust_bad_seed() {
+    run_single_fuzz_trial(
+        8847908629569428736,
         FuzzTrialConfig {
             mode: FuzzerLogEncodingMode::Never,
             long_mode: false,
