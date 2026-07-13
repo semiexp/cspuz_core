@@ -344,12 +344,34 @@ fn normalize_stmt(env: &mut NormalizerEnv, stmt: Stmt) {
         Stmt::GraphDivision(sizes, edges, edge_lits, opts) => {
             let sizes = sizes
                 .into_iter()
-                .map(|e| e.map(|e| equivalent_int_var(env, &e)))
+                .map(|e| {
+                    e.map(|e| {
+                        let size = equivalent_int_var(env, &e);
+                        let proxy = env.norm.new_int_var(
+                            env.norm.get_domain_linear_sum(&LinearSum::singleton(size)),
+                        );
+                        normalize_and_register_expr(
+                            env,
+                            IntExpr::NVar(proxy).eq(IntExpr::NVar(size)),
+                        );
+                        proxy
+                    })
+                })
                 .collect::<Vec<_>>();
 
             let edge_lits_converted = edge_lits
                 .into_iter()
-                .map(|e| equivalent_bool_lit(env, e))
+                .map(|e| {
+                    let edge_lit = equivalent_bool_lit(env, e);
+                    let proxy = env.norm.new_bool_var();
+                    let edge_expr = if edge_lit.negated {
+                        !BoolExpr::NVar(edge_lit.var)
+                    } else {
+                        BoolExpr::NVar(edge_lit.var)
+                    };
+                    normalize_and_register_expr(env, BoolExpr::NVar(proxy).iff(edge_expr));
+                    NBoolLit::new(proxy, false)
+                })
                 .collect::<Vec<_>>();
             env.norm
                 .add_extra_constraint(ExtraConstraint::GraphDivision(

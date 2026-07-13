@@ -1037,7 +1037,6 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         self.propagation_failure_lit = None;
         self.inconsistency_reason.clear();
         self.propagations.clear();
-        let previous_propagation_reasons = self.propagation_reasons.clone();
 
         if !self.analyze() {
             return false;
@@ -1045,36 +1044,37 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
         self.propagations.sort();
         self.propagations.dedup();
-        for &p in &self.propagations {
-            match unsafe { solver.value(p) } {
-                Some(false) => {
-                    self.propagation_failure_lit = Some(p);
-                    return unsafe { solver.enqueue(p) };
+        for (i, p) in self.propagations.iter().enumerate() {
+            if unsafe { solver.value(*p) } == Some(false) {
+                // This should happen only when a conflicting propagation is found during this propagation,
+                // or during the initialization phase.
+                if self.initialize_done {
+                    assert!(i > 0);
+                    assert!(
+                        self.propagations[i - 1] == !*p,
+                        "propagations={:?}, i={}, p={:?}",
+                        self.propagations,
+                        i,
+                        p
+                    );
                 }
-                Some(true) => {
-                    let lit_id = self.unique_lits.binary_search(&p).unwrap();
-                    self.propagation_reasons[lit_id] = previous_propagation_reasons[lit_id].clone();
-                }
-                None => (),
+
+                // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
+                // with the conflicting literal, the inconsistency will be detected again.
+
+                // self.propagation_failure_lit = Some(*p);
+                // return false;
+                continue;
             }
-        }
-        for &p in &self.propagations {
-            if unsafe { solver.value(p) }.is_none() {
-                assert!(unsafe { solver.enqueue(p) });
-            }
+
+            assert!(unsafe { solver.enqueue(*p) });
         }
 
         true
     }
 
     fn calc_reason(&mut self, _solver: &mut T, p: Option<Lit>, extra: Option<Lit>) -> Vec<Lit> {
-        if let Some(extra) = extra {
-            let p = !extra;
-            let idx = self.unique_lits.binary_search(&p).unwrap();
-            let mut reason = self.get_reason_lits(&self.propagation_reasons[idx]);
-            reason.push(extra);
-            return reason;
-        }
+        assert!(extra.is_none());
 
         if p.is_none() && self.propagation_failure_lit.is_none() {
             return self.inconsistency_reason.clone();
