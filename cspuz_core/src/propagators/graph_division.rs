@@ -1003,6 +1003,7 @@ impl GraphDivision {
 unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
     fn initialize(&mut self, solver: &mut T) -> bool {
         assert!(!self.initialize_done);
+        eprintln!("initialize");
         for &lit in &self.unique_lits {
             unsafe {
                 solver.add_watch(lit);
@@ -1044,20 +1045,43 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
         self.propagations.sort();
         self.propagations.dedup();
+
+        for &p in &self.propagations {
+            if unsafe { solver.value(p) } == Some(false) {
+                // This will happen during the initialization or when !p has been decided in other context
+                // (edge / size variable) than the current propagation.
+                let idx = self.unique_lits.binary_search(&p).unwrap();
+                let reason = &self.propagation_reasons[idx];
+
+                let mut res = self.get_reason_lits(reason);
+                res.push(!p);
+                eprintln!("{:?} is already false, reason={:?}", p, res);
+
+                let mut cur_level = false;
+                for &lit in &res {
+                    if unsafe { solver.is_current_level(lit) } {
+                        cur_level = true;
+                        break;
+                    }
+                }
+                assert!(cur_level);
+
+                self.inconsistency_reason = res;
+                return false;
+            }
+        }
+
         for (i, p) in self.propagations.iter().enumerate() {
             if unsafe { solver.value(*p) } == Some(false) {
-                // This should happen only when a conflicting propagation is found during this propagation,
-                // or during the initialization phase.
-                if self.initialize_done {
-                    assert!(i > 0);
-                    assert!(
-                        self.propagations[i - 1] == !*p,
-                        "propagations={:?}, i={}, p={:?}",
-                        self.propagations,
-                        i,
-                        p
-                    );
-                }
+                // This should happen only when a conflicting propagation is found during this propagation.
+                assert!(i > 0);
+                assert!(
+                    self.propagations[i - 1] == !*p,
+                    "propagations={:?}, i={}, p={:?}",
+                    self.propagations,
+                    i,
+                    p
+                );
 
                 // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
                 // with the conflicting literal, the inconsistency will be detected again.
