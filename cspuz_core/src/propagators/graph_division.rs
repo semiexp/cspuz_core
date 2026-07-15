@@ -179,7 +179,7 @@ pub struct GraphDivision {
 
     propagations: Vec<Lit>,
     propagation_reasons: Vec<Reason>, // the reason why unique_lits[i] is propagated
-    already_notified: Vec<bool>,  // whether unique_lits[i] is already notified to the solver
+    already_notified: Vec<bool>,      // whether unique_lits[i] is already notified to the solver
 
     /// The reason why the current state is inconsistent.
     /// Since this reason will be immediately used to calculate the reason of the next propagation,

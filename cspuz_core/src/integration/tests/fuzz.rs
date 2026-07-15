@@ -121,8 +121,12 @@ impl Fuzzer {
             for _ in 0..n_division_stmts {
                 // TODO: test with non-simple cases
                 let simple_only = matches!(graph_division_mode, FuzzerGraphDivisionMode::CppImpl);
-                let stmt =
-                    self.random_graph_division_stmt(&bool_vars, &int_vars, max_complexity, simple_only);
+                let stmt = self.random_graph_division_stmt(
+                    &bool_vars,
+                    &int_vars,
+                    max_complexity,
+                    simple_only,
+                );
                 let mut buf = vec![];
                 let _ = stmt.pretty_print(&mut buf);
                 stmt_descs.push(String::from_utf8(buf).unwrap_or_default());
