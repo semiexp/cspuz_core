@@ -119,8 +119,7 @@ impl Fuzzer {
         ) {
             let n_division_stmts = self.next_i32(1, 2);
             for _ in 0..n_division_stmts {
-                // TODO: test with non-simple cases
-                let simple_only = matches!(graph_division_mode, FuzzerGraphDivisionMode::CppImpl);
+                let simple_only = false;
                 let stmt = self.random_graph_division_stmt(
                     &bool_vars,
                     &int_vars,
