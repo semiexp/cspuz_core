@@ -179,6 +179,7 @@ pub struct GraphDivision {
 
     propagations: Vec<Lit>,
     propagation_reasons: Vec<Reason>, // the reason why unique_lits[i] is propagated
+    already_notified: Vec<bool>,      // whether unique_lits[i] is already notified to the solver
 
     /// The reason why the current state is inconsistent.
     /// Since this reason will be immediately used to calculate the reason of the next propagation,
@@ -296,6 +297,7 @@ impl GraphDivision {
             unique_lits,
             propagations: vec![],
             propagation_reasons: vec![Reason::NotPropagated; num_unique_lits],
+            already_notified: vec![false; num_unique_lits],
             inconsistency_reason: vec![],
             propagation_failure_lit: None,
             undo_stack: vec![],
@@ -307,7 +309,14 @@ impl GraphDivision {
     fn notify(&mut self, lit: Lit) {
         self.undo_stack.push(UndoInfo::LevelBoundary);
 
-        let mut idx = self.literals.binary_search_by_key(&lit, |x| x.0).unwrap();
+        {
+            let idx = self.unique_lits.binary_search(&lit).unwrap();
+            assert!(!self.already_notified[idx]);
+            self.already_notified[idx] = true;
+        }
+
+        // NOTE: binary_search_by_key cannot be used here because the literals are not unique in `self.literals`.
+        let mut idx = self.literals.partition_point(|x| x.0 < lit);
         while idx < self.literals.len() && self.literals[idx].0 == lit {
             match self.literals[idx].1 {
                 LiteralInfo::Edge(edge_idx, s) => {
@@ -343,7 +352,10 @@ impl GraphDivision {
         }
     }
 
-    fn undo_internal(&mut self) {
+    fn undo_internal(&mut self, p: Lit) {
+        let idx = self.unique_lits.binary_search(&p).unwrap();
+        self.already_notified[idx] = false;
+
         while let Some(info) = self.undo_stack.pop() {
             match info {
                 UndoInfo::LevelBoundary => {
@@ -368,6 +380,9 @@ impl GraphDivision {
         self.propagations.push(lit);
 
         let lit_id = self.unique_lits.binary_search(&lit).unwrap();
+        if self.already_notified[lit_id] {
+            return;
+        }
         self.propagation_reasons[lit_id] = reason;
     }
 
@@ -432,6 +447,7 @@ impl GraphDivision {
                 }
 
                 let pair = if ui > vi { (vi, ui) } else { (ui, vi) };
+                // TODO: what happens if there are multiple matches?
                 if let Ok(idx) = disconnected_groups.binary_search_by_key(&pair, |x| x.0) {
                     let (_, edge_idx) = disconnected_groups[idx];
 
@@ -1009,12 +1025,19 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
             }
         }
 
-        let unique_lits = self.unique_lits.clone();
-        for p in unique_lits {
-            if unsafe { solver.value(p) } == Some(true) {
-                if !self.propagate(solver, p, 0) {
-                    return false;
-                }
+        // We call `propagate` only for the literals that are already decided to be true at this moment.
+        // To avoid calling `propagate` for literals which are decided during the propagation of this constraint,
+        // we first collect the literals to be propagated in `propagate_lits`.
+        let mut propagate_lits = vec![];
+        for &lit in &self.unique_lits {
+            if unsafe { solver.value(lit) } == Some(true) {
+                propagate_lits.push(lit);
+            }
+        }
+
+        for p in propagate_lits {
+            if !self.propagate(solver, p, 0) {
+                return false;
             }
         }
 
@@ -1044,20 +1067,42 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
 
         self.propagations.sort();
         self.propagations.dedup();
+
+        for &p in &self.propagations {
+            if unsafe { solver.value(p) } == Some(false) {
+                // This will happen during the initialization or when !p has been decided in other context
+                // (edge / size variable) than the current propagation.
+                let idx = self.unique_lits.binary_search(&p).unwrap();
+                let reason = &self.propagation_reasons[idx];
+
+                let mut res = self.get_reason_lits(reason);
+                res.push(!p);
+
+                let mut cur_level = false;
+                for &lit in &res {
+                    if unsafe { solver.is_current_level(lit) } {
+                        cur_level = true;
+                        break;
+                    }
+                }
+                assert!(cur_level);
+
+                self.inconsistency_reason = res;
+                return false;
+            }
+        }
+
         for (i, p) in self.propagations.iter().enumerate() {
             if unsafe { solver.value(*p) } == Some(false) {
-                // This should happen only when a conflicting propagation is found during this propagation,
-                // or during the initialization phase.
-                if self.initialize_done {
-                    assert!(i > 0);
-                    assert!(
-                        self.propagations[i - 1] == !*p,
-                        "propagations={:?}, i={}, p={:?}",
-                        self.propagations,
-                        i,
-                        p
-                    );
-                }
+                // This should happen only when a conflicting propagation is found during this propagation.
+                assert!(i > 0);
+                assert!(
+                    self.propagations[i - 1] == !*p,
+                    "propagations={:?}, i={}, p={:?}",
+                    self.propagations,
+                    i,
+                    p
+                );
 
                 // As the conflicting propagation is already enqueued, we can expect that `propagate()` will be called
                 // with the conflicting literal, the inconsistency will be detected again.
@@ -1092,8 +1137,8 @@ unsafe impl<T: SolverManipulator> CustomPropagator<T> for GraphDivision {
         res
     }
 
-    fn undo(&mut self, _solver: &mut T, _p: Lit) {
-        self.undo_internal();
+    fn undo(&mut self, _solver: &mut T, p: Lit) {
+        self.undo_internal(p);
     }
 }
 
