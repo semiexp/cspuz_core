@@ -488,6 +488,15 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
             None
         },
     );
+    let mut has_current_level = false;
+    for &lit in &res {
+        assert_eq!(unsafe { Glucose_SolverValue(solver, lit) }, 0);
+        if unsafe { Glucose_IsCurrentLevel(solver, lit) } != 0 {
+            has_current_level = true;
+        }
+    }
+    assert!(res.is_empty() || has_current_level);
+
     unsafe {
         Glucose_CustomPropagatorCopyReason(out_reason, res.len() as i32, res.as_ptr());
     }

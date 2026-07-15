@@ -503,7 +503,6 @@ struct FuzzTrialConfig {
 }
 
 fn run_single_fuzz_trial(seed: u64, config: FuzzTrialConfig) {
-    eprintln!("seed: {}", seed);
     let FuzzTrialConfig {
         mode: log_encoding_mode,
         long_mode,
@@ -702,7 +701,7 @@ fn test_integration_fuzz_long_graph_division() {
     ] {
         run_fuzz_trials_parallel(
             0x9f6abcde12345678,
-            1000,
+            100000,
             FuzzTrialConfig {
                 mode: FuzzerLogEncodingMode::Never,
                 long_mode: false,
