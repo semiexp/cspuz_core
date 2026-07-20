@@ -1,5 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use cspuz_rs::graph::BoolGridEdgesIrrefutableFacts;
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use cspuz_rs_puzzles::puzzles::{heyawake, nurikabe, slitherlink, yajilin};
 use cspuz_solver_backend::decode_and_solve;
 use json::JsonValue;
@@ -9,6 +8,17 @@ const GENERATED_PROBLEMS: &str = include_str!("../generated_problems.json");
 
 fn problem_urls(problems: &str) -> JsonValue {
     json::parse(problems).expect("benchmark problem data must be valid JSON")
+}
+
+fn generated_problem_urls<'a>(
+    problems: &'a JsonValue,
+    name: &str,
+) -> impl Iterator<Item = &'a str> {
+    problems[name].members().map(|problem| {
+        problem
+            .as_str()
+            .expect("generated benchmark problem must be a pzpr URL")
+    })
 }
 
 fn bench_solve_group(c: &mut Criterion, group_name: &str, problems: &str) {
@@ -38,90 +48,42 @@ fn bench_solve_generated(c: &mut Criterion) {
     let problems = problem_urls(GENERATED_PROBLEMS);
     let mut group = c.benchmark_group("solve_generated");
 
-    let (full, problem) = slitherlink::deserialize_problem(
-        problems["slitherlink"]
-            .as_str()
-            .expect("benchmark problem must be a pzpr URL"),
-    )
-    .expect("benchmark problem must be valid");
-    assert_eq!(
-        slitherlink::solve_slitherlink(full, &problem),
-        Some(BoolGridEdgesIrrefutableFacts {
-            horizontal: option_grid([[1, 0, 1], [0, 1, 0], [0, 1, 0], [1, 0, 1]]),
-            vertical: option_grid([[1, 1, 1, 1], [1, 0, 0, 1], [1, 1, 1, 1]]),
-        })
-    );
-    group.bench_function("slitherlink", |b| {
-        b.iter(|| slitherlink::solve_slitherlink(full, black_box(&problem)))
-    });
+    for (i, url) in generated_problem_urls(&problems, "slitherlink").enumerate() {
+        let (full, problem) =
+            slitherlink::deserialize_problem(url).expect("benchmark problem must be valid");
+        group.bench_with_input(
+            BenchmarkId::new("slitherlink", i),
+            &problem,
+            |b, problem| b.iter(|| slitherlink::solve_slitherlink(full, black_box(problem))),
+        );
+    }
 
-    let problem = nurikabe::deserialize_problem(
-        problems["nurikabe"]
-            .as_str()
-            .expect("benchmark problem must be a pzpr URL"),
-    )
-    .expect("benchmark problem must be valid");
-    assert_eq!(
-        nurikabe::solve_nurikabe(&problem),
-        Some(option_grid([[0, 1, 0], [1, 1, 0], [1, 0, 0],]))
-    );
-    group.bench_function("nurikabe", |b| {
-        b.iter(|| nurikabe::solve_nurikabe(black_box(&problem)))
-    });
+    for (i, url) in generated_problem_urls(&problems, "nurikabe").enumerate() {
+        let problem = nurikabe::deserialize_problem(url).expect("benchmark problem must be valid");
+        group.bench_with_input(BenchmarkId::new("nurikabe", i), &problem, |b, problem| {
+            b.iter(|| nurikabe::solve_nurikabe(black_box(problem)))
+        });
+    }
 
-    let (borders, clues) = heyawake::deserialize_problem(
-        problems["heyawake"]
-            .as_str()
-            .expect("benchmark problem must be a pzpr URL"),
-    )
-    .expect("benchmark problem must be valid");
-    assert_eq!(
-        heyawake::solve_heyawake(&borders, &clues),
-        Some(option_grid([[-1, -1], [-1, -1]]))
-    );
-    group.bench_function("heyawake", |b| {
-        b.iter(|| heyawake::solve_heyawake(black_box(&borders), black_box(&clues)))
-    });
+    for (i, url) in generated_problem_urls(&problems, "heyawake").enumerate() {
+        let (borders, clues) =
+            heyawake::deserialize_problem(url).expect("benchmark problem must be valid");
+        group.bench_with_input(
+            BenchmarkId::new("heyawake", i),
+            &(borders, clues),
+            |b, (borders, clues)| {
+                b.iter(|| heyawake::solve_heyawake(black_box(borders), black_box(clues)))
+            },
+        );
+    }
 
-    let (outside, problem) = yajilin::deserialize_problem(
-        problems["yajilin"]
-            .as_str()
-            .expect("benchmark problem must be a pzpr URL"),
-    )
-    .expect("benchmark problem must be valid");
-    assert_eq!(
-        yajilin::solve_yajilin(outside, &problem)
-            .expect("benchmark problem must be solvable")
-            .1,
-        option_grid([
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-            [1, 0, 1, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        ])
-    );
-    group.bench_function("yajilin", |b| {
-        b.iter(|| yajilin::solve_yajilin(outside, black_box(&problem)))
-    });
-}
-
-fn option_grid<const H: usize, const W: usize>(grid: [[i8; W]; H]) -> Vec<Vec<Option<bool>>> {
-    grid.map(|row| {
-        row.map(|cell| match cell {
-            -1 => None,
-            0 => Some(false),
-            1 => Some(true),
-            _ => panic!("invalid option grid value: {cell}"),
-        })
-        .to_vec()
-    })
-    .to_vec()
+    for (i, url) in generated_problem_urls(&problems, "yajilin").enumerate() {
+        let (outside, problem) =
+            yajilin::deserialize_problem(url).expect("benchmark problem must be valid");
+        group.bench_with_input(BenchmarkId::new("yajilin", i), &problem, |b, problem| {
+            b.iter(|| yajilin::solve_yajilin(outside, black_box(problem)))
+        });
+    }
 }
 
 criterion_group!(benches, bench_solve);

@@ -1,6 +1,29 @@
 {
-  "slitherlink": "https://pzprxs.vercel.app/p?slither/f/3/3/gdk",
-  "nurikabe": "https://puzz.link/p?nurikabe/3/3/1g4l",
-  "heyawake": "https://puzz.link/p?heyawake/2/2/001",
-  "yajilin": "https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g"
+  "slitherlink": [
+    "https://pzprxs.vercel.app/p?slither/f/3/3/gdk",
+    "https://pzprxs.vercel.app/p?slither/f/3/3/o"
+  ],
+  "nurikabe": [
+    "https://puzz.link/p?nurikabe/3/3/1g4l",
+    "https://puzz.link/p?nurikabe/3/3/h4l",
+    "https://puzz.link/p?nurikabe/3/3/o"
+  ],
+  "heyawake": [
+    "https://puzz.link/p?heyawake/2/2/001",
+    "https://puzz.link/p?heyawake/2/2/00g"
+  ],
+  "yajilin": [
+    "https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/y41b21a21l22e30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zb21a21l22e30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zd21l22e30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zq22e30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zw30m21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzk21a12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzm12b11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzp11r20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzzi20d30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzzn30g",
+    "https://pzprxs.vercel.app/p?yajilin/10/10/zzzv"
+  ]
 }
