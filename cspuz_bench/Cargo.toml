@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cspuz_rs = { path = "../cspuz_rs" }
+cspuz_rs_puzzles = { path = "../cspuz_rs_puzzles" }
 cspuz_solver_backend = { path = "../cspuz_solver_backend" }
 json = "0.12.4"
 
