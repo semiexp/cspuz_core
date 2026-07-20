@@ -217,18 +217,25 @@ impl Fuzzer {
             let complexity = self.next_u32(max_complexity);
             return Stmt::Expr(self.random_bool_expr(bool_vars, int_vars, complexity));
         }
-        // 2 to 6 vertices
-        let n = (self.next_u32(5) as usize + 2).min(bool_vars.len()).max(2);
+        // 2 to 12 vertices (allowing duplicates)
+        let n = (self.next_u32(11) as usize + 2).max(2);
+        let simple_expr_ratio = self.next_u32(70) + 15; // 15% ~ 85%
+
         let vertex_exprs: Vec<BoolExpr> = (0..n)
             .map(|_| {
-                let c = self.next_u32(max_complexity / 2 + 1);
-                self.random_bool_expr(bool_vars, int_vars, c)
+                if self.next_u32(100) < simple_expr_ratio {
+                    self.random_bool_literal_as_expr(bool_vars)
+                } else {
+                    let c = self.next_u32(max_complexity / 2 + 1);
+                    self.random_bool_expr(bool_vars, int_vars, c)
+                }
             })
             .collect();
         let mut edges = vec![];
+        let edge_ratio = self.next_u32(50) + 15; // 15% ~ 65%
         for i in 0..n {
             for j in (i + 1)..n {
-                if self.next_u32(3) != 0 {
+                if self.next_u32(100) < edge_ratio {
                     edges.push((i, j));
                 }
             }
@@ -347,6 +354,15 @@ impl Fuzzer {
             supports.push(tuple);
         }
         Stmt::ExtensionSupports(exprs, supports)
+    }
+
+    fn random_bool_literal_as_expr(&mut self, bool_vars: &[BoolVar]) -> BoolExpr {
+        let idx = self.next_i32(0, bool_vars.len() as i32);
+        if self.next_i32(0, 2) == 0 {
+            bool_vars[idx as usize].expr()
+        } else {
+            !bool_vars[idx as usize].expr()
+        }
     }
 
     fn random_bool_expr(
