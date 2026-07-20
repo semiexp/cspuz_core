@@ -117,7 +117,7 @@ fn option_grid<const H: usize, const W: usize>(grid: [[i8; W]; H]) -> Vec<Vec<Op
             -1 => None,
             0 => Some(false),
             1 => Some(true),
-            _ => unreachable!(),
+            _ => panic!("invalid option grid value: {cell}"),
         })
         .to_vec()
     })
