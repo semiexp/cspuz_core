@@ -1,0 +1,15 @@
+[package]
+name = "cspuz_bench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cspuz_solver_backend = { path = "../cspuz_solver_backend" }
+json = "0.12.4"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "solve"
+harness = false
