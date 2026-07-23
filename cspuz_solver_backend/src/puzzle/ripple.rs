@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::ripple;
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let (borders, clues) = ripple::deserialize_problem(url).ok_or("invalid url")?;
-    let ans = ripple::solve_ripple(&borders, &clues);
+    let (borders, clues, is_hole) = ripple::deserialize_problem(url).ok_or("invalid url")?;
+    let ans = ripple::solve_ripple(&borders, &clues, &is_hole);
 
     let height = clues.len();
     let width = clues[0].len();
@@ -14,6 +14,12 @@ pub fn solve(url: &str) -> Result<Board, &'static str> {
 
     for y in 0..height {
         for x in 0..width {
+            if let Some(is_hole) = &is_hole {
+                if is_hole[y][x] {
+                    board.push(Item::cell(y, x, "black", ItemKind::Fill));
+                    continue;
+                }
+            }
             if let Some(n) = clues[y][x] {
                 if n >= 0 {
                     board.push(Item::cell(y, x, "black", ItemKind::Num(n)));

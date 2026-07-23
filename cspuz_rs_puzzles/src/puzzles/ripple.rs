@@ -1,22 +1,48 @@
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    Dict, HexInt, Optionalize, Rooms, Size, Spaces, Tuple2,
+    problem_to_url_with_context, url_to_problem, Choice, Choice2, Combinator, Context,
+    ContextBasedGrid, Dict, HexInt, Map, MultiDigit, Optionalize, Rooms, Size, Spaces, Tuple3,
 };
 use cspuz_rs::solver::Solver;
 
 pub fn solve_ripple(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
     clues: &[Vec<Option<i32>>],
+    is_hole: &Option<Vec<Vec<bool>>>,
 ) -> Option<Vec<Vec<Option<i32>>>> {
     let (h, w) = borders.base_shape();
 
-    let rooms = graph::borders_to_rooms(borders);
+    // Making a copy of the borders for holes
+    let mut borders_with_holes = graph::InnerGridEdges {
+        horizontal: borders.horizontal.clone(),
+        vertical: borders.vertical.clone(),
+    };
+
+    // If there are holes, add a border between cells with holes and cells with no holes
+    if let Some(is_hole) = is_hole {
+        for y in 0..h {
+            for x in 0..w {
+                if is_hole[y][x] ^ is_hole[y][(x + 1).min(w - 1)] {
+                    borders_with_holes.vertical[y][x] = true;
+                }
+                if is_hole[(y + 1).min(h - 1)][x] ^ is_hole[y][x] {
+                    borders_with_holes.horizontal[y][x] = true;
+                }
+            }
+        }
+    }
+
+    let rooms = graph::borders_to_rooms(&borders_with_holes);
     let mut ranges = vec![vec![(1, 1); w]; h];
 
     for room in &rooms {
         for &(y, x) in room {
-            ranges[y][x] = (1, room.len() as i32);
+            let hole = if let Some(is_hole) = is_hole {
+                is_hole[y][x]
+            } else {
+                false
+            };
+            ranges[y][x] = if hole { (0, 0) } else { (1, room.len() as i32) };
         }
     }
 
@@ -35,6 +61,16 @@ pub fn solve_ripple(
     }
 
     for room in &rooms {
+        let hole_only = room.iter().all(|&(y, x)| {
+            if let Some(is_hole) = is_hole {
+                is_hole[y][x]
+            } else {
+                false
+            }
+        });
+        if hole_only {
+            continue;
+        }
         let room_nums = num.select(room);
         for i in 1..=room.len() {
             solver.add_expr(room_nums.eq(i as i32).count_true().eq(1));
@@ -70,16 +106,28 @@ pub fn solve_ripple(
     solver.irrefutable_facts().map(|f| f.get(num))
 }
 
-pub type Problem = (graph::InnerGridEdges<Vec<Vec<bool>>>, Vec<Vec<Option<i32>>>);
+pub type Problem = (
+    graph::InnerGridEdges<Vec<Vec<bool>>>,
+    Vec<Vec<Option<i32>>>,
+    Option<Vec<Vec<bool>>>,
+);
 
 fn combinator() -> impl Combinator<Problem> {
-    Size::new(Tuple2::new(
+    Size::new(Tuple3::new(
         Rooms,
         ContextBasedGrid::new(Choice::new(vec![
             Box::new(Optionalize::new(HexInt)),
             Box::new(Spaces::new(None, 'g')),
             Box::new(Dict::new(Some(-1), ".")),
         ])),
+        Choice2::new(
+            Optionalize::new(ContextBasedGrid::new(Map::new(
+                MultiDigit::new(2, 5),
+                |x: bool| Some(if x { 1 } else { 0 }),
+                |n: i32| Some(n == 1),
+            ))),
+            Dict::new(None, ""),
+        ),
     ))
 }
 
@@ -124,13 +172,13 @@ mod tests {
             vec![None, None, None, None, Some(1)],
         ];
 
-        (borders, clues)
+        (borders, clues, None)
     }
 
     #[test]
     fn test_ripple_problem() {
-        let (borders, clues) = problem_for_tests();
-        let ans = solve_ripple(&borders, &clues);
+        let (borders, clues, is_hole) = problem_for_tests();
+        let ans = solve_ripple(&borders, &clues, &is_hole);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
