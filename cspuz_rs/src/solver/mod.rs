@@ -14,7 +14,9 @@ use cspuz_core::custom_constraints::PropagatorGenerator;
 use cspuz_core::domain::Domain;
 use cspuz_core::integration::IntegratedSolver;
 use cspuz_core::integration::Model as IntegratedModel;
-pub use cspuz_core::integration::PerfStats;
+pub use cspuz_core::integration::{
+    reset_thread_local_perf_stats, thread_local_perf_stats, PerfStats,
+};
 pub use cspuz_core::propagators::graph_division::GraphDivisionOptions;
 
 use ndarray::NdArray;

@@ -63,6 +63,48 @@ impl PerfStats {
     pub fn iterations(&self) -> u64 {
         self.iterations.get()
     }
+
+    fn add_time_normalize(&self, dt: f64) {
+        self.time_normalize.set(self.time_normalize.get() + dt);
+    }
+
+    fn add_time_encode(&self, dt: f64) {
+        self.time_encode.set(self.time_encode.get() + dt);
+    }
+
+    fn add_time_sat_solver(&self, dt: f64) {
+        self.time_sat_solver.set(self.time_sat_solver.get() + dt);
+    }
+
+    fn update_solver_stats(&self, stats: &crate::sat::SATSolverStats) {
+        if let Some(decisions) = stats.decisions {
+            self.decisions.set(decisions);
+        }
+        if let Some(propagations) = stats.propagations {
+            self.propagations.set(propagations);
+        }
+        if let Some(conflicts) = stats.conflicts {
+            self.conflicts.set(conflicts);
+        }
+    }
+}
+
+thread_local! {
+    static THREAD_LOCAL_PERF_STATS: std::cell::RefCell<PerfStats> =
+        std::cell::RefCell::new(PerfStats::new());
+}
+
+/// Returns a clone of the `PerfStats` accumulated in thread-local storage.
+///
+/// This is populated only for solvers created with `Config::record_perf_stats_thread_local`
+/// set to `true`; otherwise it stays at its initial (zero) values.
+pub fn thread_local_perf_stats() -> PerfStats {
+    THREAD_LOCAL_PERF_STATS.with(|stats| stats.borrow().clone())
+}
+
+/// Resets the `PerfStats` accumulated in thread-local storage to their initial values.
+pub fn reset_thread_local_perf_stats() {
+    THREAD_LOCAL_PERF_STATS.with(|stats| *stats.borrow_mut() = PerfStats::new());
 }
 
 pub struct IntegratedSolver<'a> {
@@ -129,6 +171,15 @@ impl<'a> IntegratedSolver<'a> {
         self.add_constraint(Stmt::Expr(expr))
     }
 
+    fn record_perf_stats(&self, f: impl Fn(&PerfStats)) {
+        if let Some(perf_stats) = self.perf_stats {
+            f(perf_stats);
+        }
+        if self.config.record_perf_stats_thread_local {
+            THREAD_LOCAL_PERF_STATS.with(|stats| f(&stats.borrow()));
+        }
+    }
+
     pub fn encode(&mut self) -> bool {
         let is_first = !self.already_used;
         self.already_used = true;
@@ -151,11 +202,8 @@ impl<'a> IntegratedSolver<'a> {
             &mut self.normalize_map,
             &self.config,
         );
-        if let Some(perf_stats) = self.perf_stats {
-            perf_stats
-                .time_normalize
-                .set(perf_stats.time_normalize() + start.elapsed().as_secs_f64());
-        }
+        let dt = start.elapsed().as_secs_f64();
+        self.record_perf_stats(|perf_stats| perf_stats.add_time_normalize(dt));
 
         if is_first && self.config.use_norm_domain_refinement {
             self.norm.refine_domain();
@@ -171,23 +219,10 @@ impl<'a> IntegratedSolver<'a> {
             &mut self.encode_map,
             &self.config,
         );
-        if let Some(perf_stats) = self.perf_stats {
-            perf_stats
-                .time_encode
-                .set(perf_stats.time_encode() + start.elapsed().as_secs_f64());
-        }
+        let dt = start.elapsed().as_secs_f64();
+        self.record_perf_stats(|perf_stats| perf_stats.add_time_encode(dt));
         let solver_stats = self.sat.stats();
-        if let Some(perf_stats) = self.perf_stats {
-            if let Some(decisions) = solver_stats.decisions {
-                perf_stats.decisions.set(decisions);
-            }
-            if let Some(propagations) = solver_stats.propagations {
-                perf_stats.propagations.set(propagations);
-            }
-            if let Some(conflicts) = solver_stats.conflicts {
-                perf_stats.conflicts.set(conflicts);
-            }
-        }
+        self.record_perf_stats(|perf_stats| perf_stats.update_solver_stats(&solver_stats));
         true
     }
 
@@ -201,23 +236,10 @@ impl<'a> IntegratedSolver<'a> {
         } else {
             None
         };
-        if let Some(perf_stats) = self.perf_stats {
-            perf_stats
-                .time_sat_solver
-                .set(perf_stats.time_sat_solver() + start.elapsed().as_secs_f64());
-        }
+        let dt = start.elapsed().as_secs_f64();
+        self.record_perf_stats(|perf_stats| perf_stats.add_time_sat_solver(dt));
         let solver_stats = self.sat.stats();
-        if let Some(perf_stats) = self.perf_stats {
-            if let Some(decisions) = solver_stats.decisions {
-                perf_stats.decisions.set(decisions);
-            }
-            if let Some(propagations) = solver_stats.propagations {
-                perf_stats.propagations.set(propagations);
-            }
-            if let Some(conflicts) = solver_stats.conflicts {
-                perf_stats.conflicts.set(conflicts);
-            }
-        }
+        self.record_perf_stats(|perf_stats| perf_stats.update_solver_stats(&solver_stats));
 
         match solver_result {
             Some(model) => Some(Model {
@@ -330,9 +352,7 @@ impl<'a> IntegratedSolver<'a> {
             }
         }
 
-        if let Some(perf_stats) = self.perf_stats {
-            perf_stats.iterations.set(iterations);
-        }
+        self.record_perf_stats(|perf_stats| perf_stats.iterations.set(iterations));
 
         Some(assignment)
     }
