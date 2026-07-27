@@ -14,4 +14,4 @@ experimental-backend-glucose-rs = ["cspuz_rs/experimental-backend-glucose-rs", "
 [dependencies]
 cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_rs_puzzles = { path = "../cspuz_rs_puzzles", default-features = false }
-json = "0.12.4"
+serde_json = "1.0"
