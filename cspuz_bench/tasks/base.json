@@ -1,0 +1,12 @@
+{
+    "solve_tasks": [],
+    "generate_tasks": [
+        {
+            "name": "slitherlink_10x10",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 10,
+            "seed": 42
+        }
+    ]
+}
