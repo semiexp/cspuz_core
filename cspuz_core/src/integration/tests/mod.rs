@@ -561,7 +561,11 @@ fn test_integration_solver_iterator() {
 #[test]
 fn test_integration_perf_stats() {
     let perf_stats = PerfStats::new();
-    let mut solver = IntegratedSolver::new();
+    let config = Config {
+        record_perf_stats_thread_local: true,
+        ..Config::default()
+    };
+    let mut solver = IntegratedSolver::with_config(config);
     solver.set_perf_stats(&perf_stats);
 
     let a = solver.new_int_var(Domain::range(0, 5));
@@ -569,9 +573,23 @@ fn test_integration_perf_stats() {
     solver.add_expr((a.expr() + b.expr()).ge(IntExpr::Const(4)));
     solver.add_expr((a.expr() - b.expr()).le(IntExpr::Const(2)));
 
+    crate::integration::reset_thread_local_perf_stats();
+
     let mut propagations_prev = 0;
     let mut n_ans = 0;
     for _ in solver.answer_iter(&[], &[a, b]) {
+        assert_eq!(
+            perf_stats.decisions(),
+            crate::integration::thread_local_perf_stats().decisions()
+        );
+        assert_eq!(
+            perf_stats.propagations(),
+            crate::integration::thread_local_perf_stats().propagations()
+        );
+        assert_eq!(
+            perf_stats.time_sat_solver(),
+            crate::integration::thread_local_perf_stats().time_sat_solver()
+        );
         assert!(propagations_prev < perf_stats.propagations());
         propagations_prev = perf_stats.propagations();
         n_ans += 1;

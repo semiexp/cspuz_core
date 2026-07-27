@@ -23,6 +23,7 @@ macro_rules! bool_config_options {
             glucose_rnd_init_act: bool = false, doc = "rnd_init_act in Glucose";
             optimize_polarity: bool = false, doc = "use polarity-based optimization in decide_irrefutable_facts";
             verbose: bool = false, doc = "show verbose outputs";
+            record_perf_stats_thread_local: bool = false, doc = "record performance stats into thread-local storage even when no PerfStats is explicitly set on the solver";
         }
     };
 }
