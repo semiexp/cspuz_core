@@ -117,6 +117,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     let mut ret = vec![vec![None; w]; h];
 
     let mut i = 0;
+    let mut cont = false;
     while i < body.len() {
         if idx >= w * h {
             return None;
@@ -137,13 +138,15 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
             }
             ret[idx / w][idx % w] = Some(clues);
             idx += 1;
+            cont = false;
         } else {
             let mut s = (body[i] - b'a') as usize;
-            if i == 0 || i + 1 == body.len() {
+            if i == 0 || i + 1 == body.len() || cont {
                 s += 1;
             }
             idx += s;
             i += 1;
+            cont = true;
         }
     }
 
@@ -154,7 +157,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         // https://puzz.link/p?lohkous/6/6/12k2a23b2k13d13a10b14d
         let mut problem: Vec<Vec<Option<Vec<i32>>>> = vec![vec![None; 6]; 6];
         problem[0][0] = Some(vec![1, 2]);
@@ -168,10 +171,18 @@ mod tests {
         problem
     }
 
+    fn problem_for_tests2() -> Problem {
+        // https://pzprxs.vercel.app/p?lohkous/8/8/a48zzf48e
+        let mut problem: Vec<Vec<Option<Vec<i32>>>> = vec![vec![None; 8]; 8];
+        problem[0][1] = Some(vec![4, 8]);
+        problem[7][3] = Some(vec![4, 8]);
+        problem
+    }
+
     #[test]
     #[rustfmt::skip]
     fn test_lohkous_problem() {
-        let problem = problem_for_tests();
+        let problem = problem_for_tests1();
 
         let ans = solve_lohkous(&problem);
         assert!(ans.is_some());
@@ -199,8 +210,16 @@ mod tests {
 
     #[test]
     fn test_lohkous_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?lohkous/6/6/12k2a23b2k13d13a10b14d";
-        assert_eq!(deserialize_problem(url).unwrap(), problem);
+        {
+            let problem = problem_for_tests1();
+            let url = "https://puzz.link/p?lohkous/6/6/12k2a23b2k13d13a10b14d";
+            assert_eq!(deserialize_problem(url).unwrap(), problem);
+        }
+
+        {
+            let problem = problem_for_tests2();
+            let url = "https://pzprxs.vercel.app/p?lohkous/8/8/a48zzf48e";
+            assert_eq!(deserialize_problem(url).unwrap(), problem);
+        }
     }
 }
