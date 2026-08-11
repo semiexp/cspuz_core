@@ -1,8 +1,12 @@
+use std::collections::BTreeMap;
+
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
-    get_kudamono_url_info_detailed, parse_kudamono_dimension, Combinator, Context, DecInt, Dict,
-    KudamonoBorder, KudamonoGrid, Optionalize, PrefixAndSuffix,
+    get_kudamono_url_info_detailed, parse_kudamono_dimension, problem_to_url_with_context_pzprxs,
+    url_to_problem, Choice, Combinator, Context, ContextBasedGrid, DecInt, Dict, HexInt,
+    KudamonoBorder, KudamonoGrid, Map, MultiDigit, Optionalize, PrefixAndSuffix, Rooms, Size,
+    Spaces, Tuple3, UnlimitedSeq,
 };
 use cspuz_rs::solver::{count_true, Solver};
 
@@ -149,7 +153,13 @@ pub type Problem = (
 );
 
 pub fn deserialize_problem(url: &str) -> Option<Problem> {
-    let parsed = get_kudamono_url_info_detailed(url)?;
+    if let Some(parsed) = get_kudamono_url_info_detailed(url) {
+        return deserialize_problem_kudamono(&parsed);
+    }
+    deserialize_problem_pzpr(url)
+}
+
+fn deserialize_problem_kudamono(parsed: &BTreeMap<String, &str>) -> Option<Problem> {
     let (width, height) = parse_kudamono_dimension(parsed.get("W")?)?;
 
     let ctx = Context::sized_with_kudamono_mode(height, width, true);
@@ -189,6 +199,104 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
     Some((absent_cell, num, border))
 }
 
+type PzprProblem = (
+    graph::InnerGridEdges<Vec<Vec<bool>>>,
+    Vec<Vec<bool>>,
+    Vec<Option<i32>>,
+);
+
+fn pzpr_combinator() -> impl Combinator<PzprProblem> {
+    Size::new(Tuple3::new(
+        Rooms,
+        ContextBasedGrid::new(Map::new(
+            MultiDigit::new(2, 5),
+            |x: bool| Some(if x { 1 } else { 0 }),
+            |n: i32| Some(n == 1),
+        )),
+        UnlimitedSeq::new(Choice::new(vec![
+            Box::new(Optionalize::new(HexInt)),
+            Box::new(Spaces::new(None, 'g')),
+        ])),
+    ))
+}
+
+/// Adds walls around each absent (black) cell, so that connected components of the
+/// resulting `InnerGridEdges` correspond exactly to the "rooms" of the puzzle (a room
+/// being a maximal connected group of non-absent cells not separated by a border).
+fn isolate_absent_cells(
+    borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
+    absent_cell: &[Vec<bool>],
+) -> graph::InnerGridEdges<Vec<Vec<bool>>> {
+    let (h, w) = util::infer_shape(absent_cell);
+    let mut borders = borders.clone();
+    for y in 0..h {
+        for x in 0..w {
+            if absent_cell[y][x] {
+                if y > 0 {
+                    borders.horizontal[y - 1][x] = true;
+                }
+                if y + 1 < h {
+                    borders.horizontal[y][x] = true;
+                }
+                if x > 0 {
+                    borders.vertical[y][x - 1] = true;
+                }
+                if x + 1 < w {
+                    borders.vertical[y][x] = true;
+                }
+            }
+        }
+    }
+    borders
+}
+
+fn deserialize_problem_pzpr(url: &str) -> Option<Problem> {
+    let (borders, absent_cell, num_seq) = url_to_problem(pzpr_combinator(), &["seiza"], url)?;
+    let (h, w) = borders.base_shape();
+
+    let rooms_borders = isolate_absent_cells(&borders, &absent_cell);
+    let rooms = graph::borders_to_rooms(&rooms_borders);
+
+    let mut num = vec![vec![None; w]; h];
+    let mut idx = 0;
+    for room in &rooms {
+        let (y0, x0) = room[0];
+        if absent_cell[y0][x0] {
+            continue;
+        }
+        if idx < num_seq.len() {
+            num[y0][x0] = num_seq[idx];
+        }
+        idx += 1;
+    }
+
+    Some((absent_cell, num, borders))
+}
+
+pub fn serialize_problem(problem: &Problem) -> Option<String> {
+    let (absent_cell, num, borders) = problem;
+    let (h, w) = util::infer_shape(absent_cell);
+
+    let rooms_borders = isolate_absent_cells(borders, absent_cell);
+    let rooms = graph::borders_to_rooms(&rooms_borders);
+
+    let mut num_seq = vec![];
+    for room in &rooms {
+        let (y0, x0) = room[0];
+        if absent_cell[y0][x0] {
+            continue;
+        }
+        num_seq.push(num[y0][x0]);
+    }
+
+    problem_to_url_with_context_pzprxs(
+        pzpr_combinator(),
+        "seiza",
+        (borders.clone(), absent_cell.clone(), num_seq),
+        &Context::sized(h, w),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,8 +311,8 @@ mod tests {
                 [0, 0, 0, 0, 0, 0, 0],
             ]),
             vec![
-                vec![Some(2), None, None, None, None, None, None],
-                vec![None, None, None, Some(2), None, None, None],
+                vec![Some(2), None, None, Some(2), None, None, None],
+                vec![None, None, None, None, None, None, None],
                 vec![None, None, None, None, None, None, None],
                 vec![None, Some(3), None, None, None, None, None],
                 vec![None, None, None, None, None, None, None],
@@ -266,7 +374,14 @@ mod tests {
     #[test]
     fn test_seiza_serializer() {
         let problem = problem_for_tests();
-        let url = "https://pedros.works/paper-puzzle-player.html?W=7x5&L=x9&L-N=(2)4(3)2(2)12&SIE=3RU5RRDD11RRD1URRRUU3DDLLDDD8URR8R&G=seiza";
+        let url = "https://pzprxs.vercel.app/p?seiza/7/5/4qd2la07uphg80000002g2j3h";
+        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_seiza_kudamono_serializer() {
+        let problem = problem_for_tests();
+        let url = "https://pedros.works/paper-puzzle-player.html?W=7x5&L=x9&L-N=(2)4(3)2(2)13&SIE=3RU5RRDD11RRD1URRRUU3DDLLDDD8URR8R&G=seiza";
         assert_eq!(deserialize_problem(url), Some(problem));
     }
 }
