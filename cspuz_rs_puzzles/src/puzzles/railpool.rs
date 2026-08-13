@@ -138,6 +138,9 @@ impl Combinator<Vec<Vec<Vec<i32>>>> for RailpoolClueCombinator {
 
         while idx < input.len() {
             if input[idx] == b'/' || pos >= height * width {
+                if input[idx] == b'/' {
+                    idx += 1;
+                }
                 break;
             }
 
