@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 mod dbchoco;
 mod slitherlink;
+mod yajilin;
 
 #[derive(Serialize, Deserialize)]
 pub struct BoolGridEdgesIrrefutableFacts {
@@ -105,12 +106,14 @@ where
 pub enum Task {
     DoubleChoco(dbchoco::DoubleChocoTask),
     Slitherlink(slitherlink::SlitherlinkTask),
+    Yajilin(yajilin::YajilinTask),
 }
 
 pub fn run_benchmark(task: &Task) -> Result<BenchResult, BenchmarkError> {
     match task {
         Task::DoubleChoco(task) => dbchoco::run_benchmark(task),
         Task::Slitherlink(task) => slitherlink::run_benchmark(task),
+        Task::Yajilin(task) => yajilin::run_benchmark(task),
     }
 }
 
@@ -165,6 +168,7 @@ fn materialize_benchmark_set(base: BaseBenchmarkSet) -> BenchmarkSet {
             let task = match base_task.puzzle_type.as_str() {
                 "dbchoco" => dbchoco::materialize_solve_task(&base_task.url),
                 "slitherlink" => slitherlink::materialize_solve_task(&base_task.url),
+                "yajilin" => yajilin::materialize_solve_task(&base_task.url),
                 _ => panic!("Unknown puzzle type: {}", base_task.puzzle_type),
             };
             SolveTask {
