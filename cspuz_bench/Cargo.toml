@@ -17,4 +17,5 @@ cspuz_rs = { path = "../cspuz_rs", default-features = false, features = ["genera
 cspuz_rs_puzzles = { path = "../cspuz_rs_puzzles", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+zstd = "0.13"
 rand = "0.8.5"

@@ -166,13 +166,17 @@ pub fn run_materialize(src_path: &str, dest_path: &str) -> Result<(), Box<dyn st
     let base_benchmark_set: BaseBenchmarkSet =
         serde_json::from_reader(std::fs::File::open(src_path)?)?;
     let benchmark_set = materialize_benchmark_set(base_benchmark_set);
-    serde_json::to_writer_pretty(std::fs::File::create(dest_path)?, &benchmark_set)?;
+    let dest_file = std::fs::File::create(dest_path)?;
+    let mut encoder = zstd::stream::write::Encoder::new(dest_file, 0)?;
+    serde_json::to_writer(&mut encoder, &benchmark_set)?;
+    encoder.finish()?;
     Ok(())
 }
 
 pub fn run_benchmarks(src_path: &str) {
-    let benchmark_set: BenchmarkSet =
-        serde_json::from_reader(std::fs::File::open(src_path).unwrap()).unwrap();
+    let src_file = std::fs::File::open(src_path).unwrap();
+    let decoder = zstd::stream::read::Decoder::new(src_file).unwrap();
+    let benchmark_set: BenchmarkSet = serde_json::from_reader(decoder).unwrap();
 
     for solve_task in &benchmark_set.solve_tasks {
         println!("Running solve benchmark: {}", solve_task.name);
