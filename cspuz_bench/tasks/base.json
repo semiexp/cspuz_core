@@ -2,11 +2,25 @@
     "solve_tasks": [],
     "generate_tasks": [
         {
-            "name": "slitherlink_10x10",
+            "name": "slitherlink_10x10_0",
             "puzzle_type": "slitherlink",
             "height": 10,
             "width": 10,
-            "seed": 42
+            "seed": 4200
+        },
+        {
+            "name": "slitherlink_10x10_1",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 10,
+            "seed": 4201
+        },
+        {
+            "name": "slitherlink_10x18_0",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 18,
+            "seed": 4300
         }
     ]
 }
