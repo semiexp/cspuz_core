@@ -65,7 +65,7 @@ pub(super) fn materialize_generate_task(
         answer
     };
 
-    let mut rng = rand::rngs::StdRng::seed_from_u64(42);
+    let mut rng = rand::rngs::StdRng::seed_from_u64(base.seed);
     let _ = generator::Generator::new(
         solve_with_record,
         pattern,
