@@ -210,28 +210,75 @@ pub fn run_benchmarks(src_path: &str) {
     let src_file = std::fs::File::open(src_path).unwrap();
     let decoder = zstd::stream::read::Decoder::new(src_file).unwrap();
     let benchmark_set: BenchmarkSet = serde_json::from_reader(decoder).unwrap();
+    let mut results = vec![];
 
     for solve_task in &benchmark_set.solve_tasks {
         println!("Running solve benchmark: {}", solve_task.name);
         let result = run_benchmark(&solve_task.task).unwrap();
-        println!(
-            "Elapsed time: {:.3} seconds, SAT propagations: {}",
-            result.elapsed_time_seconds, result.sat_num_propagations
-        );
+        results.push(("solve", solve_task.name.as_str(), result));
     }
 
     for generate_task_set in &benchmark_set.generate_tasks {
         println!("Running generate benchmark set: {}", generate_task_set.name);
 
-        let mut results = vec![];
+        let mut task_results = vec![];
         for task in &generate_task_set.tasks {
             let result = run_benchmark(task).unwrap();
-            results.push(result);
+            task_results.push(result);
         }
-        let accumulated_result = accumulate(&results);
+        let accumulated_result = accumulate(&task_results);
+        results.push((
+            "generate",
+            generate_task_set.name.as_str(),
+            accumulated_result,
+        ));
+    }
+
+    print_benchmark_results(&results);
+}
+
+fn print_benchmark_results(results: &[(&str, &str, BenchResult)]) {
+    let kind_width = results
+        .iter()
+        .map(|(kind, _, _)| kind.len())
+        .max()
+        .unwrap_or(0)
+        .max("Kind".len());
+    let name_width = results
+        .iter()
+        .map(|(_, name, _)| name.len())
+        .max()
+        .unwrap_or(0)
+        .max("Benchmark".len());
+    let elapsed_header = "Elapsed (s)";
+    let propagations_header = "SAT propagations";
+    let separator = format!(
+        "+-{}-+-{}-+-{}-+-{}-+",
+        "-".repeat(kind_width),
+        "-".repeat(name_width),
+        "-".repeat(elapsed_header.len()),
+        "-".repeat(propagations_header.len()),
+    );
+
+    println!("{separator}");
+    println!(
+        "| {:<kind_width$} | {:<name_width$} | {:>elapsed_width$} | {:>propagations_width$} |",
+        "Kind",
+        "Benchmark",
+        elapsed_header,
+        propagations_header,
+        elapsed_width = elapsed_header.len(),
+        propagations_width = propagations_header.len(),
+    );
+    println!("{separator}");
+    for (kind, name, result) in results {
         println!(
-            "Accumulated result for generate benchmark set {}: Elapsed time: {:.3} seconds, SAT propagations: {}",
-            generate_task_set.name, accumulated_result.elapsed_time_seconds, accumulated_result.sat_num_propagations
+            "| {kind:<kind_width$} | {name:<name_width$} | {:>elapsed_width$.3} | {:>propagations_width$.0} |",
+            result.elapsed_time_seconds,
+            result.sat_num_propagations,
+            elapsed_width = elapsed_header.len(),
+            propagations_width = propagations_header.len(),
         );
     }
+    println!("{separator}");
 }
