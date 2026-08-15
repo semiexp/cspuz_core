@@ -184,6 +184,7 @@ fn materialize_benchmark_set(base: BaseBenchmarkSet) -> BenchmarkSet {
         .into_iter()
         .map(|base_task| match base_task.puzzle_type.as_str() {
             "slitherlink" => slitherlink::materialize_generate_task(base_task),
+            "yajilin" => yajilin::materialize_generate_task(base_task),
             _ => panic!("Unknown puzzle type: {}", base_task.puzzle_type),
         })
         .collect();

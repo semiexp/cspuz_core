@@ -34,6 +34,13 @@
             "height": 10,
             "width": 18,
             "seed": 4300
+        },
+        {
+            "name": "yajilin_10x10_0",
+            "puzzle_type": "yajilin",
+            "height": 10,
+            "width": 10,
+            "seed": 4400
         }
     ]
 }
