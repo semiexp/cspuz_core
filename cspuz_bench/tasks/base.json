@@ -1,5 +1,12 @@
 {
-    "solve_tasks": [],
+    "solve_tasks": [
+        {
+            "name": "dbchoco_0",
+            "puzzle_type": "dbchoco",
+            "url": "https://puzz.link/p?dbchoco/10/10/v0v30r0rororooo0rs3szx8g7k6zx9t",
+            "comment": "https://puzsq.logicpuzzle.app/puzzle/22059"
+        }
+    ],
     "generate_tasks": [
         {
             "name": "slitherlink_10x10_0",

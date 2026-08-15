@@ -1,7 +1,9 @@
 use cspuz_core::integration::{reset_thread_local_perf_stats, thread_local_perf_stats};
 use cspuz_rs::graph::BoolGridEdgesIrrefutableFacts as CspuzRsBoolGridEdgesIrrefutableFacts;
+use cspuz_rs::graph::BoolInnerGridEdgesIrrefutableFacts as CspuzRsBoolInnerGridEdgesIrrefutableFacts;
 use serde::{Deserialize, Serialize};
 
+mod dbchoco;
 mod slitherlink;
 
 #[derive(Serialize, Deserialize)]
@@ -19,6 +21,28 @@ impl BoolGridEdgesIrrefutableFacts {
     }
 
     pub fn from_cspuz_rs(facts: &CspuzRsBoolGridEdgesIrrefutableFacts) -> Self {
+        Self {
+            horizontal: facts.horizontal.clone(),
+            vertical: facts.vertical.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BoolInnerGridEdgesIrrefutableFacts {
+    pub horizontal: Vec<Vec<Option<bool>>>,
+    pub vertical: Vec<Vec<Option<bool>>>,
+}
+
+impl BoolInnerGridEdgesIrrefutableFacts {
+    pub fn to_cspuz_rs(&self) -> CspuzRsBoolInnerGridEdgesIrrefutableFacts {
+        CspuzRsBoolInnerGridEdgesIrrefutableFacts {
+            horizontal: self.horizontal.clone(),
+            vertical: self.vertical.clone(),
+        }
+    }
+
+    pub fn from_cspuz_rs(facts: &CspuzRsBoolInnerGridEdgesIrrefutableFacts) -> Self {
         Self {
             horizontal: facts.horizontal.clone(),
             vertical: facts.vertical.clone(),
@@ -79,11 +103,13 @@ where
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Task {
+    DoubleChoco(dbchoco::DoubleChocoTask),
     Slitherlink(slitherlink::SlitherlinkTask),
 }
 
 pub fn run_benchmark(task: &Task) -> Result<BenchResult, BenchmarkError> {
     match task {
+        Task::DoubleChoco(task) => dbchoco::run_benchmark(task),
         Task::Slitherlink(task) => slitherlink::run_benchmark(task),
     }
 }
@@ -99,6 +125,7 @@ struct BaseSolveTask {
     name: String,
     puzzle_type: String,
     url: String,
+    comment: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -136,6 +163,7 @@ fn materialize_benchmark_set(base: BaseBenchmarkSet) -> BenchmarkSet {
         .into_iter()
         .map(|base_task| {
             let task = match base_task.puzzle_type.as_str() {
+                "dbchoco" => dbchoco::materialize_solve_task(&base_task.url),
                 "slitherlink" => slitherlink::materialize_solve_task(&base_task.url),
                 _ => panic!("Unknown puzzle type: {}", base_task.puzzle_type),
             };
