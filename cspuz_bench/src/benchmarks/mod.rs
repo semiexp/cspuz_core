@@ -4,6 +4,7 @@ use cspuz_rs::graph::BoolInnerGridEdgesIrrefutableFacts as CspuzRsBoolInnerGridE
 use serde::{Deserialize, Serialize};
 
 mod dbchoco;
+mod nurikabe;
 mod slitherlink;
 mod yajilin;
 
@@ -105,6 +106,7 @@ where
 #[serde(tag = "type")]
 pub enum Task {
     DoubleChoco(dbchoco::DoubleChocoTask),
+    Nurikabe(nurikabe::NurikabeTask),
     Slitherlink(slitherlink::SlitherlinkTask),
     Yajilin(yajilin::YajilinTask),
 }
@@ -112,6 +114,7 @@ pub enum Task {
 pub fn run_benchmark(task: &Task) -> Result<BenchResult, BenchmarkError> {
     match task {
         Task::DoubleChoco(task) => dbchoco::run_benchmark(task),
+        Task::Nurikabe(task) => nurikabe::run_benchmark(task),
         Task::Slitherlink(task) => slitherlink::run_benchmark(task),
         Task::Yajilin(task) => yajilin::run_benchmark(task),
     }
@@ -167,6 +170,7 @@ fn materialize_benchmark_set(base: BaseBenchmarkSet) -> BenchmarkSet {
         .map(|base_task| {
             let task = match base_task.puzzle_type.as_str() {
                 "dbchoco" => dbchoco::materialize_solve_task(&base_task.url),
+                "nurikabe" => nurikabe::materialize_solve_task(&base_task.url),
                 "slitherlink" => slitherlink::materialize_solve_task(&base_task.url),
                 "yajilin" => yajilin::materialize_solve_task(&base_task.url),
                 _ => panic!("Unknown puzzle type: {}", base_task.puzzle_type),

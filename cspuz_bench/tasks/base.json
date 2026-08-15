@@ -13,6 +13,11 @@
             "comment": "Some clues are changed from https://puzsq.logicpuzzle.app/puzzle/22059"
         },
         {
+            "name": "nurikabe_0_multiple_answers",
+            "puzzle_type": "nurikabe",
+            "url": "https://puzz.link/p?nurikabe/10/10/zsai4xelazv"
+        },
+        {
             "name": "yajilin_0",
             "puzzle_type": "yajilin",
             "url": "https://puzz.link/p?yajilin/17/17/t41f30b40a40f23b26y21a46j42n24d24a20r43i40l42i12r45a44g41r32e20e22b31j22h13b20j33h13c41w",
