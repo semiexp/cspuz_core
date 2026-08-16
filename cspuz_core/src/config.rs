@@ -88,6 +88,7 @@ fn default_backend_from_env() -> Backend {
     }
 }
 
+#[allow(dead_code)]
 fn to_config_name(s: &str) -> String {
     s.replace('-', "_")
 }
