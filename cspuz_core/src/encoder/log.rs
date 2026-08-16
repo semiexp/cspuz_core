@@ -525,7 +525,7 @@ fn log_encoding_adder(
         }));
 
         {
-            let c = encode_linear_ge_mixed_from_info(&infos, pos_constant[i]);
+            let c = encode_linear_ge_mixed_from_info(&infos, pos_constant[i], true);
             clause_set.append(c);
         }
         {
@@ -535,7 +535,7 @@ fn log_encoding_adder(
                     _ => unreachable!(),
                 }
             }
-            let c = encode_linear_ge_mixed_from_info(&infos, -pos_constant[i]);
+            let c = encode_linear_ge_mixed_from_info(&infos, -pos_constant[i], true);
             clause_set.append(c);
         }
         carry = carry_next;

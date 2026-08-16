@@ -436,26 +436,11 @@ pub(super) fn encode_linear_ne_direct(env: &EncoderEnv, sum: &LinearSum) -> Clau
 mod tests {
     use super::*;
 
+    use super::super::test_utils::assert_erase_subsumed_clauses;
     use super::super::tests::{linear_sum, EncoderTester};
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
     use crate::norm_csp::LinearLit;
-    use std::collections::BTreeSet;
-
-    fn canonical_clause_set(clauses: ClauseSet) -> BTreeSet<Vec<Lit>> {
-        let mut ret = BTreeSet::new();
-        for i in 0..clauses.len() {
-            let mut clause = clauses[i].to_vec();
-            clause.sort_unstable();
-            clause.dedup();
-            ret.insert(clause);
-        }
-        ret
-    }
-
-    fn subsumes(lhs: &[Lit], rhs: &[Lit]) -> bool {
-        lhs.iter().all(|lit| rhs.binary_search(lit).is_ok())
-    }
 
     fn check_erase_subsumed_clauses(domains: &[Vec<i32>], coefs: &[i32], constant: i32) {
         assert_eq!(domains.len(), coefs.len());
@@ -484,48 +469,11 @@ mod tests {
             .collect::<Vec<_>>();
         info.sort_by_key(|term| term.encoding.lits.len());
 
-        let erased = canonical_clause_set(encode_linear_eq_direct_from_info(
-            &env,
-            &info,
-            sum.constant,
-            true,
-        ));
-        let all = canonical_clause_set(encode_linear_eq_direct_from_info(
-            &env,
-            &info,
-            sum.constant,
-            false,
-        ));
+        let erased = encode_linear_eq_direct_from_info(&env, &info, sum.constant, true);
+        let all = encode_linear_eq_direct_from_info(&env, &info, sum.constant, false);
 
-        let instance = || format!("domains={domains:?}, coefs={coefs:?}, constant={constant}");
-
-        assert!(
-            erased.len() < all.len() && erased.is_subset(&all),
-            "the erased clause set must be a proper subset: {}\nerased={erased:?}\nall={all:?}",
-            instance()
-        );
-
-        for removed in all.difference(&erased) {
-            assert!(
-                erased.iter().any(|clause| subsumes(clause, removed)),
-                "removed clause is not subsumed by a retained clause: {}\nremoved={removed:?}\nerased={erased:?}",
-                instance()
-            );
-        }
-
-        // TODO: Enable this minimality check after the optimization also
-        // removes subsumed support clauses from the retained clause set.
-        /*
-        for clause in &erased {
-            assert!(
-                !erased
-                    .iter()
-                    .any(|other| other != clause && subsumes(other, clause)),
-                "retained clause is subsumed by another retained clause: {}\nclause={clause:?}\nerased={erased:?}",
-                instance()
-            );
-        }
-        */
+        let instance = format!("domains={domains:?}, coefs={coefs:?}, constant={constant}");
+        assert_erase_subsumed_clauses(erased, all, &instance);
     }
 
     #[test]
