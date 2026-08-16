@@ -171,7 +171,7 @@ pub(super) fn encode_linear_eq_direct(env: &EncoderEnv, sum: &LinearSum) -> Clau
             .len()
             .cmp(&encoding2.encoding.lits.len())
     });
-    encode_linear_eq_direct_from_info(env, &info, sum.constant)
+    encode_linear_eq_direct_from_info(env, &info, sum.constant, true)
 }
 
 fn encode_linear_eq_direct_two_terms(
@@ -199,11 +199,22 @@ pub(super) fn encode_linear_eq_direct_from_info(
     _env: &EncoderEnv,
     info: &[LinearInfoForDirectEncoding],
     constant: CheckedInt,
+    erase_subsumed_clauses: bool,
 ) -> ClauseSet {
     if info.len() == 2 {
         return encode_linear_eq_direct_two_terms(info, constant);
     }
 
+    // Recursively enumerate partial value assignments for all terms except the last one.
+    // `clause` contains the negations of the selected values, while `lower_bound` and
+    // `upper_bound` are the possible range of the sum under those selections.
+    // `min_relax_for_lb` and `min_relax_for_ub` are the minimum amounts by which the
+    // corresponding bound would be relaxed if any one selected value were unselected;
+    // they are used to avoid emitting a nogood subsumed by a shorter one.  The branch
+    // that advances `idx` without selecting a value enumerates such less-specific
+    // partial assignments, allowing shorter nogoods and more general support clauses
+    // to be found.  If the range excludes zero, emit a preferably minimal nogood; at
+    // the last term, emit a support clause containing all values that may make the sum zero.
     fn encode_sub(
         info: &[LinearInfoForDirectEncoding],
         clause: &mut Vec<Lit>,
@@ -213,23 +224,18 @@ pub(super) fn encode_linear_eq_direct_from_info(
         min_relax_for_lb: Option<CheckedInt>,
         min_relax_for_ub: Option<CheckedInt>,
         clauses_buf: &mut ClauseSet,
+        erase_subsumed_clauses: bool,
     ) {
         if lower_bound > 0 || upper_bound < 0 {
-            let mut cannot_prune = true;
-            if lower_bound > 0
-                && min_relax_for_lb
-                    .map(|m| lower_bound - m <= 0)
-                    .unwrap_or(true)
-            {
-                cannot_prune = true;
-            }
-            if upper_bound < 0
-                && min_relax_for_ub
-                    .map(|m| upper_bound + m >= 0)
-                    .unwrap_or(true)
-            {
-                cannot_prune = true;
-            }
+            let cannot_prune = !erase_subsumed_clauses
+                || (lower_bound > 0
+                    && min_relax_for_lb
+                        .map(|m| lower_bound - m <= 0)
+                        .unwrap_or(true))
+                || (upper_bound < 0
+                    && min_relax_for_ub
+                        .map(|m| upper_bound + m >= 0)
+                        .unwrap_or(true));
             if cannot_prune {
                 clauses_buf.push(clause);
             }
@@ -295,6 +301,7 @@ pub(super) fn encode_linear_eq_direct_from_info(
                 next_min_relax_for_lb,
                 next_min_relax_for_ub,
                 clauses_buf,
+                erase_subsumed_clauses,
             );
             clause.pop();
         }
@@ -308,6 +315,7 @@ pub(super) fn encode_linear_eq_direct_from_info(
             min_relax_for_lb,
             min_relax_for_ub,
             clauses_buf,
+            erase_subsumed_clauses,
         );
     }
 
@@ -328,6 +336,7 @@ pub(super) fn encode_linear_eq_direct_from_info(
         None,
         None,
         &mut clauses_buf,
+        erase_subsumed_clauses,
     );
 
     clauses_buf
@@ -431,6 +440,93 @@ mod tests {
     use crate::arithmetic::CmpOp;
     use crate::domain::Domain;
     use crate::norm_csp::LinearLit;
+    use std::collections::BTreeSet;
+
+    fn canonical_clause_set(clauses: ClauseSet) -> BTreeSet<Vec<Lit>> {
+        let mut ret = BTreeSet::new();
+        for i in 0..clauses.len() {
+            let mut clause = clauses[i].to_vec();
+            clause.sort_unstable();
+            clause.dedup();
+            ret.insert(clause);
+        }
+        ret
+    }
+
+    fn subsumes(lhs: &[Lit], rhs: &[Lit]) -> bool {
+        lhs.iter().all(|lit| rhs.binary_search(lit).is_ok())
+    }
+
+    fn check_erase_subsumed_clauses(domains: &[Vec<i32>], coefs: &[i32], constant: i32) {
+        assert_eq!(domains.len(), coefs.len());
+
+        let mut tester = EncoderTester::new();
+        let vars = domains
+            .iter()
+            .map(|domain| tester.add_int_var(Domain::enumerative(domain.clone()), true))
+            .collect::<Vec<_>>();
+        let terms = vars
+            .iter()
+            .copied()
+            .zip(coefs.iter().copied())
+            .collect::<Vec<_>>();
+        let sum = linear_sum(&terms, constant);
+
+        let env = tester.env();
+        let mut info = sum
+            .iter()
+            .map(|(&var, &coef)| {
+                LinearInfoForDirectEncoding::new(
+                    coef,
+                    env.map.int_map[var].as_ref().unwrap().as_direct_encoding(),
+                )
+            })
+            .collect::<Vec<_>>();
+        info.sort_by_key(|term| term.encoding.lits.len());
+
+        let erased = canonical_clause_set(encode_linear_eq_direct_from_info(
+            &env,
+            &info,
+            sum.constant,
+            true,
+        ));
+        let all = canonical_clause_set(encode_linear_eq_direct_from_info(
+            &env,
+            &info,
+            sum.constant,
+            false,
+        ));
+
+        let instance = || format!("domains={domains:?}, coefs={coefs:?}, constant={constant}");
+
+        assert!(
+            erased.len() < all.len() && erased.is_subset(&all),
+            "the erased clause set must be a proper subset: {}\nerased={erased:?}\nall={all:?}",
+            instance()
+        );
+
+        for removed in all.difference(&erased) {
+            assert!(
+                erased.iter().any(|clause| subsumes(clause, removed)),
+                "removed clause is not subsumed by a retained clause: {}\nremoved={removed:?}\nerased={erased:?}",
+                instance()
+            );
+        }
+
+        // TODO: Enable this minimality check after the optimization also
+        // removes subsumed support clauses from the retained clause set.
+        /*
+        for clause in &erased {
+            assert!(
+                !erased
+                    .iter()
+                    .any(|other| other != clause && subsumes(other, clause)),
+                "retained clause is subsumed by another retained clause: {}\nclause={clause:?}\nerased={erased:?}",
+                instance()
+            );
+        }
+        */
+    }
 
     #[test]
     fn test_encode_simple_linear_direct_encoding() {
@@ -488,6 +584,36 @@ mod tests {
         }
         tester.add_constraint_linear_lit(lit);
         tester.run_check();
+    }
+
+    #[test]
+    fn test_encode_linear_eq_direct_erase_subsumed_clauses() {
+        let instances = [
+            (
+                vec![vec![0, 2], vec![0, 6], vec![0, 1, 2]],
+                vec![1, 1, 1],
+                -5,
+            ),
+            (
+                vec![vec![-2, 0], vec![-6, 0], vec![-2, -1, 0]],
+                vec![1, 1, 1],
+                5,
+            ),
+            (
+                vec![vec![0, 2], vec![-6, 0], vec![0, 1, 2]],
+                vec![1, -1, 1],
+                -5,
+            ),
+            (
+                vec![vec![0, 2], vec![0, 3], vec![0, 10], vec![0, 1, 2, 3]],
+                vec![1, 1, 1, 1],
+                -10,
+            ),
+        ];
+
+        for (domains, coefs, constant) in instances {
+            check_erase_subsumed_clauses(&domains, &coefs, constant);
+        }
     }
 
     #[test]

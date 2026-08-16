@@ -783,7 +783,7 @@ fn log_encoding_adder2_direct(
             });
         }
 
-        let c = encode_linear_eq_direct_from_info(env, &infos, target);
+        let c = encode_linear_eq_direct_from_info(env, &infos, target, true);
         clause_set.append(c);
 
         carry_low = new_carry_low;
