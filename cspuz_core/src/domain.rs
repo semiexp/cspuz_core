@@ -13,7 +13,9 @@ impl Domain {
         Domain::Range(CheckedInt::new(low), CheckedInt::new(high))
     }
 
-    pub fn enumerative(cands: Vec<i32>) -> Domain {
+    pub fn enumerative(mut cands: Vec<i32>) -> Domain {
+        cands.sort_unstable();
+        cands.dedup();
         Domain::Enumerative(cands.into_iter().map(CheckedInt::new).collect())
     }
 
@@ -33,6 +35,12 @@ impl Domain {
     }
 
     pub(crate) fn enumerative_from_checked(cands: Vec<CheckedInt>) -> Domain {
+        for i in 1..cands.len() {
+            assert!(
+                cands[i - 1] < cands[i],
+                "cands must be sorted in ascending order"
+            );
+        }
         Domain::Enumerative(cands)
     }
 
@@ -248,5 +256,24 @@ impl BitOr<Domain> for Domain {
 
             Domain::Range(low1.min(low2), high1.max(high2))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Domain;
+
+    #[test]
+    fn enumerative_normalizes_candidates() {
+        let domain = Domain::enumerative(vec![3, 1, 2, 1, 3]);
+
+        assert_eq!(
+            domain
+                .enumerate()
+                .into_iter()
+                .map(|x| x.get())
+                .collect::<Vec<_>>(),
+            vec![1, 2, 3]
+        );
     }
 }
