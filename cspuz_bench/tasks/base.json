@@ -1,0 +1,63 @@
+{
+    "solve_tasks": [
+        {
+            "name": "dbchoco_0",
+            "puzzle_type": "dbchoco",
+            "url": "https://puzz.link/p?dbchoco/10/10/v0v30r0rororooo0rs3szx8g7k6zx9t",
+            "comment": "https://puzsq.logicpuzzle.app/puzzle/22059"
+        },
+        {
+            "name": "dbchoco_1_multiple_answers",
+            "puzzle_type": "dbchoco",
+            "url": "https://puzz.link/p?dbchoco/10/10/v0v30r0rororooo0rs3szx8g7k5zx9t",
+            "comment": "Some clues are changed from https://puzsq.logicpuzzle.app/puzzle/22059"
+        },
+        {
+            "name": "nurikabe_0_multiple_answers",
+            "puzzle_type": "nurikabe",
+            "url": "https://puzz.link/p?nurikabe/10/10/zsai4xelazv"
+        },
+        {
+            "name": "yajilin_0",
+            "puzzle_type": "yajilin",
+            "url": "https://puzz.link/p?yajilin/17/17/t41f30b40a40f23b26y21a46j42n24d24a20r43i40l42i12r45a44g41r32e20e22b31j22h13b20j33h13c41w",
+            "comment": "https://puzsq.logicpuzzle.app/puzzle/7657"
+        },
+        {
+            "name": "yajilin_1_multiple_answers",
+            "puzzle_type": "yajilin",
+            "url": "https://puzz.link/p?yajilin/17/17/t41f30b40a40f23b25y21a45j42n24d24a20r43i40l42i12r45a44g41r32e20e22b31j22h13b20j32h13c41w",
+            "comment": "Some clues are changed from https://puzsq.logicpuzzle.app/puzzle/7657"
+        }
+    ],
+    "generate_tasks": [
+        {
+            "name": "slitherlink_10x10_0",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 10,
+            "seed": 4200
+        },
+        {
+            "name": "slitherlink_10x10_1",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 10,
+            "seed": 4201
+        },
+        {
+            "name": "slitherlink_10x18_0",
+            "puzzle_type": "slitherlink",
+            "height": 10,
+            "width": 18,
+            "seed": 4300
+        },
+        {
+            "name": "yajilin_10x10_0",
+            "puzzle_type": "yajilin",
+            "height": 10,
+            "width": 10,
+            "seed": 4400
+        }
+    ]
+}
