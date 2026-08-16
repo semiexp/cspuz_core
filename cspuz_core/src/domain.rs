@@ -3,20 +3,28 @@ use crate::util::UpdateStatus;
 use std::ops::{Add, BitOr, Mul};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum Domain {
+pub struct Domain(DomainKind);
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum DomainKind {
     Range(CheckedInt, CheckedInt),
     Enumerative(Vec<CheckedInt>),
 }
 
 impl Domain {
     pub fn range(low: i32, high: i32) -> Domain {
-        Domain::Range(CheckedInt::new(low), CheckedInt::new(high))
+        Domain(DomainKind::Range(
+            CheckedInt::new(low),
+            CheckedInt::new(high),
+        ))
     }
 
     pub fn enumerative(mut cands: Vec<i32>) -> Domain {
         cands.sort_unstable();
         cands.dedup();
-        Domain::Enumerative(cands.into_iter().map(CheckedInt::new).collect())
+        Domain(DomainKind::Enumerative(
+            cands.into_iter().map(CheckedInt::new).collect(),
+        ))
     }
 
     pub fn empty() -> Domain {
@@ -25,13 +33,13 @@ impl Domain {
 
     pub fn is_empty(&self) -> bool {
         match self {
-            Domain::Range(low, high) => low > high,
-            Domain::Enumerative(cands) => cands.is_empty(),
+            Domain(DomainKind::Range(low, high)) => low > high,
+            Domain(DomainKind::Enumerative(cands)) => cands.is_empty(),
         }
     }
 
     pub(crate) fn range_from_checked(low: CheckedInt, high: CheckedInt) -> Domain {
-        Domain::Range(low, high)
+        Domain(DomainKind::Range(low, high))
     }
 
     pub(crate) fn enumerative_from_checked(cands: Vec<CheckedInt>) -> Domain {
@@ -41,33 +49,35 @@ impl Domain {
                 "cands must be sorted in ascending order"
             );
         }
-        Domain::Enumerative(cands)
+        Domain(DomainKind::Enumerative(cands))
     }
 
     pub(crate) fn enumerate(&self) -> Vec<CheckedInt> {
         match self {
-            Domain::Range(low, high) => (low.get()..=high.get()).map(CheckedInt::new).collect(),
-            Domain::Enumerative(cands) => cands.clone(),
+            Domain(DomainKind::Range(low, high)) => {
+                (low.get()..=high.get()).map(CheckedInt::new).collect()
+            }
+            Domain(DomainKind::Enumerative(cands)) => cands.clone(),
         }
     }
 
     pub(crate) fn num_candidates(&self) -> usize {
         match self {
-            &Domain::Range(low, high) => {
+            &Domain(DomainKind::Range(low, high)) => {
                 if low <= high {
                     (high - low).get() as usize + 1
                 } else {
                     0
                 }
             }
-            Domain::Enumerative(cands) => cands.len(),
+            Domain(DomainKind::Enumerative(cands)) => cands.len(),
         }
     }
 
     pub(crate) fn lower_bound_checked(&self) -> CheckedInt {
         match self {
-            Domain::Range(low, _) => *low,
-            Domain::Enumerative(cands) => {
+            Domain(DomainKind::Range(low, _)) => *low,
+            Domain(DomainKind::Enumerative(cands)) => {
                 if cands.is_empty() {
                     CheckedInt::new(1)
                 } else {
@@ -79,8 +89,8 @@ impl Domain {
 
     pub(crate) fn upper_bound_checked(&self) -> CheckedInt {
         match self {
-            Domain::Range(_, high) => *high,
-            Domain::Enumerative(cands) => {
+            Domain(DomainKind::Range(_, high)) => *high,
+            Domain(DomainKind::Enumerative(cands)) => {
                 if cands.is_empty() {
                     CheckedInt::new(0)
                 } else {
@@ -92,14 +102,14 @@ impl Domain {
 
     pub(crate) fn as_constant(&self) -> Option<CheckedInt> {
         match self {
-            Domain::Range(low, high) => {
+            Domain(DomainKind::Range(low, high)) => {
                 if *low == *high {
                     Some(*low)
                 } else {
                     None
                 }
             }
-            Domain::Enumerative(cands) => {
+            Domain(DomainKind::Enumerative(cands)) => {
                 if cands.len() == 1 {
                     Some(cands[0])
                 } else {
@@ -111,14 +121,14 @@ impl Domain {
 
     pub fn is_infeasible(&self) -> bool {
         match self {
-            Domain::Range(low, high) => *low > *high,
-            Domain::Enumerative(cands) => cands.is_empty(),
+            Domain(DomainKind::Range(low, high)) => *low > *high,
+            Domain(DomainKind::Enumerative(cands)) => cands.is_empty(),
         }
     }
 
     pub(crate) fn refine_upper_bound(&mut self, v: CheckedInt) -> UpdateStatus {
         match self {
-            Domain::Range(low, high) => {
+            Domain(DomainKind::Range(low, high)) => {
                 if *high <= v {
                     UpdateStatus::NotUpdated
                 } else {
@@ -130,7 +140,7 @@ impl Domain {
                     }
                 }
             }
-            Domain::Enumerative(cands) => {
+            Domain(DomainKind::Enumerative(cands)) => {
                 if cands.is_empty() || cands[cands.len() - 1] <= v {
                     UpdateStatus::NotUpdated
                 } else {
@@ -149,7 +159,7 @@ impl Domain {
 
     pub(crate) fn refine_lower_bound(&mut self, v: CheckedInt) -> UpdateStatus {
         match self {
-            Domain::Range(low, high) => {
+            Domain(DomainKind::Range(low, high)) => {
                 if *low >= v {
                     UpdateStatus::NotUpdated
                 } else {
@@ -161,7 +171,7 @@ impl Domain {
                     }
                 }
             }
-            Domain::Enumerative(cands) => {
+            Domain(DomainKind::Enumerative(cands)) => {
                 if cands.is_empty() || cands[0] >= v {
                     UpdateStatus::NotUpdated
                 } else {
@@ -197,7 +207,7 @@ impl Add<Domain> for Domain {
         let high1 = self.upper_bound_checked();
         let low2 = rhs.lower_bound_checked();
         let high2 = rhs.upper_bound_checked();
-        Domain::Range(low1 + low2, high1 + high2)
+        Domain(DomainKind::Range(low1 + low2, high1 + high2))
     }
 }
 
@@ -206,20 +216,20 @@ impl Mul<CheckedInt> for Domain {
 
     fn mul(self, rhs: CheckedInt) -> Domain {
         match self {
-            Domain::Range(low, high) => {
+            Domain(DomainKind::Range(low, high)) => {
                 if rhs == 0 {
                     if low > high {
-                        Domain::Range(low, high)
+                        Domain(DomainKind::Range(low, high))
                     } else {
                         Domain::range(0, 0)
                     }
                 } else if rhs > 0 {
-                    Domain::Range(low * rhs, high * rhs)
+                    Domain(DomainKind::Range(low * rhs, high * rhs))
                 } else {
-                    Domain::Range(high * rhs, low * rhs)
+                    Domain(DomainKind::Range(high * rhs, low * rhs))
                 }
             }
-            Domain::Enumerative(mut cands) => {
+            Domain(DomainKind::Enumerative(mut cands)) => {
                 if rhs == 0 {
                     if cands.is_empty() {
                         Domain::empty()
@@ -228,11 +238,11 @@ impl Mul<CheckedInt> for Domain {
                     }
                 } else if rhs > 0 {
                     cands.iter_mut().for_each(|x| *x *= rhs);
-                    Domain::Enumerative(cands)
+                    Domain(DomainKind::Enumerative(cands))
                 } else {
                     cands.iter_mut().for_each(|x| *x *= rhs);
                     cands.reverse();
-                    Domain::Enumerative(cands)
+                    Domain(DomainKind::Enumerative(cands))
                 }
             }
         }
@@ -254,7 +264,7 @@ impl BitOr<Domain> for Domain {
             let low2 = rhs.lower_bound_checked();
             let high2 = rhs.upper_bound_checked();
 
-            Domain::Range(low1.min(low2), high1.max(high2))
+            Domain(DomainKind::Range(low1.min(low2), high1.max(high2)))
         }
     }
 }
