@@ -1,8 +1,8 @@
 use crate::util;
 use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
+    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, IntVarArray1D, Solver, FALSE, TRUE};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ShakashakaCell {
@@ -13,7 +13,10 @@ pub enum ShakashakaCell {
     UpperRight,
 }
 
-pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<ShakashakaCell>>>> {
+pub fn solve_shakashaka(
+    problem: &[Vec<Option<i32>>],
+    no_square: bool,
+) -> Option<Vec<Vec<Option<ShakashakaCell>>>> {
     let (h, w) = util::infer_shape(problem);
 
     // 1   2   3   4
@@ -118,6 +121,81 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
         }
     }
 
+    if no_square {
+        let get_cells = |y: usize, x: usize, dy: i32, dx: i32| -> IntVarArray1D {
+            let mut y = y as i32;
+            let mut x = x as i32;
+            let mut ret = vec![];
+
+            eprintln!("get_cells: y={}, x={}, dy={}, dx={}", y, x, dy, dx);
+            loop {
+                if !(0 <= y && y < h as i32 && 0 <= x && x < w as i32) {
+                    break;
+                }
+                if problem[y as usize][x as usize].is_some() {
+                    break;
+                }
+                eprintln!("  adding cell: y={}, x={}", y, x);
+                ret.push(ans.at((y as usize, x as usize)));
+                y += dy;
+                x += dx;
+            }
+
+            IntVarArray1D::new(ret)
+        };
+
+        for y in 0..h {
+            for x in 0..w {
+                if problem[y][x].is_some() {
+                    continue;
+                }
+                let down = get_cells(y, x, 1, 0).eq(0).consecutive_prefix_true();
+                let right = get_cells(y, x, 0, 1).eq(0).consecutive_prefix_true();
+
+                let up_wall = if y == 0 || problem[y - 1][x].is_some() {
+                    TRUE
+                } else {
+                    ans.at((y - 1, x)).eq(2) | ans.at((y - 1, x)).eq(3)
+                };
+                let left_wall = if x == 0 || problem[y][x - 1].is_some() {
+                    TRUE
+                } else {
+                    ans.at((y, x - 1)).eq(3) | ans.at((y, x - 1)).eq(4)
+                };
+                solver.add_expr((ans.at((y, x)).eq(0) & up_wall & left_wall).imp(down.ne(right)));
+            }
+        }
+
+        for y in 0..=h {
+            for x in 0..=w {
+                if y < h && 0 < x && x < w {
+                    let dl = get_cells(y, x - 1, 1, -1).eq(1).consecutive_prefix_true();
+                    let dr = get_cells(y, x, 1, 1).eq(4).consecutive_prefix_true();
+                    solver
+                        .add_expr((ans.at((y, x - 1)).eq(1) & ans.at((y, x)).eq(4)).imp(dl.ne(dr)));
+                }
+                // following constraints are redundant
+                /*
+                if 0 < y && 0 < x && x < w {
+                    let ul = get_cells(y - 1, x - 1, -1, -1).eq(2).consecutive_prefix_true();
+                    let ur = get_cells(y - 1, x, -1, 1).eq(3).consecutive_prefix_true();
+                    solver.add_expr((ans.at((y - 1, x - 1)).eq(2) & ans.at((y - 1, x)).eq(3)).imp(ul.ne(ur)));
+                }
+                if 0 < y && y < h && x < w {
+                    let ur = get_cells(y - 1, x, -1, 1).eq(1).consecutive_prefix_true();
+                    let dr = get_cells(y, x, 1, 1).eq(2).consecutive_prefix_true();
+                    solver.add_expr((ans.at((y - 1, x)).eq(1) & ans.at((y, x)).eq(2)).imp(ur.ne(dr)));
+                }
+                if 0 < y && y < h && 0 < x {
+                    let ul = get_cells(y - 1, x - 1, -1, -1).eq(4).consecutive_prefix_true();
+                    let dl = get_cells(y, x - 1, 1, -1).eq(3).consecutive_prefix_true();
+                    solver.add_expr((ans.at((y - 1, x - 1)).eq(4) & ans.at((y, x - 1)).eq(3)).imp(ul.ne(dl)));
+                }
+                */
+            }
+        }
+    }
+
     solver.irrefutable_facts().map(|f| {
         let model = f.get(ans);
         model
@@ -140,14 +218,20 @@ pub fn solve_shakashaka(problem: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<S
     })
 }
 
-type Problem = Vec<Vec<Option<i32>>>;
+type Problem = (Vec<Vec<Option<i32>>>, bool);
 
 fn combinator() -> impl Combinator<Problem> {
-    Grid::new(Choice::new(vec![
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(NumSpaces::new(4, 2)),
-        Box::new(Dict::new(Some(-1), ".")),
-    ]))
+    Tuple2::new(
+        Grid::new(Choice::new(vec![
+            Box::new(Spaces::new(None, 'g')),
+            Box::new(NumSpaces::new(4, 2)),
+            Box::new(Dict::new(Some(-1), ".")),
+        ])),
+        Choice::new(vec![
+            Box::new(Dict::new(true, "/nosquare")),
+            Box::new(Dict::new(false, "")),
+        ]),
+    )
 }
 
 pub fn serialize_problem(problem: &Problem) -> Option<String> {
@@ -183,8 +267,8 @@ mod tests {
 
     #[test]
     fn test_shakashaka_problem() {
-        let problem = problem_for_tests();
-        let ans = solve_shakashaka(&problem);
+        let problem = (problem_for_tests(), false);
+        let ans = solve_shakashaka(&problem.0, problem.1);
         assert!(ans.is_some());
         let ans = ans.unwrap();
 
@@ -196,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_shakashaka_serializer() {
-        let problem = problem_for_tests();
+        let problem = (problem_for_tests(), false);
         let url = "https://puzz.link/p?shakashaka/10/10/rdr70bdpdgccrczhcga";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
