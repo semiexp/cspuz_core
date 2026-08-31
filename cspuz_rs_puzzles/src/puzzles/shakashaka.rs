@@ -127,7 +127,6 @@ pub fn solve_shakashaka(
             let mut x = x as i32;
             let mut ret = vec![];
 
-            eprintln!("get_cells: y={}, x={}, dy={}, dx={}", y, x, dy, dx);
             loop {
                 if !(0 <= y && y < h as i32 && 0 <= x && x < w as i32) {
                     break;
@@ -135,7 +134,6 @@ pub fn solve_shakashaka(
                 if problem[y as usize][x as usize].is_some() {
                     break;
                 }
-                eprintln!("  adding cell: y={}, x={}", y, x);
                 ret.push(ans.at((y as usize, x as usize)));
                 y += dy;
                 x += dx;
