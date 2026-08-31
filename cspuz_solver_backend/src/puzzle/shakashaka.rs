@@ -3,8 +3,8 @@ use crate::uniqueness::check_uniqueness;
 use cspuz_rs_puzzles::puzzles::shakashaka::{self, ShakashakaCell};
 
 pub fn solve(url: &str) -> Result<Board, &'static str> {
-    let problem = shakashaka::deserialize_problem(url).ok_or("invalid url")?;
-    let answer = shakashaka::solve_shakashaka(&problem);
+    let (problem, no_square) = shakashaka::deserialize_problem(url).ok_or("invalid url")?;
+    let answer = shakashaka::solve_shakashaka(&problem, no_square);
 
     let height = problem.len();
     let width = problem[0].len();
