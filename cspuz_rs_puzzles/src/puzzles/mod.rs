@@ -10,6 +10,7 @@ pub mod archipelago;
 pub mod armyants;
 pub mod ayeheya;
 pub mod balloon;
+pub mod balance_loop;
 pub mod barns;
 pub mod battleship;
 pub mod bdwalk;
