@@ -91,23 +91,7 @@ pub fn add_tetrochain_constraints(
     }
 
     // black cells are 8-neighbor connected
-    let mut aux_graph = graph::Graph::new(h * w);
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge(y * w + x, y * w + x + 1);
-            }
-            if y < h - 1 && x < w - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x + 1);
-            }
-            if y < h - 1 && x > 0 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x - 1);
-            }
-        }
-    }
+    let aux_graph = graph::graph_8_neighbors((h, w));
     graph::active_vertices_connected(solver, is_black, &aux_graph);
 
     // same tetrominoes do not touch diagonally

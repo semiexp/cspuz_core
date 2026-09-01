@@ -1,6 +1,6 @@
 use crate::util;
 use cspuz_rs::graph;
-use cspuz_rs::solver::{count_true, IntVarArray2D, Solver, TRUE};
+use cspuz_rs::solver::{count_true, IntVarArray2D, Solver};
 
 pub fn add_movement_constraints(
     solver: &mut Solver,
@@ -159,52 +159,7 @@ pub fn add_movement_constraints(
     }
 
     // No loops
-    let mut aux_graph = graph::Graph::new((h - 1) * (w - 1) + 1 + (h - 1) * w + h * (w - 1));
-    let mut indicator = vec![TRUE; (h - 1) * (w - 1) + 1];
-
-    for y in 0..h {
-        for x in 0..w - 1 {
-            let v1 = if y == 0 {
-                (h - 1) * (w - 1)
-            } else {
-                (y - 1) * (w - 1) + x
-            };
-            let v2 = if y == h - 1 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x
-            };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!movement.horizontal.at((y, x)));
-        }
-    }
-
-    for y in 0..h - 1 {
-        for x in 0..w {
-            let v1 = if x == 0 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x - 1
-            };
-            let v2 = if x == w - 1 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x
-            };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!movement.vertical.at((y, x)));
-        }
-    }
-
-    graph::active_vertices_connected(solver, &indicator, &aux_graph);
+    graph::active_edges_acyclic(solver, movement);
 
     solver.add_expr(end_state.ge(0).count_true().eq(start_amount));
 }

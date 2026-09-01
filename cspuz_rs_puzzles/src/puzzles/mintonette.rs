@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
     Spaces,
 };
-use cspuz_rs::solver::{any, count_true, Solver, TRUE};
+use cspuz_rs::solver::{any, count_true, Solver};
 
 pub fn solve_mintonette(
     clues: &[Vec<Option<i32>>],
@@ -90,52 +90,7 @@ pub fn solve_mintonette(
         }
     }
 
-    let mut aux_graph = graph::Graph::new((h - 1) * (w - 1) + 1 + (h - 1) * w + h * (w - 1));
-    let mut indicator = vec![TRUE; (h - 1) * (w - 1) + 1];
-
-    for y in 0..h {
-        for x in 0..w - 1 {
-            let v1 = if y == 0 {
-                (h - 1) * (w - 1)
-            } else {
-                (y - 1) * (w - 1) + x
-            };
-            let v2 = if y == h - 1 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x
-            };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!is_line.horizontal.at((y, x)));
-        }
-    }
-
-    for y in 0..h - 1 {
-        for x in 0..w {
-            let v1 = if x == 0 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x - 1
-            };
-            let v2 = if x == w - 1 {
-                (h - 1) * (w - 1)
-            } else {
-                y * (w - 1) + x
-            };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!is_line.vertical.at((y, x)));
-        }
-    }
-
-    graph::active_vertices_connected(&mut solver, &indicator, &aux_graph);
+    graph::active_edges_acyclic(&mut solver, is_line);
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }

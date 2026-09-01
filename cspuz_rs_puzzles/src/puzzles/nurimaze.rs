@@ -42,30 +42,8 @@ pub fn solve_nurimaze(
     graph::active_vertices_connected_2d(&mut solver, !is_black);
 
     // white cells are acyclic
-    let mut aux_graph = graph::Graph::new(h * w + 1);
-    let mut aux_graph_vertices = vec![];
-    for y in 0..h {
-        for x in 0..w {
-            aux_graph_vertices.push(is_black.at((y, x)).expr());
-
-            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, h * w);
-            }
-
-            if y < h - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge(y * w + x, y * w + x + 1);
-            }
-            if y < h - 1 && x > 0 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x - 1);
-            }
-            if y < h - 1 && x < w - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x + 1);
-            }
-        }
-    }
+    let aux_graph = graph::graph_8_neighbors_with_outer_vertex((h, w));
+    let mut aux_graph_vertices = is_black.expr().into_iter().collect::<Vec<_>>();
     aux_graph_vertices.push(TRUE);
     graph::active_vertices_connected(&mut solver, aux_graph_vertices, &aux_graph);
 
