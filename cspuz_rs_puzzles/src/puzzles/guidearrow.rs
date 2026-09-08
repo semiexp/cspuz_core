@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, NumSpaces, Size, Spaces, Tuple3,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{count_true, Solver, TRUE};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GuidearrowClue {
@@ -28,24 +28,60 @@ pub fn solve_guidearrow(
     graph::active_vertices_connected_2d(&mut solver, !is_black);
     solver.add_expr(!is_black.conv2d_and((1, 2)));
     solver.add_expr(!is_black.conv2d_and((2, 1)));
+    solver.add_expr(is_black.conv2d_or((2, 2)));
 
-    let rank = &solver.int_var_2d((h, w), 0, (h * w) as i32);
-    solver.add_expr(rank.at((ty, tx)).eq(0));
+    // Each pair represents the two possible directions of an orthogonal edge.
+    // An active direction points from a white cell toward the star.
+    let toward_right = &solver.bool_var_2d((h, w - 1));
+    let toward_left = &solver.bool_var_2d((h, w - 1));
+    let toward_down = &solver.bool_var_2d((h - 1, w));
+    let toward_up = &solver.bool_var_2d((h - 1, w));
+
+    // Every edge between two white cells is directed exactly one way, while all
+    // other edges have no direction.
+    for y in 0..h {
+        for x in 0..(w - 1) {
+            solver.add_expr(
+                count_true([toward_right.at((y, x)), toward_left.at((y, x))])
+                    .eq((!is_black.at((y, x)) & !is_black.at((y, x + 1))).ite(1, 0)),
+            );
+        }
+    }
+    for y in 0..(h - 1) {
+        for x in 0..w {
+            solver.add_expr(
+                count_true([toward_down.at((y, x)), toward_up.at((y, x))])
+                    .eq((!is_black.at((y, x)) & !is_black.at((y + 1, x))).ite(1, 0)),
+            );
+        }
+    }
+
+    // The star has no outgoing edge. Every other white cell has exactly one.
+    // Together with white-cell connectivity, this also forces the white graph
+    // to have |V|-1 edges, so it is a tree and every direction leads to the star.
+    solver.add_expr(!is_black.at((ty, tx)));
     for y in 0..h {
         for x in 0..w {
-            if (y, x) != (ty, tx) {
-                solver.add_expr(
-                    (!is_black.at((y, x))).imp(
-                        (!is_black.four_neighbors((y, x)))
-                            .imp(rank.four_neighbors((y, x)).ne(rank.at((y, x))))
-                            .all()
-                            & (!is_black.four_neighbors((y, x))
-                                & rank.four_neighbors((y, x)).lt(rank.at((y, x))))
-                            .count_true()
-                            .eq(1),
-                    ),
-                );
+            let mut outgoing = vec![];
+            if y > 0 {
+                outgoing.push(toward_up.at((y - 1, x)));
             }
+            if y < h - 1 {
+                outgoing.push(toward_down.at((y, x)));
+            }
+            if x > 0 {
+                outgoing.push(toward_left.at((y, x - 1)));
+            }
+            if x < w - 1 {
+                outgoing.push(toward_right.at((y, x)));
+            }
+            let n_outgoing = count_true(outgoing);
+            solver.add_expr(if (y, x) == (ty, tx) {
+                n_outgoing.eq(0)
+            } else {
+                n_outgoing.eq((!is_black.at((y, x))).ite(1, 0))
+            });
+
             if let Some(clue) = clues[y][x] {
                 solver.add_expr(!is_black.at((y, x)));
                 match clue {
@@ -54,34 +90,63 @@ pub fn solve_guidearrow(
                             return None;
                         }
                         solver.add_expr(!is_black.at((y - 1, x)));
-                        solver.add_expr(rank.at((y - 1, x)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_up.at((y - 1, x)));
                     }
                     GuidearrowClue::Down => {
                         if y == h - 1 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y + 1, x)));
-                        solver.add_expr(rank.at((y + 1, x)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_down.at((y, x)));
                     }
                     GuidearrowClue::Left => {
                         if x == 0 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y, x - 1)));
-                        solver.add_expr(rank.at((y, x - 1)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_left.at((y, x - 1)));
                     }
                     GuidearrowClue::Right => {
                         if x == w - 1 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y, x + 1)));
-                        solver.add_expr(rank.at((y, x + 1)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_right.at((y, x)));
                     }
                     _ => (),
                 }
             }
         }
     }
+
+    // This is redundant with the white-tree constraints: a black component
+    // enclosed away from the boundary would be surrounded by a white cycle.
+    // Keeping the redundant dual connectivity explicit greatly strengthens
+    // propagation on large instances.
+    let mut aux_graph = graph::Graph::new(h * w + 1);
+    let mut aux_vertices = vec![];
+
+    for y in 0..h {
+        for x in 0..w {
+            if y < h - 1 {
+                if x < w - 1 {
+                    aux_graph.add_edge(y * w + x, (y + 1) * w + x + 1);
+                }
+                if x > 0 {
+                    aux_graph.add_edge(y * w + x, (y + 1) * w + x - 1);
+                }
+            }
+
+            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
+                aux_graph.add_edge(y * w + x, h * w);
+            }
+
+            aux_vertices.push(is_black.at((y, x)).expr());
+        }
+    }
+    aux_vertices.push(TRUE);
+    graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
@@ -172,5 +237,62 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?guidearrow/7/6/31kecsdl.n";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_guidearrow_sparse_multiple_solutions() {
+        let (ty, tx, clues) =
+            deserialize_problem("https://puzz.link/p?guidearrow/10/10/11zzzzz").unwrap();
+        let ans = solve_guidearrow(ty, tx, &clues).unwrap();
+
+        assert_eq!(ans[ty][tx], Some(false));
+        assert!(ans.iter().flatten().any(|cell| cell.is_none()));
+    }
+
+    #[test]
+    fn test_guidearrow_outward_arrows() {
+        for (y, x, clue) in [
+            (0, 1, GuidearrowClue::Up),
+            (2, 1, GuidearrowClue::Down),
+            (1, 0, GuidearrowClue::Left),
+            (1, 2, GuidearrowClue::Right),
+        ] {
+            let mut clues = vec![vec![None; 3]; 3];
+            clues[y][x] = Some(clue);
+            assert!(solve_guidearrow(0, 0, &clues).is_none());
+        }
+    }
+
+    #[test]
+    fn test_guidearrow_opposing_arrows() {
+        let mut clues = vec![vec![None; 3]; 3];
+        clues[1][0] = Some(GuidearrowClue::Right);
+        clues[1][1] = Some(GuidearrowClue::Left);
+        assert!(solve_guidearrow(0, 0, &clues).is_none());
+    }
+
+    #[test]
+    fn test_guidearrow_white_cycle() {
+        let mut clues = vec![vec![Some(GuidearrowClue::Unknown); 3]; 3];
+        clues[0][0] = None; // The star is also white.
+        clues[1][1] = None;
+        assert!(solve_guidearrow(0, 0, &clues).is_none());
+    }
+
+    #[test]
+    fn test_guidearrow_large_unique_problems() {
+        let urls = [
+            "https://puzz.link/p?guidearrow/12/12/b7ubbjdzzzt6.kbzq",
+            "https://puzz.link/p?guidearrow/12/17/5atbbsezkdkezsesdzoetccczk",
+        ];
+
+        for url in urls {
+            let (ty, tx, clues) = deserialize_problem(url).unwrap();
+            let ans = solve_guidearrow(ty, tx, &clues).unwrap();
+            assert!(
+                ans.iter().flatten().all(|cell| cell.is_some()),
+                "solution must be unique: {url}",
+            );
+        }
     }
 }
