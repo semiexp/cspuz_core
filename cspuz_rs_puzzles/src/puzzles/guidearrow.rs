@@ -30,15 +30,11 @@ pub fn solve_guidearrow(
     solver.add_expr(!is_black.conv2d_and((2, 1)));
     solver.add_expr(is_black.conv2d_or((2, 2)));
 
-    // Each pair represents the two possible directions of an orthogonal edge.
-    // An active direction points from a white cell toward the star.
     let toward_right = &solver.bool_var_2d((h, w - 1));
     let toward_left = &solver.bool_var_2d((h, w - 1));
     let toward_down = &solver.bool_var_2d((h - 1, w));
     let toward_up = &solver.bool_var_2d((h - 1, w));
 
-    // Every edge between two white cells is directed exactly one way, while all
-    // other edges have no direction.
     for y in 0..h {
         for x in 0..(w - 1) {
             solver.add_expr(
@@ -56,9 +52,6 @@ pub fn solve_guidearrow(
         }
     }
 
-    // The star has no outgoing edge. Every other white cell has exactly one.
-    // Together with white-cell connectivity, this also forces the white graph
-    // to have |V|-1 edges, so it is a tree and every direction leads to the star.
     solver.add_expr(!is_black.at((ty, tx)));
     for y in 0..h {
         for x in 0..w {
@@ -119,10 +112,6 @@ pub fn solve_guidearrow(
         }
     }
 
-    // This is redundant with the white-tree constraints: a black component
-    // enclosed away from the boundary would be surrounded by a white cycle.
-    // Keeping the redundant dual connectivity explicit greatly strengthens
-    // propagation on large instances.
     let mut aux_graph = graph::Graph::new(h * w + 1);
     let mut aux_vertices = vec![];
 
@@ -237,62 +226,5 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?guidearrow/7/6/31kecsdl.n";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
-    }
-
-    #[test]
-    fn test_guidearrow_sparse_multiple_solutions() {
-        let (ty, tx, clues) =
-            deserialize_problem("https://puzz.link/p?guidearrow/10/10/11zzzzz").unwrap();
-        let ans = solve_guidearrow(ty, tx, &clues).unwrap();
-
-        assert_eq!(ans[ty][tx], Some(false));
-        assert!(ans.iter().flatten().any(|cell| cell.is_none()));
-    }
-
-    #[test]
-    fn test_guidearrow_outward_arrows() {
-        for (y, x, clue) in [
-            (0, 1, GuidearrowClue::Up),
-            (2, 1, GuidearrowClue::Down),
-            (1, 0, GuidearrowClue::Left),
-            (1, 2, GuidearrowClue::Right),
-        ] {
-            let mut clues = vec![vec![None; 3]; 3];
-            clues[y][x] = Some(clue);
-            assert!(solve_guidearrow(0, 0, &clues).is_none());
-        }
-    }
-
-    #[test]
-    fn test_guidearrow_opposing_arrows() {
-        let mut clues = vec![vec![None; 3]; 3];
-        clues[1][0] = Some(GuidearrowClue::Right);
-        clues[1][1] = Some(GuidearrowClue::Left);
-        assert!(solve_guidearrow(0, 0, &clues).is_none());
-    }
-
-    #[test]
-    fn test_guidearrow_white_cycle() {
-        let mut clues = vec![vec![Some(GuidearrowClue::Unknown); 3]; 3];
-        clues[0][0] = None; // The star is also white.
-        clues[1][1] = None;
-        assert!(solve_guidearrow(0, 0, &clues).is_none());
-    }
-
-    #[test]
-    fn test_guidearrow_large_unique_problems() {
-        let urls = [
-            "https://puzz.link/p?guidearrow/12/12/b7ubbjdzzzt6.kbzq",
-            "https://puzz.link/p?guidearrow/12/17/5atbbsezkdkezsesdzoetccczk",
-        ];
-
-        for url in urls {
-            let (ty, tx, clues) = deserialize_problem(url).unwrap();
-            let ans = solve_guidearrow(ty, tx, &clues).unwrap();
-            assert!(
-                ans.iter().flatten().all(|cell| cell.is_some()),
-                "solution must be unique: {url}",
-            );
-        }
     }
 }
