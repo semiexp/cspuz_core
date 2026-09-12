@@ -78,21 +78,37 @@ pub struct Solver {
 
 const NUM_VAR_MAX: i32 = 0x3fffffff;
 
+// The native bridge uses signed 32-bit offsets into flattened arrays.
+fn checked_total_len(lengths: impl IntoIterator<Item = usize>) -> usize {
+    lengths.into_iter().fold(0usize, |total, len| {
+        let total = total.checked_add(len).expect("array length overflow");
+        assert!(
+            total <= i32::MAX as usize,
+            "array exceeds native index range"
+        );
+        total
+    })
+}
+
 impl Solver {
     pub fn new() -> Solver {
+        let ptr = unsafe { Glucose_CreateSolver() };
+        assert!(!ptr.is_null());
         Solver {
-            ptr: unsafe { Glucose_CreateSolver() },
+            ptr,
             custom_constraints: vec![],
         }
     }
 
     pub fn new_var(&mut self) -> Var {
+        assert!(self.num_var() <= NUM_VAR_MAX);
         let var_id = unsafe { Glucose_NewVar(self.ptr) };
         assert!((0..=NUM_VAR_MAX).contains(&var_id));
         Var(var_id)
     }
 
     pub fn new_named_var(&mut self, name: &str) -> Var {
+        assert!(self.num_var() <= NUM_VAR_MAX);
         let c_string = CString::new(name).unwrap();
         let var_id = unsafe { Glucose_NewNamedVar(self.ptr, c_string.as_ptr()) };
         assert!((0..=NUM_VAR_MAX).contains(&var_id));
@@ -107,6 +123,13 @@ impl Solver {
         (0..self.num_var()).map(Var).collect()
     }
 
+    fn validate_lits<'a>(&self, lits: impl IntoIterator<Item = &'a Lit>) {
+        let num_var = self.num_var();
+        for &lit in lits {
+            assert!(lit.0 >= 0 && lit.var().0 < num_var, "invalid SAT literal");
+        }
+    }
+
     pub fn set_polarity(&mut self, var: Var, polarity: bool) {
         assert!(0 <= var.0 && var.0 < self.num_var());
         unsafe { Glucose_SetPolarity(self.ptr, var.0, if polarity { 1 } else { 0 }) }
@@ -114,6 +137,7 @@ impl Solver {
 
     pub fn add_clause(&mut self, clause: &[Lit]) -> bool {
         assert!(clause.len() <= i32::MAX as usize);
+        self.validate_lits(clause);
         let res = unsafe { Glucose_AddClause(self.ptr, clause.as_ptr(), clause.len() as i32) };
         res != 0
     }
@@ -135,8 +159,18 @@ impl Solver {
             assert_eq!(lits[i].len() + 1, domain[i].len());
         }
 
+        checked_total_len(domain.iter().map(Vec::len));
+        self.validate_lits(lits.iter().flatten());
+        for values in domain {
+            assert!(
+                values.windows(2).all(|w| w[0] < w[1]),
+                "domain must be strictly increasing"
+            );
+        }
+
         match mode {
             OrderEncodingLinearMode::Cpp => {
+                assert!(coefs.iter().all(|&coef| coef != 0), "zero coefficient");
                 let n_terms = lits.len() as i32;
                 let domain_size = domain.iter().map(|x| x.len() as i32).collect::<Vec<_>>();
                 let lits_flat = lits.iter().flatten().copied().collect::<Vec<_>>();
@@ -177,7 +211,8 @@ impl Solver {
         edges: &[(usize, usize)],
     ) -> bool {
         assert!(lits.len() <= i32::MAX as usize);
-        assert!(edges.len() <= i32::MAX as usize);
+        assert!(edges.len() <= (i32::MAX as usize) / 2);
+        self.validate_lits(lits);
 
         let mut edges_flat = vec![];
         for &(u, v) in edges {
@@ -204,12 +239,14 @@ impl Solver {
         vars: &[Vec<Lit>],
         supports: &[Vec<Option<usize>>],
     ) -> bool {
-        let mut len_total = 0;
-        for v in vars {
-            len_total += v.len();
-        }
-        assert!(len_total <= i32::MAX as usize);
-        assert!(vars.len() * supports.len() <= i32::MAX as usize);
+        assert!(vars.len() <= i32::MAX as usize);
+        assert!(supports.len() <= i32::MAX as usize);
+        checked_total_len(vars.iter().map(Vec::len));
+        assert!(vars
+            .len()
+            .checked_mul(supports.len())
+            .is_some_and(|n| n <= i32::MAX as usize));
+        self.validate_lits(vars.iter().flatten());
 
         let domain_size = vars.iter().map(|v| v.len() as i32).collect::<Vec<_>>();
         let vars_flat = vars.iter().flatten().copied().collect::<Vec<_>>();
@@ -248,6 +285,28 @@ impl Solver {
         mode: GraphDivisionMode,
         opts: &GraphDivisionOptions,
     ) -> bool {
+        assert!(domains.len() <= i32::MAX as usize);
+        assert!(edges.len() <= (i32::MAX as usize) / 2);
+        assert_eq!(domains.len(), dom_lits.len());
+        assert_eq!(edges.len(), edge_lits.len());
+        checked_total_len(domains.iter().map(Vec::len));
+        for (domain, lits) in domains.iter().zip(dom_lits) {
+            assert_eq!(lits.len(), domain.len().saturating_sub(1));
+            assert!(
+                domain.windows(2).all(|w| w[0] < w[1]),
+                "domain must be strictly increasing"
+            );
+        }
+        self.validate_lits(dom_lits.iter().flatten());
+        self.validate_lits(edge_lits);
+        for &(u, v) in edges {
+            assert!(
+                u < domains.len() && v < domains.len(),
+                "invalid graph endpoint"
+            );
+            assert_ne!(u, v, "graph division does not support self-loops");
+        }
+
         if mode == GraphDivisionMode::Rust {
             let vertex_weights = vec![1; domains.len()];
             let constr =
@@ -256,8 +315,6 @@ impl Solver {
         }
 
         assert!(!opts.require_extra_constraints());
-        assert_eq!(domains.len(), dom_lits.len());
-        assert_eq!(edges.len(), edge_lits.len());
 
         let mut dom_sizes = vec![];
         let mut dom_lits_flat = vec![];
@@ -488,8 +545,14 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
             None
         },
     );
+    assert!(res.len() <= i32::MAX as usize);
+    let num_var = unsafe { Glucose_NumVar(solver) };
     let mut has_current_level = false;
     for &lit in &res {
+        assert!(
+            lit.0 >= 0 && lit.var().0 < num_var,
+            "invalid reason literal"
+        );
         assert_eq!(unsafe { Glucose_SolverValue(solver, lit) }, 0);
         if unsafe { Glucose_IsCurrentLevel(solver, lit) } != 0 {
             has_current_level = true;
@@ -522,6 +585,87 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorUndo(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_reject_invalid_literals() {
+        for lit in [Lit(-2), Lit(-1), Lit(2), Lit(i32::MAX)] {
+            for operation in 0..6 {
+                let mut solver = Solver::new();
+                solver.new_var();
+                let result =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match operation {
+                        0 => solver.add_clause(&[lit]),
+                        1 => solver.add_active_vertices_connected(&[lit], &[]),
+                        2 => solver.add_order_encoding_linear(
+                            &[vec![lit]],
+                            &[vec![0, 1]],
+                            &[1],
+                            0,
+                            OrderEncodingLinearMode::Cpp,
+                        ),
+                        3 => solver
+                            .add_direct_encoding_extension_supports(&[vec![lit]], &[vec![Some(0)]]),
+                        4 => solver.add_graph_division(
+                            &[vec![1, 2]],
+                            &[vec![lit]],
+                            &[],
+                            &[],
+                            GraphDivisionMode::Cpp,
+                            &GraphDivisionOptions::default(),
+                        ),
+                        _ => solver.add_graph_division(
+                            &[vec![], vec![]],
+                            &[vec![], vec![]],
+                            &[(0, 1)],
+                            &[lit],
+                            GraphDivisionMode::Cpp,
+                            &GraphDivisionOptions::default(),
+                        ),
+                    }));
+                assert!(result.is_err(), "operation {operation} accepted {lit:?}");
+                assert!(solver.solve().is_some());
+            }
+        }
+    }
+
+    #[test]
+    fn test_reject_invalid_graph_structure() {
+        for mode in [GraphDivisionMode::Cpp, GraphDivisionMode::Rust] {
+            for edge in [(0, 1), (0, usize::MAX), (0, 0)] {
+                let mut solver = Solver::new();
+                let lit = solver.new_var().as_lit(false);
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    solver.add_graph_division(
+                        &[vec![]],
+                        &[vec![]],
+                        &[edge],
+                        &[lit],
+                        mode,
+                        &GraphDivisionOptions::default(),
+                    );
+                }));
+                assert!(result.is_err());
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "array exceeds native index range")]
+    fn test_reject_flattened_length_overflow() {
+        checked_total_len([i32::MAX as usize, 1]);
+    }
+
+    #[test]
+    #[should_panic(expected = "zero coefficient")]
+    fn test_reject_zero_coefficient() {
+        Solver::new().add_order_encoding_linear(
+            &[vec![]],
+            &[vec![1]],
+            &[0],
+            0,
+            OrderEncodingLinearMode::Cpp,
+        );
+    }
 
     #[test]
     fn test_solver() {
