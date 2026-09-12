@@ -562,7 +562,8 @@ fn normalize_disjunction(
 ) -> Vec<Constraint> {
     let mut constrs = constrs;
     if constrs.is_empty() {
-        vec![]
+        // An empty disjunction is false, represented by a single empty clause.
+        vec![Constraint::new()]
     } else if constrs.len() == 1 {
         constrs.remove(0)
     } else {
