@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, NumSpaces, Size, Spaces, Tuple3,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{count_true, Solver, TRUE};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GuidearrowClue {
@@ -28,24 +28,53 @@ pub fn solve_guidearrow(
     graph::active_vertices_connected_2d(&mut solver, !is_black);
     solver.add_expr(!is_black.conv2d_and((1, 2)));
     solver.add_expr(!is_black.conv2d_and((2, 1)));
+    solver.add_expr(is_black.conv2d_or((2, 2)));
 
-    let rank = &solver.int_var_2d((h, w), 0, (h * w) as i32);
-    solver.add_expr(rank.at((ty, tx)).eq(0));
+    let toward_right = &solver.bool_var_2d((h, w - 1));
+    let toward_left = &solver.bool_var_2d((h, w - 1));
+    let toward_down = &solver.bool_var_2d((h - 1, w));
+    let toward_up = &solver.bool_var_2d((h - 1, w));
+
+    for y in 0..h {
+        for x in 0..(w - 1) {
+            solver.add_expr(
+                count_true([toward_right.at((y, x)), toward_left.at((y, x))])
+                    .eq((!is_black.at((y, x)) & !is_black.at((y, x + 1))).ite(1, 0)),
+            );
+        }
+    }
+    for y in 0..(h - 1) {
+        for x in 0..w {
+            solver.add_expr(
+                count_true([toward_down.at((y, x)), toward_up.at((y, x))])
+                    .eq((!is_black.at((y, x)) & !is_black.at((y + 1, x))).ite(1, 0)),
+            );
+        }
+    }
+
+    solver.add_expr(!is_black.at((ty, tx)));
     for y in 0..h {
         for x in 0..w {
-            if (y, x) != (ty, tx) {
-                solver.add_expr(
-                    (!is_black.at((y, x))).imp(
-                        (!is_black.four_neighbors((y, x)))
-                            .imp(rank.four_neighbors((y, x)).ne(rank.at((y, x))))
-                            .all()
-                            & (!is_black.four_neighbors((y, x))
-                                & rank.four_neighbors((y, x)).lt(rank.at((y, x))))
-                            .count_true()
-                            .eq(1),
-                    ),
-                );
+            let mut outgoing = vec![];
+            if y > 0 {
+                outgoing.push(toward_up.at((y - 1, x)));
             }
+            if y < h - 1 {
+                outgoing.push(toward_down.at((y, x)));
+            }
+            if x > 0 {
+                outgoing.push(toward_left.at((y, x - 1)));
+            }
+            if x < w - 1 {
+                outgoing.push(toward_right.at((y, x)));
+            }
+            let n_outgoing = count_true(outgoing);
+            solver.add_expr(if (y, x) == (ty, tx) {
+                n_outgoing.eq(0)
+            } else {
+                n_outgoing.eq((!is_black.at((y, x))).ite(1, 0))
+            });
+
             if let Some(clue) = clues[y][x] {
                 solver.add_expr(!is_black.at((y, x)));
                 match clue {
@@ -54,34 +83,59 @@ pub fn solve_guidearrow(
                             return None;
                         }
                         solver.add_expr(!is_black.at((y - 1, x)));
-                        solver.add_expr(rank.at((y - 1, x)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_up.at((y - 1, x)));
                     }
                     GuidearrowClue::Down => {
                         if y == h - 1 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y + 1, x)));
-                        solver.add_expr(rank.at((y + 1, x)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_down.at((y, x)));
                     }
                     GuidearrowClue::Left => {
                         if x == 0 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y, x - 1)));
-                        solver.add_expr(rank.at((y, x - 1)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_left.at((y, x - 1)));
                     }
                     GuidearrowClue::Right => {
                         if x == w - 1 {
                             return None;
                         }
                         solver.add_expr(!is_black.at((y, x + 1)));
-                        solver.add_expr(rank.at((y, x + 1)).lt(rank.at((y, x))));
+                        solver.add_expr(toward_right.at((y, x)));
                     }
                     _ => (),
                 }
             }
         }
     }
+
+    let mut aux_graph = graph::Graph::new(h * w + 1);
+    let mut aux_vertices = vec![];
+
+    for y in 0..h {
+        for x in 0..w {
+            if y < h - 1 {
+                if x < w - 1 {
+                    aux_graph.add_edge(y * w + x, (y + 1) * w + x + 1);
+                }
+                if x > 0 {
+                    aux_graph.add_edge(y * w + x, (y + 1) * w + x - 1);
+                }
+            }
+
+            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
+                aux_graph.add_edge(y * w + x, h * w);
+            }
+
+            aux_vertices.push(is_black.at((y, x)).expr());
+        }
+    }
+    aux_vertices.push(TRUE);
+    graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
 
