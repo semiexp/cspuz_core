@@ -383,6 +383,9 @@ impl CSP {
     }
 
     pub fn new_int_var(&mut self, domain: Domain) -> IntVar {
+        if domain.is_empty() {
+            self.inconsistent = true;
+        }
         let id = self.vars.int_var.len();
         self.vars.int_var.push(IntVarData::new(domain));
         IntVar::new(id)
@@ -393,14 +396,10 @@ impl CSP {
     }
 
     pub fn new_int_var_from_list(&mut self, domain_list: Vec<CheckedInt>) -> IntVar {
-        assert!(!domain_list.is_empty());
         let mut domain_list = domain_list;
         domain_list.sort();
         domain_list.dedup();
-        let domain = Domain::enumerative_from_checked(domain_list.clone());
-        let id = self.vars.int_var.len();
-        self.vars.int_var.push(IntVarData::new(domain));
-        IntVar::new(id)
+        self.new_int_var(Domain::enumerative_from_checked(domain_list))
     }
 
     pub fn add_constraint(&mut self, stmt: Stmt) {

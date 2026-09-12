@@ -979,6 +979,45 @@ fn test_integration_exhaustive_alldifferent() {
 }
 
 #[test]
+fn test_integration_unused_empty_domain_range() {
+    let mut solver = IntegratedSolver::new();
+    // Even an unused variable must have at least one possible value.
+    solver.new_int_var(Domain::empty());
+
+    assert!(
+        solver.solve().is_none(),
+        "an unused integer variable with an empty range must make the problem UNSAT"
+    );
+}
+
+#[test]
+fn test_integration_unused_empty_domain_list() {
+    let mut solver = IntegratedSolver::new();
+    solver.new_int_var(Domain::enumerative(vec![]));
+
+    assert!(
+        solver.solve().is_none(),
+        "an unused integer variable with an empty domain list must make the problem UNSAT"
+    );
+}
+
+#[test]
+fn test_integration_unused_empty_domain_from_list() {
+    for use_constant_folding in [true, false] {
+        let mut solver = IntegratedSolver::with_config(Config {
+            use_constant_folding,
+            ..Config::default()
+        });
+        solver.new_int_var_from_list(vec![]);
+
+        assert!(
+            solver.solve().is_none(),
+            "an empty domain list must make the problem UNSAT (use_constant_folding={use_constant_folding})"
+        );
+    }
+}
+
+#[test]
 fn test_integration_domain_list1() {
     let mut tester = IntegrationTester::new();
 
