@@ -65,6 +65,42 @@ impl<'a> IntegrationTester<'a> {
 }
 
 #[test]
+fn test_integration_empty_or() {
+    for use_constant_folding in [true, false] {
+        let mut solver = IntegratedSolver::with_config(Config {
+            use_constant_folding,
+            ..Config::default()
+        });
+        solver.add_expr(BoolExpr::Or(vec![]));
+
+        // An empty disjunction is false, so asserting it must be unsatisfiable.
+        assert!(
+            solver.solve().is_none(),
+            "empty OR must be unsatisfiable (use_constant_folding={use_constant_folding})"
+        );
+    }
+}
+
+#[test]
+fn test_integration_answer_iter_empty_keys() {
+    for use_constant_folding in [true, false] {
+        let solver = IntegratedSolver::with_config(Config {
+            use_constant_folding,
+            ..Config::default()
+        });
+        let mut answers = solver.answer_iter(&[], &[]);
+
+        assert!(answers.next().is_some());
+        // Excluding the empty assignment adds an empty OR. Check only the next
+        // answer so a regression fails instead of collecting answers forever.
+        assert!(
+            answers.next().is_none(),
+            "empty assignment must be enumerated only once (use_constant_folding={use_constant_folding})"
+        );
+    }
+}
+
+#[test]
 fn test_integration_simple_logic1() {
     let mut solver = IntegratedSolver::new();
 
@@ -427,6 +463,24 @@ fn test_integration_csp_optimization3() {
 
     let res = solver.solve();
     assert!(res.is_none());
+}
+
+#[test]
+fn test_integration_irrefutable_empty_keys() {
+    for use_constant_folding in [true, false] {
+        let solver = IntegratedSolver::with_config(Config {
+            use_constant_folding,
+            ..Config::default()
+        });
+
+        // Refuting the initial empty assignment adds an empty OR, which must
+        // make the problem unsatisfiable and terminate the search.
+        let facts = solver
+            .decide_irrefutable_facts(&[], &[])
+            .expect("a satisfiable problem with no keys must have empty irrefutable facts");
+        assert_eq!(facts.bool_iter().count(), 0);
+        assert_eq!(facts.int_iter().count(), 0);
+    }
 }
 
 #[test]
