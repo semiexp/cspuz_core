@@ -309,6 +309,83 @@ impl PathPropagator {
         }
         path
     }
+
+    fn shortcut_path(&self, a: usize, b: usize) -> Option<Vec<usize>> {
+        let ra = self.root(a);
+        let rb = self.root(b);
+        if ra == rb {
+            return Some(self.find_path(a, b, None));
+        }
+        let ta = self.terminal[ra]?;
+        let tb = self.terminal[rb]?;
+        if self.clue[ta] != self.clue[tb] {
+            return None;
+        }
+        let mut reason = self.find_path(a, ta, None);
+        reason.extend(self.find_path(tb, b, None));
+        Some(reason)
+    }
+
+    fn edge_between(&self, a: usize, b: usize) -> usize {
+        for &(u, e) in &self.adjacent[a] {
+            if u == b {
+                return e;
+            }
+        }
+        panic!("No edge between {} and {}", a, b);
+    }
+
+    fn find_shortcut(&self, start: usize, end: usize, stride: usize) -> Option<Vec<(usize, bool)>> {
+        let mut v = start;
+        let mut last = None;
+
+        while v <= end {
+            match self.vertex_state[v] {
+                VertexState::Unknown => {
+                    last = None;
+                }
+                VertexState::NotTraversed => {}
+                VertexState::Traversed => {
+                    if let Some(last) = last {
+                        let blocker = if v - last == stride {
+                            let e = self.edge_between(v, last);
+                            if self.edge_state[e] != EdgeState::NoLine {
+                                None
+                            } else {
+                                Some(e)
+                            }
+                        } else {
+                            Some(!0)
+                        };
+
+                        if let Some(blocker) = blocker {
+                            if let Some(reason) = self.shortcut_path(last, v) {
+                                let mut reason =
+                                    reason.iter().map(|&e| (e, true)).collect::<Vec<_>>();
+                                let mut w = last + stride;
+                                while w < v {
+                                    reason.push((self.edges.len() + w, false));
+                                    w += stride;
+                                }
+                                if blocker != !0 {
+                                    reason.push((blocker, false));
+                                }
+
+                                // Needed because this reason is found only when vertex_state is set to Traversed
+                                reason.push((self.edges.len() + last, true));
+                                reason.push((self.edges.len() + v, true));
+                                return Some(reason);
+                            }
+                        }
+                    }
+                    last = Some(v);
+                }
+            }
+            v += stride;
+        }
+
+        None
+    }
 }
 
 impl SimpleCustomConstraint for PathPropagator {
@@ -406,6 +483,18 @@ impl SimpleCustomConstraint for PathPropagator {
             return Some(reason);
         }
 
+        for y in 0..self.height {
+            if let Some(reason) = self.find_shortcut(y * self.width, (y + 1) * self.width - 1, 1) {
+                return Some(reason);
+            }
+        }
+        for x in 0..self.width {
+            if let Some(reason) =
+                self.find_shortcut(x, x + (self.height - 1) * self.width, self.width)
+            {
+                return Some(reason);
+            }
+        }
         None
     }
 
