@@ -12,6 +12,9 @@ cspuz_rs = { path = "../cspuz_rs", default-features = false }
 cspuz_core = { path = "../cspuz_core", default-features = false }
 json = "0.12.4"
 
+[dev-dependencies]
+rand = "0.8.5"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 base64 = "0.22.1"
 flate2 = "1.1.5"

@@ -11,6 +11,14 @@ pub fn enumerate_answers_numlin(
     clues: &[Vec<Option<i32>>],
     num_max_answers: usize,
 ) -> Vec<graph::BoolGridEdgesModel> {
+    enumerate_answers_numlin_impl(clues, num_max_answers, true)
+}
+
+pub fn enumerate_answers_numlin_impl(
+    clues: &[Vec<Option<i32>>],
+    num_max_answers: usize,
+    use_propagator: bool,
+) -> Vec<graph::BoolGridEdgesModel> {
     let (h, w) = util::infer_shape(clues);
 
     let mut solver = Solver::new();
@@ -104,26 +112,122 @@ pub fn enumerate_answers_numlin(
         ),
     );
 
-    let mut values = vec![];
-    for y in 0..h {
-        for x in 0..(w - 1) {
-            values.push(is_line.horizontal.at((y, x)).expr());
+    if use_propagator {
+        let mut values = vec![];
+        for y in 0..h {
+            for x in 0..(w - 1) {
+                values.push(is_line.horizontal.at((y, x)).expr());
+            }
+        }
+        for y in 0..(h - 1) {
+            for x in 0..w {
+                values.push(is_line.vertical.at((y, x)).expr());
+            }
+        }
+        for y in 0..h {
+            for x in 0..w {
+                values.push(is_line.vertex_neighbors((y, x)).any());
+            }
+        }
+
+        solver.add_custom_constraint(
+            Box::new(propagator::PathPropagator::new(h, w, clues)),
+            values,
+        );
+    } else {
+        #[cfg(test)]
+        {
+            // acyclic
+            let mut graph = graph::Graph::new((h - 1) * (w - 1) + 1);
+            let outside = (h - 1) * (w - 1);
+            let mut indicator = vec![];
+
+            for y in 0..h {
+                for x in 0..(w - 1) {
+                    let v1 = if y == 0 {
+                        outside
+                    } else {
+                        (y - 1) * (w - 1) + x
+                    };
+                    let v2 = if y == h - 1 { outside } else { y * (w - 1) + x };
+                    graph.add_edge(v1, v2);
+                    indicator.push(!is_line.horizontal.at((y, x)));
+                }
+            }
+            for y in 0..(h - 1) {
+                for x in 0..w {
+                    let v1 = if x == 0 {
+                        outside
+                    } else {
+                        y * (w - 1) + (x - 1)
+                    };
+                    let v2 = if x == w - 1 { outside } else { y * (w - 1) + x };
+                    graph.add_edge(v1, v2);
+                    indicator.push(!is_line.vertical.at((y, x)));
+                }
+            }
+            let is_active = vec![cspuz_rs::solver::TRUE; graph.n_vertices()];
+            graph::active_vertices_connected_via_active_edges(
+                &mut solver,
+                &is_active,
+                &indicator,
+                &graph,
+            );
+
+            // no detour
+            let is_passed = &solver.bool_var_2d((h, w));
+            for y in 0..h {
+                for x in 0..w {
+                    solver.add_expr(
+                        is_passed
+                            .at((y, x))
+                            .iff(is_line.vertex_neighbors((y, x)).any()),
+                    );
+                }
+            }
+            for y in 0..h {
+                for x in 0..(w - 1) {
+                    solver.add_expr(
+                        (!is_line.horizontal.at((y, x)))
+                            .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y, x + 1)))),
+                    );
+                }
+                for x1 in 0..(w - 2) {
+                    for x2 in (x1 + 2)..w {
+                        solver.add_expr(
+                            (is_passed.at((y, x1))
+                                & is_passed.at((y, x2))
+                                & !(is_passed.slice_fixed_y((y, (x1 + 1)..x2)).any()))
+                            .imp(cell_clue_id.at((y, x1)).ne(cell_clue_id.at((y, x2)))),
+                        );
+                    }
+                }
+            }
+            for x in 0..w {
+                for y in 0..(h - 1) {
+                    solver.add_expr(
+                        (!is_line.vertical.at((y, x)))
+                            .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y + 1, x)))),
+                    );
+                }
+                for y1 in 0..(h - 2) {
+                    for y2 in (y1 + 2)..h {
+                        solver.add_expr(
+                            (is_passed.at((y1, x))
+                                & is_passed.at((y2, x))
+                                & !(is_passed.slice_fixed_x(((y1 + 1)..y2, x)).any()))
+                            .imp(cell_clue_id.at((y1, x)).ne(cell_clue_id.at((y2, x)))),
+                        );
+                    }
+                }
+            }
+        }
+
+        #[cfg(not(test))]
+        {
+            panic!("use_propagator must be true in non-test code");
         }
     }
-    for y in 0..(h - 1) {
-        for x in 0..w {
-            values.push(is_line.vertical.at((y, x)).expr());
-        }
-    }
-    for y in 0..h {
-        for x in 0..w {
-            values.push(is_line.vertex_neighbors((y, x)).any());
-        }
-    }
-    solver.add_custom_constraint(
-        Box::new(propagator::PathPropagator::new(h, w, clues)),
-        values,
-    );
 
     solver
         .answer_iter()
@@ -152,3 +256,6 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod instance_generator;

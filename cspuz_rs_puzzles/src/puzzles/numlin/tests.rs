@@ -43,3 +43,55 @@ fn test_numlin_serializer() {
     let url = "https://puzz.link/p?numlin/6/6/j4h14m2n2h133k";
     util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
 }
+
+fn answer_flat(answer: &graph::BoolGridEdgesModel) -> Vec<bool> {
+    let mut result = vec![];
+    let height = answer.horizontal.len();
+    let width = answer.horizontal[0].len() + 1;
+
+    for y in 0..height {
+        for x in 0..(width - 1) {
+            result.push(answer.horizontal[y][x]);
+        }
+    }
+    for y in 0..(height - 1) {
+        for x in 0..width {
+            result.push(answer.vertical[y][x]);
+        }
+    }
+
+    result
+}
+
+fn run_fuzz(height: usize, width: usize, seed: u64) {
+    let problem = instance_generator::generate_instance_by_csp(height, width, seed).unwrap();
+    let csp_answers = enumerate_answers_numlin(&problem, usize::MAX);
+    let no_propagator_answers = enumerate_answers_numlin_impl(&problem, usize::MAX, false);
+    let numlin_answers = no_propagator_answers;
+
+    assert_eq!(csp_answers.len(), numlin_answers.len());
+
+    let mut csp_answers = csp_answers
+        .iter()
+        .map(|ans| answer_flat(ans))
+        .collect::<Vec<_>>();
+    csp_answers.sort();
+
+    let mut numlin_answers = numlin_answers
+        .iter()
+        .map(|ans| answer_flat(ans))
+        .collect::<Vec<_>>();
+    numlin_answers.sort();
+
+    assert_eq!(csp_answers, numlin_answers);
+}
+
+#[test]
+fn test_numlin_fuzz() {
+    for (height, width) in [(7, 8), (8, 7), (8, 8), (9, 9)] {
+        let seed_start = height * 10000 + width * 100;
+        for seed in 0..10 {
+            run_fuzz(height, width, (seed_start + seed) as u64);
+        }
+    }
+}
