@@ -64,11 +64,12 @@ fn answer_flat(answer: &graph::BoolGridEdgesModel) -> Vec<bool> {
 }
 
 fn run_fuzz(height: usize, width: usize, seed: u64) {
-    let problem = if let Some(problem) = instance_generator::generate_instance_by_csp(height, width, seed) {
-        problem
-    } else {
-        return;
-    };
+    let problem =
+        if let Some(problem) = instance_generator::generate_instance_by_csp(height, width, seed) {
+            problem
+        } else {
+            return;
+        };
     let csp_answers = enumerate_answers_numlin(&problem, usize::MAX);
     let no_propagator_answers = enumerate_answers_numlin_impl(&problem, usize::MAX, false);
     let numlin_answers = no_propagator_answers;
