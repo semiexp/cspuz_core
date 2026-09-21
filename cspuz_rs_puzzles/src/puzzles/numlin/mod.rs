@@ -188,8 +188,10 @@ pub fn enumerate_answers_numlin_impl(
             for y in 0..h {
                 for x in 0..(w - 1) {
                     solver.add_expr(
-                        (!is_line.horizontal.at((y, x)))
-                            .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y, x + 1)))),
+                        (!is_line.horizontal.at((y, x))
+                            & is_passed.at((y, x))
+                            & is_passed.at((y, x + 1)))
+                        .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y, x + 1)))),
                     );
                 }
                 for x1 in 0..(w - 2) {
@@ -206,8 +208,10 @@ pub fn enumerate_answers_numlin_impl(
             for x in 0..w {
                 for y in 0..(h - 1) {
                     solver.add_expr(
-                        (!is_line.vertical.at((y, x)))
-                            .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y + 1, x)))),
+                        (!is_line.vertical.at((y, x))
+                            & is_passed.at((y, x))
+                            & is_passed.at((y + 1, x)))
+                        .imp(cell_clue_id.at((y, x)).ne(cell_clue_id.at((y + 1, x)))),
                     );
                 }
                 for y1 in 0..(h - 2) {
