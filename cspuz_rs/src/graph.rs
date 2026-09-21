@@ -1,9 +1,9 @@
 use std::ops::Index;
 
 use super::solver::{
-    count_true, traits::BoolArrayLike, traits::Operand, BoolExprArray1D, BoolExprArray2D, BoolVar,
-    BoolVarArray1D, BoolVarArray2D, FromModel, FromOwnedPartialModel, GraphDivisionOptions, Model,
-    OwnedPartialModel, Solver,
+    count_true, traits::BoolArrayLike, traits::Operand, BoolExpr, BoolExprArray1D, BoolExprArray2D,
+    BoolVar, BoolVarArray1D, BoolVarArray2D, FromModel, FromOwnedPartialModel,
+    GraphDivisionOptions, Model, OwnedPartialModel, Solver, TRUE,
 };
 use cspuz_core::csp::BoolExpr as CSPBoolExpr;
 use cspuz_core::csp::IntExpr as CSPIntExpr;
@@ -140,7 +140,154 @@ pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
     graph
 }
 
-/// A struct for maintaining "edges" of a grid, including those on the outer border.
+/// Returns a graph for an h * w grid with 8-neighbor connectivity.
+///
+/// Vertices are indexed as `y * w + x` for cell `(y, x)`.
+/// Each cell is connected to all adjacent cells: horizontally, vertically, and diagonally.
+pub fn graph_8_neighbors(shape: (usize, usize)) -> Graph {
+    let (h, w) = shape;
+    let mut graph = Graph::new(h * w);
+    for y in 0..h {
+        for x in 0..w {
+            if x < w - 1 {
+                graph.add_edge(y * w + x, y * w + (x + 1));
+            }
+            if y < h - 1 {
+                graph.add_edge(y * w + x, (y + 1) * w + x);
+            }
+            if y < h - 1 && x < w - 1 {
+                graph.add_edge(y * w + x, (y + 1) * w + (x + 1));
+            }
+            if y < h - 1 && x > 0 {
+                graph.add_edge(y * w + x, (y + 1) * w + (x - 1));
+            }
+        }
+    }
+    graph
+}
+
+/// Returns a graph for an h * w grid with 8-neighbor connectivity plus an outer vertex.
+///
+/// Vertices are indexed as `y * w + x` for cell `(y, x)`.
+/// The outer vertex has index `h * w`.
+/// All border cells (first/last row or column) are connected to the outer vertex.
+pub fn graph_8_neighbors_with_outer_vertex(shape: (usize, usize)) -> Graph {
+    let (h, w) = shape;
+    let mut graph = graph_8_neighbors(shape);
+    let outer = graph.add_vertex();
+    for y in 0..h {
+        for x in 0..w {
+            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
+                graph.add_edge(y * w + x, outer);
+            }
+        }
+    }
+    graph
+}
+
+/// Adds a constraint that the active edges in `edges` form no closed cycle.
+///
+/// This is equivalent to requiring that the subgraph induced by the active edges is a forest.
+/// The implementation uses the planar dual graph: the active edges are acyclic if and only if
+/// the "face" vertices (always active) together with the "non-edge" vertices remain connected
+/// in the dual graph.
+///
+/// `edges` is a `BoolGridEdges` with base shape `(H, W)`, representing a grid with `(H + 1) * (W + 1)`
+/// vertices, `(H + 1) * W` horizontal edges, and `H * (W + 1)` vertical edges.
+pub fn active_edges_acyclic(solver: &mut Solver, edges: &BoolGridEdges) {
+    let (base_h, base_w) = edges.base_shape();
+    let h = base_h + 1;
+    let w = base_w + 1;
+    let outer = (h - 1) * (w - 1);
+    let mut aux_graph = Graph::new(outer + 1 + h * (w - 1) + (h - 1) * w);
+    let mut indicator: Vec<BoolExpr> = vec![TRUE; outer + 1];
+
+    for y in 0..h {
+        for x in 0..w - 1 {
+            let v1 = if y == 0 { outer } else { (y - 1) * (w - 1) + x };
+            let v2 = if y == h - 1 { outer } else { y * (w - 1) + x };
+            let e = indicator.len();
+            aux_graph.add_edge(e, v1);
+            aux_graph.add_edge(e, v2);
+            indicator.push(!edges.horizontal.at((y, x)));
+        }
+    }
+    for y in 0..h - 1 {
+        for x in 0..w {
+            let v1 = if x == 0 { outer } else { y * (w - 1) + x - 1 };
+            let v2 = if x == w - 1 { outer } else { y * (w - 1) + x };
+            let e = indicator.len();
+            aux_graph.add_edge(e, v1);
+            aux_graph.add_edge(e, v2);
+            indicator.push(!edges.vertical.at((y, x)));
+        }
+    }
+
+    active_vertices_connected(solver, &indicator, &aux_graph);
+}
+
+/// Returns a graph for the sub-cell connectivity of an h * w slash/backslash puzzle grid.
+///
+/// Each cell is split into 4 quadrants, giving a `2h * 2w` sub-cell grid.
+/// Quadrant `(y, x)` in the sub-grid is indexed as `y * w * 2 + x`.
+/// The connectivity between quadrants reflects which sub-cells share a boundary that can be
+/// crossed by a slash (`/`) or backslash (`\`) diagonal.
+///
+/// Specifically:
+/// - Sub-cells where `y % 2 == x % 2` (the same parity) can connect to their lower-left,
+///   lower, and right neighbors.
+/// - Sub-cells where `y % 2 != x % 2` (different parity) can connect to their lower, right,
+///   and lower-right neighbors.
+pub fn graph_slash_connectivity(shape: (usize, usize)) -> Graph {
+    let (h, w) = shape;
+    let mut g = Graph::new(h * w * 4);
+    for y in 0..(h * 2) {
+        for x in 0..(w * 2) {
+            if y % 2 == x % 2 {
+                if y < h * 2 - 1 {
+                    if x > 0 {
+                        g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x - 1);
+                    }
+                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
+                }
+                if x < w * 2 - 1 {
+                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
+                }
+            } else {
+                if y < h * 2 - 1 {
+                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
+                }
+                if x < w * 2 - 1 {
+                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
+                }
+                if y < h * 2 - 1 && x < w * 2 - 1 {
+                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x + 1);
+                }
+            }
+        }
+    }
+    g
+}
+
+/// Returns a graph for the sub-cell connectivity of an h * w slash/backslash puzzle grid,
+/// with an additional outer vertex connected to all border sub-cells.
+///
+/// This extends `graph_slash_connectivity` by adding a vertex at index `h * w * 4` that is
+/// connected to every sub-cell on the border of the `2h * 2w` sub-grid.
+pub fn graph_slash_connectivity_with_outer_vertex(shape: (usize, usize)) -> Graph {
+    let (h, w) = shape;
+    let mut g = graph_slash_connectivity(shape);
+    let outer = g.add_vertex();
+    for y in 0..(h * 2) {
+        for x in 0..(w * 2) {
+            if y == 0 || y == h * 2 - 1 || x == 0 || x == w * 2 - 1 {
+                g.add_edge(outer, y * w * 2 + x);
+            }
+        }
+    }
+    g
+}
+
 ///
 /// Suppose we have a H * W grid. Then, each cell is surrounded by 2 horizontal edges and 2 vertical edges.
 /// Thus we have (H + 1) * W horizontal edges and H * (W + 1) vertical edges in total.

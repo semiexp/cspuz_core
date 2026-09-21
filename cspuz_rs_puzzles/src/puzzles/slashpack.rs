@@ -40,32 +40,7 @@ pub fn solve_slashpack(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>
      */
     let room_id = &solver.int_var_2d((h * 2, w * 2), 0, n_rooms);
     let room_id_flat = &room_id.flatten();
-    let mut g = graph::Graph::new(h * w * 4);
-    for y in 0..(h * 2) {
-        for x in 0..(w * 2) {
-            if y % 2 == x % 2 {
-                if y < h * 2 - 1 {
-                    if x > 0 {
-                        g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x - 1);
-                    }
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
-                }
-                if x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
-                }
-            } else {
-                if y < h * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
-                }
-                if x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
-                }
-                if y < h * 2 - 1 && x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x + 1);
-                }
-            }
-        }
-    }
+    let g = graph::graph_slash_connectivity((h, w));
     for i in 0..g.n_edges() {
         let (u, v) = g[i];
         solver.add_expr(

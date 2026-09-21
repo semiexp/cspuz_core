@@ -64,24 +64,7 @@ pub fn solve_bramble(
 
     {
         // black cells are connected by 8-connectivity
-        let mut g = graph::Graph::new(h * w);
-        for y in 0..h {
-            for x in 0..w {
-                let v = y * w + x;
-                if y > 0 {
-                    g.add_edge(v, (y - 1) * w + x);
-                }
-                if x > 0 {
-                    g.add_edge(v, y * w + (x - 1));
-                }
-                if y > 0 && x > 0 {
-                    g.add_edge(v, (y - 1) * w + (x - 1));
-                }
-                if y > 0 && x < w - 1 {
-                    g.add_edge(v, (y - 1) * w + (x + 1));
-                }
-            }
-        }
+        let g = graph::graph_8_neighbors((h, w));
         graph::active_vertices_connected(&mut solver, is_black.flatten(), &g);
     }
 

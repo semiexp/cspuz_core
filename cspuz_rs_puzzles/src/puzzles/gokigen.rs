@@ -44,39 +44,14 @@ pub fn solve_gokigen(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>
     0 /\ 1
     2 \/ 3
      */
-    let mut g = graph::Graph::new(h * w * 4 + 1);
+    let g = graph::graph_slash_connectivity_with_outer_vertex((h, w));
     let mut is_active = vec![];
     for y in 0..(h * 2) {
         for x in 0..(w * 2) {
-            if y == 0 || y == h * 2 - 1 || x == 0 || x == w * 2 - 1 {
-                g.add_edge(h * w * 4, y * w * 2 + x);
-            }
             if y % 2 == x % 2 {
                 is_active.push(ans.at((y / 2, x / 2)).eq(GOKIGEN_SLASH));
             } else {
                 is_active.push(ans.at((y / 2, x / 2)).eq(GOKIGEN_BACKSLASH));
-            }
-
-            if y % 2 == x % 2 {
-                if y < h * 2 - 1 {
-                    if x > 0 {
-                        g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x - 1);
-                    }
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
-                }
-                if x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
-                }
-            } else {
-                if y < h * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x);
-                }
-                if x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, y * w * 2 + x + 1);
-                }
-                if y < h * 2 - 1 && x < w * 2 - 1 {
-                    g.add_edge(y * w * 2 + x, (y + 1) * w * 2 + x + 1);
-                }
             }
         }
     }
