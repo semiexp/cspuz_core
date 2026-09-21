@@ -341,7 +341,7 @@ pub fn dispatch_puzz_link_enumerate(
     url: &str,
     num_max_answers: usize,
 ) -> Option<Result<(Board, Vec<Board>), &'static str>> {
-    if puzzle_kind == "numlin" {
+    if puzzle_kind == "numlin" || puzzle_kind == "numberlink" {
         return Some(numlin::enumerate(url, num_max_answers));
     }
     puzz_link::dispatch_enumerate(puzzle_kind, url, num_max_answers)
