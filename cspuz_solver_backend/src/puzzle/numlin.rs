@@ -6,7 +6,7 @@ use cspuz_rs_puzzles::puzzles::numlin;
 pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>), &'static str> {
     let problem = numlin::deserialize_problem(url).ok_or("invalid url")?;
     // At least two representative answers are needed to determine uniqueness.
-    let answers = numlin::enumerate_answers_numlin(&problem, num_max_answers.max(2));
+    let answers = numlin::enumerate_answers_numlin(&problem, num_max_answers);
     let uniqueness = if num_max_answers <= 1 {
         Uniqueness::NotApplicable
     } else {
