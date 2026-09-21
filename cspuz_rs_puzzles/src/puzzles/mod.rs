@@ -103,6 +103,7 @@ pub mod norinuri;
 pub mod nothing;
 pub mod nothree;
 pub mod numcity;
+pub mod numlin;
 pub mod nurikabe;
 pub mod nuriloop;
 pub mod nurimaze;

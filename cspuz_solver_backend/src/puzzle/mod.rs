@@ -322,6 +322,7 @@ puzzle_list!(penpa_edit,
 );
 
 pub mod double_lits;
+pub mod numlin;
 
 pub fn dispatch_puzz_link(puzzle_kind: &str, url: &str) -> Option<Result<Board, &'static str>> {
     if let Some(res) = puzz_link::dispatch(puzzle_kind, url) {
@@ -340,6 +341,9 @@ pub fn dispatch_puzz_link_enumerate(
     url: &str,
     num_max_answers: usize,
 ) -> Option<Result<(Board, Vec<Board>), &'static str>> {
+    if puzzle_kind == "numlin" || puzzle_kind == "numberlink" {
+        return Some(numlin::enumerate(url, num_max_answers));
+    }
     puzz_link::dispatch_enumerate(puzzle_kind, url, num_max_answers)
 }
 

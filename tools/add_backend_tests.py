@@ -103,7 +103,7 @@ def add_test_solve_to_file(file_path, url):
         print(f"Error updating {file_path}: {e}")
         return False
 
-IGNORED_FILES = ["mod.rs", "heyawake_internal.rs"]
+IGNORED_FILES = ["mod.rs", "heyawake_internal.rs", "numlin.rs"]
 
 
 def main():
