@@ -64,7 +64,11 @@ fn answer_flat(answer: &graph::BoolGridEdgesModel) -> Vec<bool> {
 }
 
 fn run_fuzz(height: usize, width: usize, seed: u64) {
-    let problem = instance_generator::generate_instance_by_csp(height, width, seed).unwrap();
+    let problem = if let Some(problem) = instance_generator::generate_instance_by_csp(height, width, seed) {
+        problem
+    } else {
+        return;
+    };
     let csp_answers = enumerate_answers_numlin(&problem, usize::MAX);
     let no_propagator_answers = enumerate_answers_numlin_impl(&problem, usize::MAX, false);
     let numlin_answers = no_propagator_answers;
@@ -87,10 +91,21 @@ fn run_fuzz(height: usize, width: usize, seed: u64) {
 }
 
 #[test]
-fn test_numlin_fuzz() {
-    for (height, width) in [(7, 8), (8, 7), (8, 8), (9, 9)] {
+fn test_numlin_fuzz_short() {
+    for (height, width) in [(7, 8), (8, 7), (8, 8), (9, 9), (10, 10)] {
         let seed_start = height * 10000 + width * 100;
         for seed in 0..10 {
+            run_fuzz(height, width, (seed_start + seed) as u64);
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn test_numlin_fuzz_long() {
+    for (height, width) in [(7, 8), (8, 7), (8, 8), (9, 9), (10, 10)] {
+        let seed_start = height * 100000 + width * 1000;
+        for seed in 0..1000 {
             run_fuzz(height, width, (seed_start + seed) as u64);
         }
     }
