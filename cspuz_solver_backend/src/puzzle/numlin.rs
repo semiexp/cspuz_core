@@ -5,11 +5,21 @@ use cspuz_rs_puzzles::puzzles::numlin;
 
 pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>), &'static str> {
     let problem = numlin::deserialize_problem(url).ok_or("invalid url")?;
+    // At least two representative answers are needed to determine uniqueness.
     let answers = numlin::enumerate_answers_numlin(&problem, num_max_answers);
+    let uniqueness = if num_max_answers <= 1 {
+        Uniqueness::NotApplicable
+    } else {
+        match answers.len() {
+            0 => Uniqueness::NoAnswer,
+            1 if find_another_answer(&answers[0]).is_none() => Uniqueness::Unique,
+            _ => Uniqueness::NonUnique,
+        }
+    };
 
     let height = problem.len();
     let width = problem[0].len();
-    let mut board_common = Board::new(BoardKind::Grid, height, width, Uniqueness::NotApplicable);
+    let mut board_common = Board::new(BoardKind::Grid, height, width, uniqueness);
 
     for y in 0..height {
         for x in 0..width {

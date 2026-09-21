@@ -99,14 +99,20 @@ fn enumerate_answers_problem(url: *const u8, len: usize, num_max_answers: usize)
 
     let ret_string = match result {
         Ok((common, per_answer)) => {
+            let uniqueness = match common.uniqueness {
+                Uniqueness::Unique => ",\"isUnique\":true",
+                Uniqueness::NonUnique => ",\"isUnique\":false",
+                Uniqueness::NotApplicable | Uniqueness::NoAnswer => "",
+            };
             format!(
-                "{{\"status\":\"ok\",\"description\":{{\"common\":{},\"answers\":[{}]}}}}",
+                "{{\"status\":\"ok\",\"description\":{{\"common\":{},\"answers\":[{}]{}}}}}",
                 common.to_json(),
                 per_answer
                     .iter()
                     .map(|x| x.to_json())
                     .collect::<Vec<_>>()
-                    .join(",")
+                    .join(","),
+                uniqueness
             )
         }
         Err(err) => {
