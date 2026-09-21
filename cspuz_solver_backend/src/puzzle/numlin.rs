@@ -34,7 +34,7 @@ pub fn enumerate(url: &str, num_max_answers: usize) -> Result<(Board, Vec<Board>
     }
 
     let mut boards = vec![];
-    for ans in answers.into_iter().take(num_max_answers) {
+    for ans in answers {
         let mut board_answer =
             Board::new(BoardKind::Empty, height, width, Uniqueness::NotApplicable);
         for y in 0..height {
