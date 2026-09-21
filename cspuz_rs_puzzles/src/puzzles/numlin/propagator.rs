@@ -1,132 +1,4 @@
-use crate::util;
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
-use cspuz_rs::graph;
-use cspuz_rs::serializer::{
-    problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
-};
-use cspuz_rs::solver::Solver;
-
-pub fn enumerate_answers_numlin(
-    clues: &[Vec<Option<i32>>],
-    num_max_answers: usize,
-) -> Vec<graph::BoolGridEdgesModel> {
-    let (h, w) = util::infer_shape(clues);
-
-    let mut solver = Solver::new();
-
-    let is_line = graph::GridEdges::new(&mut solver, (h - 1, w - 1));
-    solver.add_answer_key_bool(&is_line.horizontal);
-    solver.add_answer_key_bool(&is_line.vertical);
-
-    for y in 0..h {
-        for x in 0..w {
-            if clues[y][x].is_some() {
-                solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(1));
-            } else {
-                solver.add_expr(
-                    is_line.vertex_neighbors((y, x)).count_true().eq(0)
-                        | is_line.vertex_neighbors((y, x)).count_true().eq(2),
-                );
-            }
-        }
-    }
-
-    // forbid trivial detour
-    for y in 0..(h - 1) {
-        for x in 0..(w - 1) {
-            solver.add_expr(is_line.cell_neighbors((y, x)).count_true().le(2));
-        }
-    }
-
-    // L-shape canonization
-    for y in 0..(h - 1) {
-        for x in 0..(w - 1) {
-            if clues[y + 1][x + 1].is_none() {
-                if y == h - 2 || x == w - 2 {
-                    solver.add_expr(!(is_line.horizontal.at((y, x)) & is_line.vertical.at((y, x))));
-                } else {
-                    solver.add_expr(
-                        (is_line.horizontal.at((y, x)) & is_line.vertical.at((y, x))).imp(
-                            is_line.horizontal.at((y + 1, x + 1))
-                                & is_line.vertical.at((y + 1, x + 1)),
-                        ),
-                    );
-                }
-            }
-
-            if clues[y + 1][x].is_none() {
-                if y == h - 2 || x == 0 {
-                    solver.add_expr(
-                        !(is_line.horizontal.at((y, x)) & is_line.vertical.at((y, x + 1))),
-                    );
-                } else {
-                    solver.add_expr(
-                        (is_line.horizontal.at((y, x)) & is_line.vertical.at((y, x + 1))).imp(
-                            is_line.horizontal.at((y + 1, x - 1)) & is_line.vertical.at((y + 1, x)),
-                        ),
-                    );
-                }
-            }
-        }
-    }
-
-    let mut max_clue = 0;
-    for y in 0..h {
-        for x in 0..w {
-            if let Some(n) = clues[y][x] {
-                max_clue = max_clue.max(n);
-            }
-        }
-    }
-
-    let cell_clue_id = &solver.int_var_2d((h, w), 0, max_clue);
-    for y in 0..h {
-        for x in 0..w {
-            if let Some(n) = clues[y][x] {
-                solver.add_expr(cell_clue_id.at((y, x)).eq(n));
-            }
-        }
-    }
-
-    solver.add_expr(
-        is_line.horizontal.imp(
-            cell_clue_id
-                .slice((.., 1..))
-                .eq(cell_clue_id.slice((.., ..(w - 1)))),
-        ),
-    );
-    solver.add_expr(
-        is_line.vertical.imp(
-            cell_clue_id
-                .slice((1.., ..))
-                .eq(cell_clue_id.slice((..(h - 1), ..))),
-        ),
-    );
-
-    let mut values = vec![];
-    for y in 0..h {
-        for x in 0..(w - 1) {
-            values.push(is_line.horizontal.at((y, x)).expr());
-        }
-    }
-    for y in 0..(h - 1) {
-        for x in 0..w {
-            values.push(is_line.vertical.at((y, x)).expr());
-        }
-    }
-    for y in 0..h {
-        for x in 0..w {
-            values.push(is_line.vertex_neighbors((y, x)).any());
-        }
-    }
-    solver.add_custom_constraint(Box::new(PathPropagator::new(h, w, clues)), values);
-
-    solver
-        .answer_iter()
-        .take(num_max_answers)
-        .map(|f| f.get_unwrap(&is_line))
-        .collect()
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum EdgeState {
@@ -142,7 +14,7 @@ enum VertexState {
     NotTraversed,
 }
 
-struct PathPropagator {
+pub(super) struct PathPropagator {
     height: usize,
     width: usize,
     clue: Vec<Option<i32>>,
@@ -195,7 +67,7 @@ struct PathWorkspace {
 }
 
 impl PathPropagator {
-    fn new(height: usize, width: usize, clues: &[Vec<Option<i32>>]) -> PathPropagator {
+    pub(super) fn new(height: usize, width: usize, clues: &[Vec<Option<i32>>]) -> PathPropagator {
         let mut edges = vec![];
         let mut adjacent = vec![vec![]; height * width];
         for y in 0..height {
@@ -520,72 +392,5 @@ impl SimpleCustomConstraint for PathPropagator {
                 self.vertex_state[index] = VertexState::Unknown;
             }
         }
-    }
-}
-
-type Problem = Vec<Vec<Option<i32>>>;
-
-fn combinator() -> impl Combinator<Problem> {
-    Grid::new(Choice::new(vec![
-        Box::new(Optionalize::new(HexInt)),
-        Box::new(Spaces::new(None, 'g')),
-        Box::new(Dict::new(Some(-1), ".")),
-    ]))
-}
-
-pub fn serialize_problem(problem: &Problem) -> Option<String> {
-    problem_to_url(combinator(), "numlin", problem.clone())
-}
-
-pub fn deserialize_problem(url: &str) -> Option<Problem> {
-    url_to_problem(combinator(), &["numlin"], url)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn problem_for_tests() -> Problem {
-        vec![
-            vec![None, None, None, None, Some(4), None],
-            vec![None, Some(1), Some(4), None, None, None],
-            vec![None, None, None, None, Some(2), None],
-            vec![None, None, None, None, None, None],
-            vec![None, Some(2), None, None, Some(1), Some(3)],
-            vec![Some(3), None, None, None, None, None],
-        ]
-    }
-
-    #[test]
-    fn test_numlin_problem() {
-        let problem = problem_for_tests();
-        let ans = enumerate_answers_numlin(&problem, 3);
-        assert_eq!(ans.len(), 1);
-        let ans = &ans[0];
-        let expected = graph::BoolGridEdgesModel {
-            horizontal: util::tests::to_bool_2d([
-                [1, 1, 1, 0, 1],
-                [0, 0, 0, 1, 0],
-                [0, 0, 1, 0, 0],
-                [0, 1, 0, 1, 1],
-                [1, 0, 1, 1, 0],
-                [1, 1, 1, 1, 1],
-            ]),
-            vertical: util::tests::to_bool_2d([
-                [1, 0, 0, 1, 0, 1],
-                [1, 1, 1, 0, 1, 1],
-                [1, 1, 0, 1, 0, 1],
-                [1, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 1],
-            ]),
-        };
-        assert_eq!(ans, &expected);
-    }
-
-    #[test]
-    fn test_numlin_serializer() {
-        let problem = problem_for_tests();
-        let url = "https://puzz.link/p?numlin/6/6/j4h14m2n2h133k";
-        util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
 }
