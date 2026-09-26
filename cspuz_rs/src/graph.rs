@@ -238,8 +238,8 @@ pub fn borders_to_rooms(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> Vec<Vec<(us
 pub struct RoomPartition {
     /// Cells belonging to each room.
     pub rooms: Vec<Vec<(usize, usize)>>,
-    /// `room_of[y][x]` is the index of the room containing `(y, x)`.
-    pub room_of: Vec<Vec<usize>>,
+    /// `room_id[y][x]` is the index of the room containing `(y, x)`.
+    pub room_id: Vec<Vec<usize>>,
     /// `index_in_room[y][x]` is the index of `(y, x)` within its room.
     pub index_in_room: Vec<Vec<usize>>,
 }
@@ -248,7 +248,7 @@ pub struct RoomPartition {
 ///
 /// Rooms are connected components as described in [`borders_to_rooms`].
 /// For every cell `(y, x)`, the returned partition satisfies
-/// `rooms[room_of[y][x]][index_in_room[y][x]] == (y, x)`.
+/// `rooms[room_id[y][x]][index_in_room[y][x]] == (y, x)`.
 pub fn borders_to_room_partition(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> RoomPartition {
     fn visit(
         y: usize,
@@ -292,18 +292,18 @@ pub fn borders_to_room_partition(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> Ro
         }
     }
 
-    let mut room_of = vec![vec![0; width]; height];
+    let mut room_id = vec![vec![0; width]; height];
     let mut index_in_room = vec![vec![0; width]; height];
-    for (room_id, room) in ret.iter().enumerate() {
-        for (index, &(y, x)) in room.iter().enumerate() {
-            room_of[y][x] = room_id;
-            index_in_room[y][x] = index;
+    for (rid, room) in ret.iter().enumerate() {
+        for (idx, &(y, x)) in room.iter().enumerate() {
+            room_id[y][x] = rid;
+            index_in_room[y][x] = idx;
         }
     }
 
     RoomPartition {
         rooms: ret,
-        room_of,
+        room_id,
         index_in_room,
     }
 }
@@ -1135,7 +1135,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            partition.room_of,
+            partition.room_id,
             vec![vec![0, 1, 1], vec![2, 2, 1], vec![2, 3, 3]]
         );
         assert_eq!(
@@ -1155,7 +1155,7 @@ mod tests {
             borders_to_room_partition(&borders),
             RoomPartition {
                 rooms: vec![vec![(0, 0)]],
-                room_of: vec![vec![0]],
+                room_id: vec![vec![0]],
                 index_in_room: vec![vec![0]],
             }
         );
