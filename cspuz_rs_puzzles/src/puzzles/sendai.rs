@@ -68,33 +68,21 @@ pub fn solve_sendai(
         );
     }
 
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let idx_in_room = &room_partition.index_in_room;
     for (room_id, room) in rooms.iter().enumerate() {
         if let Some(clue) = clues[room_id] {
             let num_vertices = room.len();
             let mut edges = vec![];
             let mut edge_values = vec![];
-            let mut vertex_id_map = vec![None; h * w];
-            for (i, &(y, x)) in room.iter().enumerate() {
-                vertex_id_map[y * w + x] = Some(i);
-            }
             for &(y, x) in room {
-                if y + 1 < h
-                    && vertex_id_map[(y + 1) * w + x].is_some()
-                    && !borders.horizontal[y][x]
-                {
-                    edges.push((
-                        vertex_id_map[y * w + x].unwrap(),
-                        vertex_id_map[(y + 1) * w + x].unwrap(),
-                    ));
+                if y + 1 < h && !borders.horizontal[y][x] {
+                    edges.push((idx_in_room[y][x], idx_in_room[y + 1][x]));
                     edge_values.push(is_border.horizontal.at((y, x)).clone());
                 }
-                if x + 1 < w && vertex_id_map[y * w + (x + 1)].is_some() && !borders.vertical[y][x]
-                {
-                    edges.push((
-                        vertex_id_map[y * w + x].unwrap(),
-                        vertex_id_map[y * w + (x + 1)].unwrap(),
-                    ));
+                if x + 1 < w && !borders.vertical[y][x] {
+                    edges.push((idx_in_room[y][x], idx_in_room[y][x + 1]));
                     edge_values.push(is_border.vertical.at((y, x)).clone());
                 }
             }

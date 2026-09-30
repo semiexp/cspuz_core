@@ -18,9 +18,10 @@ pub fn solve_moonsun(
     solver.add_answer_key_bool(&is_line.vertical);
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
     let room_mode = &solver.bool_var_1d(rooms.len()); // false: 1, true: 2
-    let mut room_id = vec![vec![0; w]; h];
 
     for i in 0..rooms.len() {
         let mut has_one = false;
@@ -45,12 +46,6 @@ pub fn solve_moonsun(
         }
         if !has_two {
             solver.add_expr(!room_mode.at(i));
-        }
-    }
-
-    for i in 0..rooms.len() {
-        for &(y, x) in &rooms[i] {
-            room_id[y][x] = i;
         }
     }
 

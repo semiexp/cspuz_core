@@ -69,14 +69,9 @@ pub fn solve_doubleback(
         }
     }
 
-    let rooms = graph::borders_to_rooms(&borders_with_holes);
-    let mut room_id = vec![vec![0; w]; h];
-
-    for i in 0..rooms.len() {
-        for &(y, x) in &rooms[i] {
-            room_id[y][x] = i;
-        }
-    }
+    let room_partition = graph::borders_to_room_partition(&borders_with_holes);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
 
     let mut room_entrance = vec![vec![]; rooms.len()];
     for y in 0..h {

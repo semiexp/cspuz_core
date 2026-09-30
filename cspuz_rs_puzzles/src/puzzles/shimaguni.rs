@@ -15,16 +15,13 @@ pub fn solve_shimaguni(
     let is_black = &solver.bool_var_2d((h, w));
     solver.add_answer_key_bool(is_black);
 
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
     assert_eq!(rooms.len(), clues.len());
 
-    let mut room_id = vec![vec![usize::MAX; w]; h];
     let mut num_black = vec![];
-    for i in 0..rooms.len() {
-        let room = &rooms[i];
-        for j in 0..room.len() {
-            room_id[room[j].0][room[j].1] = i;
-        }
+    for room in rooms {
         let cells = is_black.select(room);
         let n = solver.int_var(0, room.len() as i32);
         solver.add_expr(count_true(&cells).eq(&n));

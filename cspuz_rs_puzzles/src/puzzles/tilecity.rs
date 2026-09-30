@@ -11,13 +11,9 @@ pub fn solve_tilecity(
 ) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = borders.base_shape();
 
-    let rooms = graph::borders_to_rooms(borders);
-    let mut room_id = vec![vec![0; w]; h];
-    for (i, room) in rooms.iter().enumerate() {
-        for &(y, x) in room {
-            room_id[y][x] = i;
-        }
-    }
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
 
     let mut edges = vec![];
     for y in 0..h {

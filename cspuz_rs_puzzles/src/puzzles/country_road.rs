@@ -13,19 +13,14 @@ pub fn solve_country_road(
     let (h, w) = borders.base_shape();
 
     let mut solver = Solver::new();
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
-    let mut room_id = vec![vec![0; w]; h];
-
-    for i in 0..rooms.len() {
-        for &(y, x) in &rooms[i] {
-            room_id[y][x] = i;
-        }
-    }
 
     let mut room_entrance = vec![vec![]; rooms.len()];
     for y in 0..h {
