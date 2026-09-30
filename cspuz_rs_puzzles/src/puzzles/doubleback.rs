@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice2, Combinator, Context, ContextBasedGrid,
     Dict, Map, MultiDigit, Optionalize, Rooms, Size, Tuple2,
 };
-use cspuz_rs::solver::{count_true, Solver};
+use cspuz_rs::solver::Solver;
 use std::cmp::min;
 
 pub fn solve_doubleback(
@@ -71,21 +71,7 @@ pub fn solve_doubleback(
 
     let room_partition = graph::borders_to_room_partition(&borders_with_holes);
     let rooms = &room_partition.rooms;
-    let room_id = &room_partition.room_id;
-
-    let mut room_entrance = vec![vec![]; rooms.len()];
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 && room_id[y][x] != room_id[y + 1][x] {
-                room_entrance[room_id[y][x]].push(is_line.vertical.at((y, x)));
-                room_entrance[room_id[y + 1][x]].push(is_line.vertical.at((y, x)));
-            }
-            if x < w - 1 && room_id[y][x] != room_id[y][x + 1] {
-                room_entrance[room_id[y][x]].push(is_line.horizontal.at((y, x)));
-                room_entrance[room_id[y][x + 1]].push(is_line.horizontal.at((y, x)));
-            }
-        }
-    }
+    let is_line_dual = is_line.clone().dual();
 
     for i in 0..rooms.len() {
         // Check every room is entered twice
@@ -95,7 +81,12 @@ pub fn solve_doubleback(
                 continue;
             }
         }
-        solver.add_expr(count_true(&room_entrance[i]).eq(4));
+        solver.add_expr(
+            room_partition
+                .boundary_edges(i, &is_line_dual)
+                .count_true()
+                .eq(4),
+        );
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
