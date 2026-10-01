@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
-use cspuz_rs::solver::{Solver, TRUE};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_litherslink(
     clues: &[Vec<Option<i32>>],
@@ -53,36 +53,7 @@ pub fn solve_litherslink(
     solver.add_expr((!vertex_color).any());
 
     // no loop (that is, all cells are reachable to the outside of the grid)
-    let mut aux_graph = graph::Graph::new(h * w + 1 + h * (w + 1) + (h + 1) * w);
-    let mut indicator = vec![TRUE; h * w + 1];
-
-    for y in 0..=h {
-        for x in 0..w {
-            let v1 = if y == 0 { h * w } else { (y - 1) * w + x };
-            let v2 = if y == h { h * w } else { y * w + x };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!is_line.horizontal.at((y, x)));
-        }
-    }
-
-    for y in 0..h {
-        for x in 0..=w {
-            let v1 = if x == 0 { h * w } else { y * w + x - 1 };
-            let v2 = if x == w { h * w } else { y * w + x };
-
-            let e = indicator.len();
-            aux_graph.add_edge(e, v1);
-            aux_graph.add_edge(e, v2);
-
-            indicator.push(!is_line.vertical.at((y, x)));
-        }
-    }
-
-    graph::active_vertices_connected(&mut solver, &indicator, &aux_graph);
+    graph::active_edges_acyclic_grid_edges(&mut solver, is_line);
     solver.irrefutable_facts().map(|f| f.get(is_line))
 }
 

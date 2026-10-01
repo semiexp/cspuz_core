@@ -1200,6 +1200,40 @@ pub fn active_edges_directed_cycle_path(
     directed_loop
 }
 
+/// Requires the selected grid edges to form a forest.
+///
+/// Empty edge sets and multiple trees are allowed. This imposes no degree or
+/// endpoint constraints. Faces (including the outside) are connected through
+/// absent edges in the planar dual exactly when the selected edges are acyclic.
+pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdges) {
+    let (h, w) = edges.base_shape();
+    let outer = h * w;
+    let mut graph = Graph::new(outer + 1);
+    let mut active = vec![crate::solver::TRUE; outer + 1];
+
+    for y in 0..=h {
+        for x in 0..w {
+            let above = if y == 0 { outer } else { (y - 1) * w + x };
+            let below = if y == h { outer } else { y * w + x };
+            let v = graph.add_vertex();
+            graph.add_edge(v, above);
+            graph.add_edge(v, below);
+            active.push(!edges.horizontal.at((y, x)));
+        }
+    }
+    for y in 0..h {
+        for x in 0..=w {
+            let left = if x == 0 { outer } else { y * w + x - 1 };
+            let right = if x == w { outer } else { y * w + x };
+            let v = graph.add_vertex();
+            graph.add_edge(v, left);
+            graph.add_edge(v, right);
+            active.push(!edges.vertical.at((y, x)));
+        }
+    }
+    active_vertices_connected(solver, active, &graph);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
