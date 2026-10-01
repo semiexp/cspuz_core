@@ -173,6 +173,7 @@ impl PyConfig {
     fn get_backend(&self) -> PyResult<String> {
         let mode = match self.config.backend {
             Backend::Glucose => "glucose",
+            #[cfg(feature = "experimental-backend-glucose-rs")]
             Backend::GlucoseRs => "glucose_rs",
             Backend::CaDiCaL => "cadical",
             Backend::External => "external",
@@ -184,19 +185,25 @@ impl PyConfig {
     fn set_backend(&mut self, backend: String) -> PyResult<()> {
         if backend == "glucose" {
             self.config.backend = Backend::Glucose;
-        } else if backend == "glucose_rs" {
-            self.config.backend = Backend::GlucoseRs;
-        } else if backend == "cadical" {
-            self.config.backend = Backend::CaDiCaL;
-        } else if backend == "external" {
-            self.config.backend = Backend::External;
-        } else {
-            return Err(PyErr::new::<PyValueError, _>(format!(
-                "unknown backend: {}",
-                backend
-            )));
+            return Ok(());
         }
-        Ok(())
+        #[cfg(feature = "experimental-backend-glucose-rs")]
+        if backend == "glucose_rs" {
+            self.config.backend = Backend::GlucoseRs;
+            return Ok(());
+        }
+        if backend == "cadical" {
+            self.config.backend = Backend::CaDiCaL;
+            return Ok(());
+        }
+        if backend == "external" {
+            self.config.backend = Backend::External;
+            return Ok(());
+        }
+        return Err(PyErr::new::<PyValueError, _>(format!(
+            "unknown backend: {}",
+            backend
+        )));
     }
 
     #[getter]
