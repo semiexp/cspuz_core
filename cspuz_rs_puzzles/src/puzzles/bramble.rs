@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context_pzprxs, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
     Optionalize, RoomsWithValues, Size, Spaces,
 };
-use cspuz_rs::solver::{Solver, TRUE};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_bramble(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -64,43 +64,17 @@ pub fn solve_bramble(
 
     {
         // black cells are connected by 8-connectivity
-        let mut g = graph::Graph::new(h * w);
-        for y in 0..h {
-            for x in 0..w {
-                let v = y * w + x;
-                if y > 0 {
-                    g.add_edge(v, (y - 1) * w + x);
-                }
-                if x > 0 {
-                    g.add_edge(v, y * w + (x - 1));
-                }
-                if y > 0 && x > 0 {
-                    g.add_edge(v, (y - 1) * w + (x - 1));
-                }
-                if y > 0 && x < w - 1 {
-                    g.add_edge(v, (y - 1) * w + (x + 1));
-                }
-            }
-        }
+        let g = graph::grid_graph((h, w), graph::GridNeighborhood::Eight);
         graph::active_vertices_connected(&mut solver, is_black.flatten(), &g);
     }
 
     {
         // white cells are connected to the outside
-        let mut aux_graph = graph::infer_graph_from_2d_array((h, w));
-        let mut aux_vertices = (!is_black).into_iter().collect::<Vec<_>>();
-
-        let outer = aux_graph.add_vertex();
-        aux_vertices.push(TRUE);
-
-        for y in 0..h {
-            for x in 0..w {
-                if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                    aux_graph.add_edge(y * w + x, outer);
-                }
-            }
-        }
-        graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+        graph::active_components_touch_boundary_2d(
+            &mut solver,
+            !is_black,
+            graph::GridNeighborhood::Orthogonal,
+        );
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_black))

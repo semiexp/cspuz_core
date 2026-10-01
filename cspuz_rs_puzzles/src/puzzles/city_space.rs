@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
     Spaces,
 };
-use cspuz_rs::solver::{Solver, FALSE, TRUE};
+use cspuz_rs::solver::{Solver, FALSE};
 
 pub fn solve_city_space(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -26,30 +26,11 @@ pub fn solve_city_space(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<boo
 
     solver.add_expr(is_black.conv2d_or((2, 2)));
 
-    let mut aux_graph = graph::Graph::new(h * w + 1);
-    let mut aux_vertices = is_black.expr().into_iter().collect::<Vec<_>>();
-    aux_vertices.push(TRUE);
-
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge(y * w + x, y * w + (x + 1));
-            }
-            if y < h - 1 && x < w - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + (x + 1));
-            }
-            if y < h - 1 && x > 0 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + (x - 1));
-            }
-            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, h * w);
-            }
-        }
-    }
-    graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+    graph::active_components_touch_boundary_2d(
+        &mut solver,
+        is_black,
+        graph::GridNeighborhood::Eight,
+    );
 
     for y in 0..h {
         for x in 0..w {

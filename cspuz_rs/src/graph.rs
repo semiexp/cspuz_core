@@ -124,20 +124,69 @@ impl Index<usize> for Graph {
     }
 }
 
-pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
+/// Adjacency used by a grid graph.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GridNeighborhood {
+    Orthogonal,
+    Diagonal,
+    Eight,
+}
+
+/// Constructs a grid graph with vertex `(y, x)` numbered `y * width + x`.
+/// Empty dimensions are allowed. Each undirected edge is added once.
+pub fn grid_graph(shape: (usize, usize), neighborhood: GridNeighborhood) -> Graph {
     let (h, w) = shape;
     let mut graph = Graph::new(h * w);
     for y in 0..h {
         for x in 0..w {
-            if x < w - 1 {
+            if neighborhood != GridNeighborhood::Diagonal && x + 1 < w {
                 graph.add_edge(y * w + x, y * w + (x + 1));
             }
-            if y < h - 1 {
+            if neighborhood != GridNeighborhood::Diagonal && y + 1 < h {
                 graph.add_edge(y * w + x, (y + 1) * w + x);
+            }
+            if neighborhood != GridNeighborhood::Orthogonal && y + 1 < h {
+                if x + 1 < w {
+                    graph.add_edge(y * w + x, (y + 1) * w + x + 1);
+                }
+                if x > 0 {
+                    graph.add_edge(y * w + x, (y + 1) * w + x - 1);
+                }
             }
         }
     }
     graph
+}
+
+pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
+    grid_graph(shape, GridNeighborhood::Orthogonal)
+}
+
+/// Requires every active component to touch the boundary of the grid.
+///
+/// Components use the given neighborhood and may be disconnected within the
+/// grid. An empty set of active cells is allowed.
+pub fn active_components_touch_boundary_2d<T>(
+    solver: &mut Solver,
+    is_active: T,
+    neighborhood: GridNeighborhood,
+) where
+    T: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
+{
+    let is_active = is_active.as_ndarray();
+    let (h, w) = is_active.shape();
+    let mut graph = grid_graph((h, w), neighborhood);
+    let outer = graph.add_vertex();
+    let mut vertices: Vec<_> = is_active.into_iter().collect();
+    vertices.push(crate::solver::TRUE);
+    for y in 0..h {
+        for x in 0..w {
+            if y == 0 || y + 1 == h || x == 0 || x + 1 == w {
+                graph.add_edge(y * w + x, outer);
+            }
+        }
+    }
+    active_vertices_connected(solver, vertices, &graph);
 }
 
 /// A struct for maintaining "edges" of a grid, including those on the outer border.

@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{Solver, TRUE};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_cave(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -15,20 +15,11 @@ pub fn solve_cave(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> 
     // white cells are connected
     graph::active_vertices_connected_2d(&mut solver, !is_black);
 
-    let mut aux_graph = graph::infer_graph_from_2d_array((h, w));
-    let mut aux_vertices = is_black.expr().into_iter().collect::<Vec<_>>();
-
-    let outer = aux_graph.add_vertex();
-    aux_vertices.push(TRUE);
-
-    for y in 0..h {
-        for x in 0..w {
-            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, outer);
-            }
-        }
-    }
-    graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+    graph::active_components_touch_boundary_2d(
+        &mut solver,
+        is_black,
+        graph::GridNeighborhood::Orthogonal,
+    );
 
     let is_white = &!is_black;
 
