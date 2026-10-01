@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{orthogonal_prefix_lengths, Solver};
 
 pub fn solve_kurodoko(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -23,13 +23,9 @@ pub fn solve_kurodoko(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
                 if n < 0 {
                     continue;
                 }
-                solver.add_expr(
-                    ((!is_black.slice_fixed_y((y, ..x)).reverse()).consecutive_prefix_true()
-                        + (!is_black.slice_fixed_y((y, x + 1..))).consecutive_prefix_true()
-                        + (!is_black.slice_fixed_x((..y, x)).reverse()).consecutive_prefix_true()
-                        + (!is_black.slice_fixed_x((y + 1.., x))).consecutive_prefix_true())
-                    .eq(n - 1),
-                );
+                let lengths = orthogonal_prefix_lengths(!is_black, (y, x));
+                solver
+                    .add_expr((lengths.up + lengths.down + lengths.left + lengths.right).eq(n - 1));
             }
         }
     }
