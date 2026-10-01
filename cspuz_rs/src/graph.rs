@@ -1234,6 +1234,82 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Requires selected edges to form axis-aligned rectangular loops.
+///
+/// Multiple loops and an empty edge set are allowed. Loops may cross at vertices,
+/// continuing straight through each crossing; edges cannot be shared. This does
+/// not require any particular vertices to be visited. Use `vertex_neighbors`
+/// at the call site to impose coverage or room counts.
+///
+/// Relative coordinates and dimensions propagate along each straight strand;
+/// at corners, the horizontal and vertical strands describe the same rectangle.
+pub fn add_rectangular_loops(solver: &mut Solver, is_line: &BoolGridEdges) {
+    use crate::solver::FALSE;
+    let (height, width) = is_line.base_shape();
+    let (h, w) = (height + 1, width + 1);
+    let horizontal_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
+    let horizontal_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
+    let horizontal_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
+    let horizontal_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
+    let vertical_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
+    let vertical_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
+    let vertical_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
+    let vertical_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
+
+    for y in 0..h {
+        for x in 0..w {
+            if 0 < y {
+                solver.add_expr(is_line.vertical.at((y - 1, x)).imp(
+                    vertical_h.at((y - 1, x)).eq(vertical_h.at((y, x)))
+                        & vertical_w.at((y - 1, x)).eq(vertical_w.at((y, x)))
+                        & vertical_y.at((y - 1, x)).eq(vertical_y.at((y, x)) - 1)
+                        & vertical_x.at((y - 1, x)).eq(vertical_x.at((y, x))),
+                ));
+            }
+            if 0 < x {
+                solver.add_expr(is_line.horizontal.at((y, x - 1)).imp(
+                    horizontal_h.at((y, x - 1)).eq(horizontal_h.at((y, x)))
+                        & horizontal_w.at((y, x - 1)).eq(horizontal_w.at((y, x)))
+                        & horizontal_y.at((y, x - 1)).eq(horizontal_y.at((y, x)))
+                        & horizontal_x.at((y, x - 1)).eq(horizontal_x.at((y, x)) - 1),
+                ));
+            }
+
+            let is_corner = &solver.bool_var();
+            solver.add_expr(is_corner.iff(
+                is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
+                    ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
+            ));
+            solver.add_expr(is_corner.iff(
+                is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
+                    ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
+            ));
+            solver.add_expr(
+                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), FALSE))
+                    .imp(vertical_y.at((y, x)).eq(0)),
+            );
+            solver.add_expr(
+                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), FALSE))
+                    .imp(vertical_y.at((y, x)).eq(vertical_h.at((y, x)))),
+            );
+            solver.add_expr(
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), FALSE))
+                    .imp(horizontal_x.at((y, x)).eq(0)),
+            );
+            solver.add_expr(
+                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), FALSE))
+                    .imp(horizontal_x.at((y, x)).eq(horizontal_w.at((y, x)))),
+            );
+            solver.add_expr(is_corner.imp(
+                horizontal_y.at((y, x)).eq(vertical_y.at((y, x)))
+                    & horizontal_x.at((y, x)).eq(vertical_x.at((y, x)))
+                    & horizontal_h.at((y, x)).eq(vertical_h.at((y, x)))
+                    & horizontal_w.at((y, x)).eq(vertical_w.at((y, x))),
+            ));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1691,5 +1767,101 @@ mod tests {
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
             }
         }
+    }
+
+    fn rectangle(
+        shape: (usize, usize),
+        top: usize,
+        left: usize,
+        bottom: usize,
+        right: usize,
+    ) -> u64 {
+        let (h, w) = shape;
+        let mut mask = 0;
+        for x in left..right {
+            mask |= 1 << (top * w + x);
+            mask |= 1 << (bottom * w + x);
+        }
+        for y in top..bottom {
+            mask |= 1 << ((h + 1) * w + y * (w + 1) + left);
+            mask |= 1 << ((h + 1) * w + y * (w + 1) + right);
+        }
+        mask
+    }
+
+    fn rectangular_loops_accepts(shape: (usize, usize), mask: u64) -> bool {
+        let (h, w) = shape;
+        let mut solver = Solver::new();
+        let edges = BoolGridEdges::new(&mut solver, shape);
+        for y in 0..=h {
+            for x in 0..w {
+                solver.add_expr(
+                    edges
+                        .horizontal
+                        .at((y, x))
+                        .iff(mask & (1 << (y * w + x)) != 0),
+                );
+            }
+        }
+        for y in 0..h {
+            for x in 0..=w {
+                solver.add_expr(
+                    edges
+                        .vertical
+                        .at((y, x))
+                        .iff(mask & (1 << ((h + 1) * w + y * (w + 1) + x)) != 0),
+                );
+            }
+        }
+        add_rectangular_loops(&mut solver, &edges);
+        solver.solve().is_some()
+    }
+
+    #[test]
+    fn test_small_edge_sets_are_exactly_rectangles_or_empty() {
+        // These grids cannot accommodate two disjoint or crossing rectangles.
+        // Exhaustive edge sets also cover open paths, branches, nonrectangular
+        // cycles, and two squares touching at a corner.
+        for (h, w) in [(0, 0), (0, 3), (3, 0), (1, 2), (2, 2)] {
+            let mut expected = vec![0];
+            for top in 0..h {
+                for bottom in top + 1..=h {
+                    for left in 0..w {
+                        for right in left + 1..=w {
+                            expected.push(rectangle((h, w), top, left, bottom, right));
+                        }
+                    }
+                }
+            }
+            let n = (h + 1) * w + h * (w + 1);
+            for mask in 0..1u64 << n {
+                assert_eq!(
+                    rectangular_loops_accepts((h, w), mask),
+                    expected.contains(&mask),
+                    "shape={h},{w}, mask={mask}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_multiple_nested_and_crossing_rectangles_are_allowed() {
+        assert!(rectangular_loops_accepts(
+            (1, 3),
+            rectangle((1, 3), 0, 0, 1, 1) | rectangle((1, 3), 0, 2, 1, 3)
+        ));
+        assert!(rectangular_loops_accepts(
+            (3, 3),
+            rectangle((3, 3), 0, 0, 3, 3) | rectangle((3, 3), 1, 1, 2, 2)
+        ));
+        assert!(rectangular_loops_accepts(
+            (4, 4),
+            rectangle((4, 4), 0, 1, 4, 3) | rectangle((4, 4), 1, 0, 3, 4)
+        ));
+        // Sharing an edge creates branches, which are forbidden.
+        assert!(!rectangular_loops_accepts(
+            (1, 2),
+            rectangle((1, 2), 0, 0, 1, 1) | rectangle((1, 2), 0, 1, 1, 2)
+        ));
     }
 }
