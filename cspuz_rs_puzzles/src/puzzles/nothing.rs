@@ -10,37 +10,19 @@ pub fn solve_all_or_nothing(
     let (h, w) = borders.base_shape();
 
     let mut solver = Solver::new();
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
-    let mut room_id = vec![vec![0; w]; h];
 
+    let is_line_dual = is_line.clone().dual();
     for i in 0..rooms.len() {
-        for &(y, x) in &rooms[i] {
-            room_id[y][x] = i;
-        }
-    }
-
-    let mut room_entrance = vec![vec![]; rooms.len()];
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 && room_id[y][x] != room_id[y + 1][x] {
-                room_entrance[room_id[y][x]].push(is_line.vertical.at((y, x)));
-                room_entrance[room_id[y + 1][x]].push(is_line.vertical.at((y, x)));
-            }
-            if x < w - 1 && room_id[y][x] != room_id[y][x + 1] {
-                room_entrance[room_id[y][x]].push(is_line.horizontal.at((y, x)));
-                room_entrance[room_id[y][x + 1]].push(is_line.horizontal.at((y, x)));
-            }
-        }
-    }
-
-    for i in 0..rooms.len() {
+        let num_entrances = room_partition.boundary_edges(i, &is_line_dual).count_true();
         // Check every room is entered only once
-        solver.add_expr(count_true(&room_entrance[i]).eq(2) | count_true(&room_entrance[i]).eq(0));
+        solver.add_expr(num_entrances.eq(2) | num_entrances.eq(0));
     }
 
     for y in 0..h {

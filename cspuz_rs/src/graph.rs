@@ -230,6 +230,63 @@ impl<T> InnerGridEdges<Vec<Vec<T>>> {
 /// assert_eq!(rooms.len(), 4);
 /// ```
 pub fn borders_to_rooms(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> Vec<Vec<(usize, usize)>> {
+    borders_to_room_partition(borders).rooms
+}
+
+/// Rooms of a grid and lookup tables for each cell.
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct RoomPartition {
+    /// Cells belonging to each room.
+    pub rooms: Vec<Vec<(usize, usize)>>,
+    /// `room_id[y][x]` is the index of the room containing `(y, x)`.
+    pub room_id: Vec<Vec<usize>>,
+    /// `index_in_room[y][x]` is the index of `(y, x)` within its room.
+    pub index_in_room: Vec<Vec<usize>>,
+}
+
+impl RoomPartition {
+    /// Returns the variables for edges separating `room_id` from other rooms.
+    ///
+    /// Each boundary edge appears once. Edges within the same room, including
+    /// extra borders in the original input, and the outer grid boundary are excluded.
+    /// The order of the returned variables is not guaranteed.
+    ///
+    /// `edges` must use the same cell grid as this partition. For lines connecting
+    /// cell centers, use [`GridEdges::dual`] to select the lines crossing the boundary.
+    ///
+    /// # Panics
+    /// Panics if `room_id` is out of range or `edges` does not match the grid shape.
+    pub fn boundary_edges(&self, room_id: usize, edges: &BoolInnerGridEdges) -> BoolVarArray1D {
+        let height = self.room_id.len();
+        let width = self.room_id[0].len();
+        assert_eq!(edges.horizontal.shape(), (height - 1, width));
+        assert_eq!(edges.vertical.shape(), (height, width - 1));
+
+        let mut ret = vec![];
+        for &(y, x) in &self.rooms[room_id] {
+            if y > 0 && self.room_id[y - 1][x] != room_id {
+                ret.push(edges.horizontal.at((y - 1, x)));
+            }
+            if y + 1 < height && self.room_id[y + 1][x] != room_id {
+                ret.push(edges.horizontal.at((y, x)));
+            }
+            if x > 0 && self.room_id[y][x - 1] != room_id {
+                ret.push(edges.vertical.at((y, x - 1)));
+            }
+            if x + 1 < width && self.room_id[y][x + 1] != room_id {
+                ret.push(edges.vertical.at((y, x)));
+            }
+        }
+        BoolVarArray1D::new(ret)
+    }
+}
+
+/// Returns rooms and lookup tables from the given borders.
+///
+/// Rooms are connected components as described in [`borders_to_rooms`].
+/// For every cell `(y, x)`, the returned partition satisfies
+/// `rooms[room_id[y][x]][index_in_room[y][x]] == (y, x)`.
+pub fn borders_to_room_partition(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> RoomPartition {
     fn visit(
         y: usize,
         x: usize,
@@ -272,7 +329,20 @@ pub fn borders_to_rooms(borders: &InnerGridEdges<Vec<Vec<bool>>>) -> Vec<Vec<(us
         }
     }
 
-    ret
+    let mut room_id = vec![vec![0; width]; height];
+    let mut index_in_room = vec![vec![0; width]; height];
+    for (rid, room) in ret.iter().enumerate() {
+        for (idx, &(y, x)) in room.iter().enumerate() {
+            room_id[y][x] = rid;
+            index_in_room[y][x] = idx;
+        }
+    }
+
+    RoomPartition {
+        rooms: ret,
+        room_id,
+        index_in_room,
+    }
 }
 
 pub type BoolGridEdges = GridEdges<BoolVarArray2D>;
@@ -1084,6 +1154,164 @@ pub fn active_edges_directed_cycle_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_borders_to_room_partition() {
+        let borders = InnerGridEdges {
+            horizontal: vec![vec![true, true, false], vec![false, true, true]],
+            vertical: vec![vec![true, false], vec![false, true], vec![true, false]],
+        };
+        let partition = borders_to_room_partition(&borders);
+        assert_eq!(
+            partition.rooms,
+            vec![
+                vec![(0, 0)],
+                vec![(0, 1), (0, 2), (1, 2)],
+                vec![(1, 0), (2, 0), (1, 1)],
+                vec![(2, 1), (2, 2)],
+            ]
+        );
+        assert_eq!(
+            partition.room_id,
+            vec![vec![0, 1, 1], vec![2, 2, 1], vec![2, 3, 3]]
+        );
+        assert_eq!(
+            partition.index_in_room,
+            vec![vec![0, 0, 1], vec![0, 2, 2], vec![1, 0, 1]]
+        );
+        assert_eq!(borders_to_rooms(&borders), partition.rooms);
+    }
+
+    #[test]
+    fn test_borders_to_room_partition_single_cell() {
+        let borders = InnerGridEdges {
+            horizontal: vec![],
+            vertical: vec![vec![]],
+        };
+        assert_eq!(
+            borders_to_room_partition(&borders),
+            RoomPartition {
+                rooms: vec![vec![(0, 0)]],
+                room_id: vec![vec![0]],
+                index_in_room: vec![vec![0]],
+            }
+        );
+    }
+
+    #[test]
+    fn test_room_partition_boundary_edges() {
+        // The center cell is a room surrounded by the other room. The borders
+        // at vertical[0][0] and horizontal[1][3] lie within the surrounding room.
+        let borders = InnerGridEdges {
+            horizontal: vec![
+                vec![false, true, false, false],
+                vec![false, true, false, true],
+            ],
+            vertical: vec![
+                vec![true, false, false],
+                vec![true, true, false],
+                vec![false, false, false],
+            ],
+        };
+        let partition = borders_to_room_partition(&borders);
+        assert_eq!(partition.rooms.len(), 2);
+        let mut solver = Solver::new();
+        let edges = BoolInnerGridEdges::new(&mut solver, (3, 4));
+        let expected = BoolVarArray1D::new([
+            edges.horizontal.at((0, 1)),
+            edges.horizontal.at((1, 1)),
+            edges.vertical.at((1, 0)),
+            edges.vertical.at((1, 1)),
+        ])
+        .to_vec();
+
+        for room_id in 0..partition.rooms.len() {
+            let actual = partition.boundary_edges(room_id, &edges).to_vec();
+            assert_eq!(actual.len(), expected.len());
+            for edge in &expected {
+                assert!(actual.contains(edge));
+            }
+        }
+    }
+
+    #[test]
+    fn test_room_partition_boundary_edges_single_room() {
+        for (height, width) in [(1, 1), (1, 4), (4, 1), (2, 2)] {
+            let mut borders = InnerGridEdges {
+                horizontal: vec![vec![false; width]; height - 1],
+                vertical: vec![vec![false; width - 1]; height],
+            };
+            if height > 1 && width > 1 {
+                borders.horizontal[0][0] = true;
+            }
+            let partition = borders_to_room_partition(&borders);
+            assert_eq!(partition.rooms.len(), 1);
+            let mut solver = Solver::new();
+            let edges = BoolInnerGridEdges::new(&mut solver, (height, width));
+            assert_eq!(partition.boundary_edges(0, &edges).len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_room_partition_boundary_edges_single_row_or_column() {
+        for (height, width) in [(1, 3), (3, 1)] {
+            let borders = InnerGridEdges {
+                horizontal: vec![vec![true; width]; height - 1],
+                vertical: vec![vec![true; width - 1]; height],
+            };
+            let partition = borders_to_room_partition(&borders);
+            let mut solver = Solver::new();
+            let edges = BoolInnerGridEdges::new(&mut solver, (height, width));
+            let all_edges = if height == 1 {
+                edges.vertical.flatten()
+            } else {
+                edges.horizontal.flatten()
+            };
+            for (room_id, indices) in [vec![0], vec![0, 1], vec![1]].iter().enumerate() {
+                let expected =
+                    BoolVarArray1D::new(indices.iter().map(|&i| all_edges.at(i))).to_vec();
+                let actual = partition.boundary_edges(room_id, &edges).to_vec();
+                assert_eq!(actual.len(), expected.len());
+                for edge in expected {
+                    assert!(actual.contains(&edge));
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion `left == right` failed")]
+    fn test_room_partition_boundary_edges_horizontal_shape_mismatch() {
+        let borders = InnerGridEdges {
+            horizontal: vec![vec![false; 3]],
+            vertical: vec![vec![false; 2]; 2],
+        };
+        let partition = borders_to_room_partition(&borders);
+        let mut solver = Solver::new();
+        let edges = BoolInnerGridEdges {
+            horizontal: solver.bool_var_2d((2, 3)), // Expected (1, 3).
+            vertical: solver.bool_var_2d((2, 2)),
+        };
+
+        partition.boundary_edges(0, &edges);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion `left == right` failed")]
+    fn test_room_partition_boundary_edges_vertical_shape_mismatch() {
+        let borders = InnerGridEdges {
+            horizontal: vec![vec![false; 3]],
+            vertical: vec![vec![false; 2]; 2],
+        };
+        let partition = borders_to_room_partition(&borders);
+        let mut solver = Solver::new();
+        let edges = BoolInnerGridEdges {
+            horizontal: solver.bool_var_2d((1, 3)),
+            vertical: solver.bool_var_2d((2, 3)), // Expected (2, 2).
+        };
+
+        partition.boundary_edges(0, &edges);
+    }
 
     #[test]
     fn test_graph_crossable_single_cycle_grid_edges_1() {

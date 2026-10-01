@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Combinator, Context, ContextBasedGrid, MultiDigit,
     Rooms, Size, Tuple2,
 };
-use cspuz_rs::solver::{count_true, Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_moonsun(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -18,9 +18,10 @@ pub fn solve_moonsun(
     solver.add_answer_key_bool(&is_line.vertical);
 
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
-    let rooms = graph::borders_to_rooms(borders);
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
     let room_mode = &solver.bool_var_1d(rooms.len()); // false: 1, true: 2
-    let mut room_id = vec![vec![0; w]; h];
 
     for i in 0..rooms.len() {
         let mut has_one = false;
@@ -48,13 +49,6 @@ pub fn solve_moonsun(
         }
     }
 
-    for i in 0..rooms.len() {
-        for &(y, x) in &rooms[i] {
-            room_id[y][x] = i;
-        }
-    }
-
-    let mut room_entrance = vec![vec![]; rooms.len()];
     for y in 0..h {
         for x in 0..w {
             if y < h - 1 && room_id[y][x] != room_id[y + 1][x] {
@@ -64,8 +58,6 @@ pub fn solve_moonsun(
                         .at((y, x))
                         .imp(room_mode.at(room_id[y][x]) ^ room_mode.at(room_id[y + 1][x])),
                 );
-                room_entrance[room_id[y][x]].push(is_line.vertical.at((y, x)));
-                room_entrance[room_id[y + 1][x]].push(is_line.vertical.at((y, x)));
             }
             if x < w - 1 && room_id[y][x] != room_id[y][x + 1] {
                 solver.add_expr(
@@ -74,13 +66,17 @@ pub fn solve_moonsun(
                         .at((y, x))
                         .imp(room_mode.at(room_id[y][x]) ^ room_mode.at(room_id[y][x + 1])),
                 );
-                room_entrance[room_id[y][x]].push(is_line.horizontal.at((y, x)));
-                room_entrance[room_id[y][x + 1]].push(is_line.horizontal.at((y, x)));
             }
         }
     }
+    let is_line_dual = is_line.clone().dual();
     for i in 0..rooms.len() {
-        solver.add_expr(count_true(&room_entrance[i]).eq(2));
+        solver.add_expr(
+            room_partition
+                .boundary_edges(i, &is_line_dual)
+                .count_true()
+                .eq(2),
+        );
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_line))

@@ -70,13 +70,13 @@ pub fn solve_lits(
         }
     }
 
-    let rooms = graph::borders_to_rooms(borders);
-    let mut room_id = vec![vec![0; w]; h];
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
     let room_kind = &solver.int_var_1d(rooms.len(), 0, 3);
     for (i, room) in rooms.iter().enumerate() {
         let mut cell_kinds = vec![vec![]; 5];
         for &(y, x) in room {
-            room_id[y][x] = i;
             for j in 1..=4 {
                 cell_kinds[j].push(kind.at((y, x)).eq(j as i32));
             }

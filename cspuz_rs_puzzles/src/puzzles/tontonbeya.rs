@@ -16,16 +16,10 @@ pub fn solve_tontonbeya(
     let ans = &solver.int_var_2d((h, w), 0, 2);
     solver.add_answer_key_int(ans);
 
-    let rooms = graph::borders_to_rooms(borders);
-    let mut room_id = vec![vec![0; w]; h];
-    let mut idx_in_room = vec![vec![0; w]; h];
-    for i in 0..rooms.len() {
-        for j in 0..rooms[i].len() {
-            let (y, x) = rooms[i][j];
-            room_id[y][x] = i;
-            idx_in_room[y][x] = j;
-        }
-    }
+    let room_partition = graph::borders_to_room_partition(borders);
+    let rooms = &room_partition.rooms;
+    let room_id = &room_partition.room_id;
+    let idx_in_room = &room_partition.index_in_room;
 
     for y in 0..h {
         for x in 0..w {
