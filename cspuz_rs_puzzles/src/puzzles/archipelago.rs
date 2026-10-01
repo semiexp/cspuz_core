@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
     Spaces,
 };
-use cspuz_rs::solver::{Solver, TRUE};
+use cspuz_rs::solver::Solver;
 use std::collections::VecDeque;
 
 use cspuz_core::custom_constraints::SimpleCustomConstraint;
@@ -46,24 +46,22 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
         }
     }
 
-    let mut aux_graph = graph::Graph::new(h * w * 2 + 1);
+    let mut grid_graph = graph::Graph::new(h * w);
     for y in 0..h {
         for x in 0..w {
             let p = y * w + x;
-            aux_graph.add_edge(p, p + h * w);
-            aux_graph.add_edge(p + h * w, h * w * 2);
 
             if y < h - 1 {
-                aux_graph.add_edge(p, p + w);
+                grid_graph.add_edge(p, p + w);
             }
             if x < w - 1 {
-                aux_graph.add_edge(p, p + 1);
+                grid_graph.add_edge(p, p + 1);
             }
             if y < h - 1 && x < w - 1 {
-                aux_graph.add_edge(p, p + w + 1);
+                grid_graph.add_edge(p, p + w + 1);
             }
             if y < h - 1 && x > 0 {
-                aux_graph.add_edge(p, p + w - 1);
+                grid_graph.add_edge(p, p + w - 1);
             }
         }
     }
@@ -78,13 +76,12 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
             solver.add_expr(nums.gt(n).imp(reachable));
         }
 
-        let vertices = reachable
-            .expr()
-            .into_iter()
-            .chain((is_black & nums.eq(n)).into_iter())
-            .chain([TRUE].into_iter())
-            .collect::<Vec<_>>();
-        graph::active_vertices_connected(&mut solver, &vertices, &mut aux_graph);
+        graph::active_components_reach_seeds(
+            &mut solver,
+            reachable,
+            is_black & nums.eq(n),
+            &grid_graph,
+        );
     }
 
     solver.add_custom_constraint(
