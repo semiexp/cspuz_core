@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{BoolExprArray2D, Solver};
 
 pub fn solve_kurotto(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -20,36 +20,14 @@ pub fn solve_kurotto(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>
                     continue;
                 }
 
-                let connected = &solver.bool_var_2d((h, w));
-                for y2 in 0..h {
-                    for x2 in 0..w {
-                        if y == y2 && x == x2 {
-                            solver.add_expr(connected.at((y2, x2)));
-                        } else {
-                            solver.add_expr(connected.at((y2, x2)).imp(is_black.at((y2, x2))));
-                        }
-                    }
-                }
+                let allowed = BoolExprArray2D::new(
+                    (h, w),
+                    (0..h).flat_map(|yy| {
+                        (0..w).map(move |xx| is_black.at((yy, xx)) | (yy == y && xx == x))
+                    }),
+                );
+                let connected = graph::connected_component_from_2d(&mut solver, allowed, (y, x));
                 solver.add_expr(connected.count_true().eq(n + 1));
-                graph::active_vertices_connected_2d(&mut solver, connected);
-
-                for nb in connected.four_neighbor_indices((y, x)) {
-                    solver.add_expr(is_black.at(nb).imp(connected.at(nb)));
-                }
-                solver.add_expr(
-                    (is_black.slice((1.., ..)) & is_black.slice((..(h - 1), ..))).imp(
-                        connected
-                            .slice((1.., ..))
-                            .iff(connected.slice((..(h - 1), ..))),
-                    ),
-                );
-                solver.add_expr(
-                    (is_black.slice((.., 1..)) & is_black.slice((.., ..(w - 1)))).imp(
-                        connected
-                            .slice((.., 1..))
-                            .iff(connected.slice((.., ..(w - 1)))),
-                    ),
-                );
             }
         }
     }
