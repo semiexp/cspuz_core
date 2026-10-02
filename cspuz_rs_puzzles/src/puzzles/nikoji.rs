@@ -27,25 +27,8 @@ pub fn solve_nikoji(
     symbols.sort();
 
     let cell_group = &solver.int_var_2d((h, w), 0, symbols.len() as i32 - 1);
-    solver.add_expr(
-        cell_group
-            .slice((.., ..(w - 1)))
-            .ne(cell_group.slice((.., 1..)))
-            .iff(&is_border.vertical),
-    );
-    solver.add_expr(
-        cell_group
-            .slice((..(h - 1), ..))
-            .ne(cell_group.slice((1.., ..)))
-            .iff(&is_border.horizontal),
-    );
-
-    for i in 0..symbols.len() {
-        graph::active_vertices_connected_2d(&mut solver, cell_group.eq(i as i32));
-
-        let (_, y, x) = symbols[i];
-        solver.add_expr(cell_group.at((y, x)).eq(i as i32));
-    }
+    let seeds: Vec<_> = symbols.iter().map(|&(_, y, x)| (y, x)).collect();
+    graph::seeded_partition_2d(&mut solver, cell_group, is_border, &seeds);
 
     let mut leader_ids = vec![];
     let mut p = 0;
