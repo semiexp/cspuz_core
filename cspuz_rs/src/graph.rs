@@ -1547,13 +1547,6 @@ mod tests {
             );
         }
     }
-}
-
-#[cfg(test)]
-mod grid_neighborhood_tests {
-    use super::{self, GridNeighborhood};
-    use crate::solver::Solver;
-
     #[test]
     fn grid_edges_match_neighborhood() {
         for shape in [(0, 0), (0, 3), (3, 0), (1, 1), (1, 4), (4, 1), (3, 4)] {
