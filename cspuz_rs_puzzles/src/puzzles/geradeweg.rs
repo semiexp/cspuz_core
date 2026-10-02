@@ -5,7 +5,7 @@ use cspuz_rs::serializer::{
     problem_to_url_pzprxs, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize,
     Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, FALSE};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_geradeweg(
     full: bool,
@@ -25,86 +25,18 @@ pub fn solve_geradeweg(
             if let Some(n) = clues[y][x] {
                 solver.add_expr(is_passed.at((y, x)));
 
-                let has_left = if x > 0 {
-                    is_line.horizontal.at((y, x - 1)).expr()
-                } else {
-                    FALSE
-                };
-                let has_right = if x < w - 1 {
-                    is_line.horizontal.at((y, x)).expr()
-                } else {
-                    FALSE
-                };
+                let lengths = graph::straight_lengths_from(is_line, (y, x));
+                let horizontal = lengths.left + lengths.right;
+                let vertical = lengths.up + lengths.down;
+                let has_horizontal = is_line.horizontal.at_offset((y, x), (0, -1), false)
+                    | is_line.horizontal.at_offset((y, x), (0, 0), false);
+                let has_vertical = is_line.vertical.at_offset((y, x), (-1, 0), false)
+                    | is_line.vertical.at_offset((y, x), (0, 0), false);
                 if n > 0 {
-                    solver.add_expr(
-                        (has_left.clone() | has_right.clone()).imp(
-                            (is_line
-                                .horizontal
-                                .slice_fixed_y((y, ..x))
-                                .reverse()
-                                .consecutive_prefix_true()
-                                + is_line
-                                    .horizontal
-                                    .slice_fixed_y((y, x..))
-                                    .consecutive_prefix_true())
-                            .eq(n),
-                        ),
-                    );
-                }
-
-                let has_up = if y > 0 {
-                    is_line.vertical.at((y - 1, x)).expr()
+                    solver.add_expr(has_horizontal.imp(horizontal.eq(n)));
+                    solver.add_expr(has_vertical.imp(vertical.eq(n)));
                 } else {
-                    FALSE
-                };
-                let has_down = if y < h - 1 {
-                    is_line.vertical.at((y, x)).expr()
-                } else {
-                    FALSE
-                };
-
-                if n > 0 {
-                    solver.add_expr(
-                        (has_up.clone() | has_down.clone()).imp(
-                            (is_line
-                                .vertical
-                                .slice_fixed_x((..y, x))
-                                .reverse()
-                                .consecutive_prefix_true()
-                                + is_line
-                                    .vertical
-                                    .slice_fixed_x((y.., x))
-                                    .consecutive_prefix_true())
-                            .eq(n),
-                        ),
-                    );
-                }
-
-                if n <= 0 {
-                    solver.add_expr(
-                        ((has_up.clone() | has_down.clone())
-                            & (has_left.clone() | has_right.clone()))
-                        .imp(
-                            (is_line
-                                .vertical
-                                .slice_fixed_x((..y, x))
-                                .reverse()
-                                .consecutive_prefix_true()
-                                + is_line
-                                    .vertical
-                                    .slice_fixed_x((y.., x))
-                                    .consecutive_prefix_true())
-                            .eq(is_line
-                                .horizontal
-                                .slice_fixed_y((y, ..x))
-                                .reverse()
-                                .consecutive_prefix_true()
-                                + is_line
-                                    .horizontal
-                                    .slice_fixed_y((y, x..))
-                                    .consecutive_prefix_true()),
-                        ),
-                    );
+                    solver.add_expr((has_horizontal & has_vertical).imp(horizontal.eq(vertical)));
                 }
             }
         }

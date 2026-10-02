@@ -52,28 +52,9 @@ pub fn solve_railpool(
     let vertical_len = &solver.int_var_2d((h, w), 0, (h - 1) as i32);
     for y in 0..h {
         for x in 0..w {
-            solver.add_expr(
-                horizontal_len.at((y, x)).eq(is_line
-                    .horizontal
-                    .slice_fixed_y((y, x..))
-                    .consecutive_prefix_true()
-                    + is_line
-                        .horizontal
-                        .slice_fixed_y((y, ..x))
-                        .reverse()
-                        .consecutive_prefix_true()),
-            );
-            solver.add_expr(
-                vertical_len.at((y, x)).eq(is_line
-                    .vertical
-                    .slice_fixed_x((y.., x))
-                    .consecutive_prefix_true()
-                    + is_line
-                        .vertical
-                        .slice_fixed_x((..y, x))
-                        .reverse()
-                        .consecutive_prefix_true()),
-            );
+            let lengths = graph::straight_lengths_from(is_line, (y, x));
+            solver.add_expr(horizontal_len.at((y, x)).eq(lengths.left + lengths.right));
+            solver.add_expr(vertical_len.at((y, x)).eq(lengths.up + lengths.down));
         }
     }
 

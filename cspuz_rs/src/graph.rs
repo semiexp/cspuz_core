@@ -420,6 +420,27 @@ impl<T> InnerGridEdges<T> {
 }
 
 impl BoolGridEdges {
+    /// Returns edges along a straight ray from a grid vertex, nearest first.
+    /// The first edge is incident to `vertex`. Boundary-facing rays are empty.
+    /// Panics for an out-of-bounds vertex or `Arrow::Unspecified`.
+    pub fn edge_ray(
+        &self,
+        vertex: (usize, usize),
+        direction: crate::items::Arrow,
+    ) -> BoolVarArray1D {
+        use crate::items::Arrow;
+        let (h, w) = self.base_shape();
+        let (y, x) = vertex;
+        assert!(y <= h && x <= w);
+        match direction {
+            Arrow::Up => self.vertical.slice_fixed_x((..y, x)).reverse(),
+            Arrow::Down => self.vertical.slice_fixed_x((y.., x)),
+            Arrow::Left => self.horizontal.slice_fixed_y((y, ..x)).reverse(),
+            Arrow::Right => self.horizontal.slice_fixed_y((y, x..)),
+            Arrow::Unspecified => panic!("edge_ray requires a direction"),
+        }
+    }
+
     pub fn new(solver: &mut Solver, shape: (usize, usize)) -> BoolGridEdges {
         let (height, width) = shape;
         BoolGridEdges {
@@ -1234,6 +1255,28 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Counts consecutive selected edges from `vertex` in each direction.
+/// Only expressions for this vertex are built; no solver variables are allocated.
+/// Empty rays have length zero. Panics if the vertex is out of bounds.
+pub fn straight_lengths_from(
+    edges: &BoolGridEdges,
+    vertex: (usize, usize),
+) -> crate::items::FourDirections<crate::solver::IntExpr> {
+    use crate::items::{Arrow, FourDirections};
+    FourDirections {
+        up: edges.edge_ray(vertex, Arrow::Up).consecutive_prefix_true(),
+        down: edges
+            .edge_ray(vertex, Arrow::Down)
+            .consecutive_prefix_true(),
+        left: edges
+            .edge_ray(vertex, Arrow::Left)
+            .consecutive_prefix_true(),
+        right: edges
+            .edge_ray(vertex, Arrow::Right)
+            .consecutive_prefix_true(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1689,6 +1732,77 @@ mod tests {
                 }
                 active_edges_acyclic_grid_edges(&mut solver, &edges);
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
+            }
+        }
+    }
+
+    use crate::items::Arrow;
+
+    const DIRECTIONS: [(Arrow, i32, i32); 4] = [
+        (Arrow::Up, -1, 0),
+        (Arrow::Down, 1, 0),
+        (Arrow::Left, 0, -1),
+        (Arrow::Right, 0, 1),
+    ];
+
+    #[test]
+    fn test_edge_rays_and_lengths_start_with_the_incident_edge() {
+        for (h, w) in [(0, 0), (0, 4), (4, 0), (1, 2), (2, 2)] {
+            let n = (h + 1) * w + h * (w + 1);
+            for mask in 0..1usize << n {
+                let horizontal = |y: usize, x: usize| mask & (1usize << (y * w + x)) != 0;
+                let vertical =
+                    |y: usize, x: usize| mask & (1usize << ((h + 1) * w + y * (w + 1) + x)) != 0;
+                let mut solver = Solver::new();
+                let edges = BoolGridEdges::new(&mut solver, (h, w));
+                for y in 0..=h {
+                    for x in 0..w {
+                        solver.add_expr(edges.horizontal.at((y, x)).iff(horizontal(y, x)));
+                    }
+                }
+                for y in 0..h {
+                    for x in 0..=w {
+                        solver.add_expr(edges.vertical.at((y, x)).iff(vertical(y, x)));
+                    }
+                }
+                let mut checks = vec![];
+                for y in 0..=h {
+                    for x in 0..=w {
+                        let lengths = straight_lengths_from(&edges, (y, x));
+                        for (expr, (direction, dy, dx)) in
+                            [lengths.up, lengths.down, lengths.left, lengths.right]
+                                .into_iter()
+                                .zip(DIRECTIONS)
+                        {
+                            let (mut yy, mut xx) = (y as i32, x as i32);
+                            let mut expected = vec![];
+                            loop {
+                                let (ny, nx) = (yy + dy, xx + dx);
+                                if ny < 0 || ny > h as i32 || nx < 0 || nx > w as i32 {
+                                    break;
+                                }
+                                expected.push(if dy == 0 {
+                                    horizontal(yy as usize, xx.min(nx) as usize)
+                                } else {
+                                    vertical(yy.min(ny) as usize, xx as usize)
+                                });
+                                yy = ny;
+                                xx = nx;
+                            }
+                            let value = solver.int_var(0, (h + w) as i32);
+                            solver.add_expr(value.eq(expr));
+                            checks.push((value, edges.edge_ray((y, x), direction), expected));
+                        }
+                    }
+                }
+                let model = solver.solve().unwrap();
+                for (value, ray, expected) in checks {
+                    assert_eq!(
+                        model.get(&value),
+                        expected.iter().take_while(|&&b| b).count() as i32
+                    );
+                    assert_eq!(model.get(&ray), expected);
+                }
             }
         }
     }

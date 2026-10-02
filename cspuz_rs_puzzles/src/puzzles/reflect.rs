@@ -66,29 +66,12 @@ pub fn solve_reflect_link(
                 _ => continue,
             };
 
-            let n_vertical = if to_down {
-                is_line
-                    .vertical
-                    .slice_fixed_x((y.., x))
-                    .consecutive_prefix_true()
-            } else {
-                is_line
-                    .vertical
-                    .slice_fixed_x((..y, x))
-                    .reverse()
-                    .consecutive_prefix_true()
-            };
+            let lengths = graph::straight_lengths_from(is_line, (y, x));
+            let n_vertical = if to_down { lengths.down } else { lengths.up };
             let n_horizontal = if to_right {
-                is_line
-                    .horizontal
-                    .slice_fixed_y((y, x..))
-                    .consecutive_prefix_true()
+                lengths.right
             } else {
-                is_line
-                    .horizontal
-                    .slice_fixed_y((y, ..x))
-                    .reverse()
-                    .consecutive_prefix_true()
+                lengths.left
             };
             solver.add_expr(n_vertical.gt(0));
             solver.add_expr(n_horizontal.gt(0));

@@ -37,7 +37,8 @@ pub type IntExprArray1D = NdArray<(usize,), CSPIntExpr>;
 pub type IntExprArray2D = NdArray<(usize, usize), CSPIntExpr>;
 
 pub use constraints::{
-    all, any, bool_constant, consecutive_prefix_true, count_true, int_constant, sum, FALSE, TRUE,
+    all, any, bool_constant, consecutive_prefix_true, count_true, int_constant,
+    orthogonal_prefix_lengths, sum, FALSE, TRUE,
 };
 
 pub struct Solver<'a> {
