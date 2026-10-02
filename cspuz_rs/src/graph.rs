@@ -1200,6 +1200,40 @@ pub fn active_edges_directed_cycle_path(
     directed_loop
 }
 
+/// Requires the selected grid edges to form a forest.
+///
+/// Empty edge sets and multiple trees are allowed. This imposes no degree or
+/// endpoint constraints. Faces (including the outside) are connected through
+/// absent edges in the planar dual exactly when the selected edges are acyclic.
+pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdges) {
+    let (h, w) = edges.base_shape();
+    let outer = h * w;
+    let mut graph = Graph::new(outer + 1);
+    let mut active = vec![crate::solver::TRUE; outer + 1];
+
+    for y in 0..=h {
+        for x in 0..w {
+            let above = if y == 0 { outer } else { (y - 1) * w + x };
+            let below = if y == h { outer } else { y * w + x };
+            let v = graph.add_vertex();
+            graph.add_edge(v, above);
+            graph.add_edge(v, below);
+            active.push(!edges.horizontal.at((y, x)));
+        }
+    }
+    for y in 0..h {
+        for x in 0..=w {
+            let left = if x == 0 { outer } else { y * w + x - 1 };
+            let right = if x == w { outer } else { y * w + x };
+            let v = graph.add_vertex();
+            graph.add_edge(v, left);
+            graph.add_edge(v, right);
+            active.push(!edges.vertical.at((y, x)));
+        }
+    }
+    active_vertices_connected(solver, active, &graph);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1617,5 +1651,45 @@ mod tests {
         assert!(accepts((3, 3), &[(0, 0), (1, 1)], Diagonal));
         assert!(accepts((3, 3), &[(0, 1), (1, 1)], Orthogonal));
         assert!(!accepts((3, 3), &[(0, 1), (1, 1)], Diagonal));
+    }
+
+    #[test]
+    fn acyclicity_matches_union_find() {
+        // Includes empty grids, paths, disconnected trees, branches, and cycles.
+        for shape in [(0, 0), (0, 3), (3, 0), (1, 1), (1, 2), (2, 2)] {
+            let mut solver = Solver::new();
+            let edges = BoolGridEdges::new(&mut solver, shape);
+            let (_, graph) = edges.representation();
+            for mask in 0..1usize << graph.n_edges() {
+                let mut parent: Vec<_> = (0..graph.n_vertices()).collect();
+                let mut acyclic = true;
+                for i in 0..graph.n_edges() {
+                    if mask & (1 << i) == 0 {
+                        continue;
+                    }
+                    let (mut a, mut b) = graph[i];
+                    while parent[a] != a {
+                        a = parent[a];
+                    }
+                    while parent[b] != b {
+                        b = parent[b];
+                    }
+                    if a == b {
+                        acyclic = false;
+                        break;
+                    }
+                    parent[a] = b;
+                }
+
+                let mut solver = Solver::new();
+                let edges = BoolGridEdges::new(&mut solver, shape);
+                let (vars, _) = edges.representation();
+                for (i, var) in vars.iter().enumerate() {
+                    solver.add_expr(var.iff(mask & (1 << i) != 0));
+                }
+                active_edges_acyclic_grid_edges(&mut solver, &edges);
+                assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
+            }
+        }
     }
 }
