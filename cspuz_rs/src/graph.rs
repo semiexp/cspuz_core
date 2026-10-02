@@ -124,20 +124,69 @@ impl Index<usize> for Graph {
     }
 }
 
-pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
+/// Adjacency used by a grid graph.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GridNeighborhood {
+    Orthogonal,
+    Diagonal,
+    Eight,
+}
+
+/// Constructs a grid graph with vertex `(y, x)` numbered `y * width + x`.
+/// Empty dimensions are allowed. Each undirected edge is added once.
+pub fn grid_graph(shape: (usize, usize), neighborhood: GridNeighborhood) -> Graph {
     let (h, w) = shape;
     let mut graph = Graph::new(h * w);
     for y in 0..h {
         for x in 0..w {
-            if x < w - 1 {
+            if neighborhood != GridNeighborhood::Diagonal && x + 1 < w {
                 graph.add_edge(y * w + x, y * w + (x + 1));
             }
-            if y < h - 1 {
+            if neighborhood != GridNeighborhood::Diagonal && y + 1 < h {
                 graph.add_edge(y * w + x, (y + 1) * w + x);
+            }
+            if neighborhood != GridNeighborhood::Orthogonal && y + 1 < h {
+                if x + 1 < w {
+                    graph.add_edge(y * w + x, (y + 1) * w + x + 1);
+                }
+                if x > 0 {
+                    graph.add_edge(y * w + x, (y + 1) * w + x - 1);
+                }
             }
         }
     }
     graph
+}
+
+pub fn infer_graph_from_2d_array(shape: (usize, usize)) -> Graph {
+    grid_graph(shape, GridNeighborhood::Orthogonal)
+}
+
+/// Requires every active component to touch the boundary of the grid.
+///
+/// Components use the given neighborhood and may be disconnected within the
+/// grid. An empty set of active cells is allowed.
+pub fn active_components_touch_boundary_2d<T>(
+    solver: &mut Solver,
+    is_active: T,
+    neighborhood: GridNeighborhood,
+) where
+    T: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
+{
+    let is_active = is_active.as_ndarray();
+    let (h, w) = is_active.shape();
+    let mut graph = grid_graph((h, w), neighborhood);
+    let outer = graph.add_vertex();
+    let mut vertices: Vec<_> = is_active.into_iter().collect();
+    vertices.push(crate::solver::TRUE);
+    for y in 0..h {
+        for x in 0..w {
+            if y == 0 || y + 1 == h || x == 0 || x + 1 == w {
+                graph.add_edge(y * w + x, outer);
+            }
+        }
+    }
+    active_vertices_connected(solver, vertices, &graph);
 }
 
 /// A struct for maintaining "edges" of a grid, including those on the outer border.
@@ -1497,5 +1546,76 @@ mod tests {
                 ]
             );
         }
+    }
+    #[test]
+    fn grid_edges_match_neighborhood() {
+        for shape in [(0, 0), (0, 3), (3, 0), (1, 1), (1, 4), (4, 1), (3, 4)] {
+            for kind in [
+                GridNeighborhood::Orthogonal,
+                GridNeighborhood::Diagonal,
+                GridNeighborhood::Eight,
+            ] {
+                let g = super::grid_graph(shape, kind);
+                let (h, w) = shape;
+                assert_eq!(g.n_vertices(), h * w);
+                let mut expected = vec![];
+                for a in 0..h * w {
+                    for b in a + 1..h * w {
+                        let dy = (a / w).abs_diff(b / w);
+                        let dx = (a % w).abs_diff(b % w);
+                        let adjacent = match kind {
+                            GridNeighborhood::Orthogonal => dy + dx == 1,
+                            GridNeighborhood::Diagonal => dy == 1 && dx == 1,
+                            GridNeighborhood::Eight => dy <= 1 && dx <= 1,
+                        };
+                        if adjacent {
+                            expected.push((a, b));
+                        }
+                    }
+                }
+                let mut actual: Vec<_> = (0..g.n_edges()).map(|i| g[i]).collect();
+                actual.sort_unstable();
+                assert_eq!(actual, expected);
+            }
+            let old = super::infer_graph_from_2d_array(shape);
+            let new = super::grid_graph(shape, GridNeighborhood::Orthogonal);
+            assert_eq!(
+                (0..old.n_edges()).map(|i| old[i]).collect::<Vec<_>>(),
+                (0..new.n_edges()).map(|i| new[i]).collect::<Vec<_>>()
+            );
+        }
+    }
+
+    fn accepts(shape: (usize, usize), active: &[(usize, usize)], kind: GridNeighborhood) -> bool {
+        let mut solver = Solver::new();
+        let cells = solver.bool_var_2d(shape);
+        for y in 0..shape.0 {
+            for x in 0..shape.1 {
+                solver.add_expr(cells.at((y, x)).iff(active.contains(&(y, x))));
+            }
+        }
+        // An expression input is supported as well as variables.
+        super::active_components_touch_boundary_2d(&mut solver, !!&cells, kind);
+        solver.solve().is_some()
+    }
+
+    #[test]
+    fn each_component_must_reach_boundary() {
+        use GridNeighborhood::*;
+        for kind in [Orthogonal, Diagonal, Eight] {
+            assert!(accepts((3, 3), &[], kind));
+            assert!(accepts((3, 3), &[(0, 0), (2, 2)], kind));
+            assert!(!accepts((3, 3), &[(0, 2), (1, 1)], Orthogonal));
+            assert!(!accepts((3, 3), &[(1, 1)], kind));
+            assert!(accepts((1, 3), &[(0, 1)], kind));
+            assert!(accepts((3, 1), &[(1, 0)], kind));
+            assert!(accepts((1, 1), &[(0, 0)], kind));
+            assert!(accepts((0, 3), &[], kind));
+            assert!(accepts((3, 0), &[], kind));
+        }
+        assert!(accepts((3, 3), &[(0, 0), (1, 1)], Eight));
+        assert!(accepts((3, 3), &[(0, 0), (1, 1)], Diagonal));
+        assert!(accepts((3, 3), &[(0, 1), (1, 1)], Orthogonal));
+        assert!(!accepts((3, 3), &[(0, 1), (1, 1)], Diagonal));
     }
 }

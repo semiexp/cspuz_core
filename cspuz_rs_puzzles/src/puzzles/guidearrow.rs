@@ -4,7 +4,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
     Dict, HexInt, Map, NumSpaces, Size, Spaces, Tuple3,
 };
-use cspuz_rs::solver::{count_true, Solver, TRUE};
+use cspuz_rs::solver::{count_true, Solver};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GuidearrowClue {
@@ -112,29 +112,11 @@ pub fn solve_guidearrow(
         }
     }
 
-    let mut aux_graph = graph::Graph::new(h * w + 1);
-    let mut aux_vertices = vec![];
-
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 {
-                if x < w - 1 {
-                    aux_graph.add_edge(y * w + x, (y + 1) * w + x + 1);
-                }
-                if x > 0 {
-                    aux_graph.add_edge(y * w + x, (y + 1) * w + x - 1);
-                }
-            }
-
-            if y == 0 || y == h - 1 || x == 0 || x == w - 1 {
-                aux_graph.add_edge(y * w + x, h * w);
-            }
-
-            aux_vertices.push(is_black.at((y, x)).expr());
-        }
-    }
-    aux_vertices.push(TRUE);
-    graph::active_vertices_connected(&mut solver, &aux_vertices, &aux_graph);
+    graph::active_components_touch_boundary_2d(
+        &mut solver,
+        is_black,
+        graph::GridNeighborhood::Diagonal,
+    );
 
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
