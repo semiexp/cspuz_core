@@ -54,6 +54,30 @@ pub fn solve_fillmat(
         }
     }
 
+    // cannot contain multiple clues in a single region
+    for y in 0..h {
+        let mut last_clue_x = None;
+        for x in 0..w {
+            if clues[y][x].is_some() {
+                if let Some(last_x) = last_clue_x {
+                    solver.add_expr(is_border.vertical.slice_fixed_y((y, last_x..x)).any());
+                }
+                last_clue_x = Some(x);
+            }
+        }
+    }
+    for x in 0..w {
+        let mut last_clue_y = None;
+        for y in 0..h {
+            if clues[y][x].is_some() {
+                if let Some(last_y) = last_clue_y {
+                    solver.add_expr(is_border.horizontal.slice_fixed_x((last_y..y, x)).any());
+                }
+                last_clue_y = Some(y);
+            }
+        }
+    }
+
     solver.irrefutable_facts().map(|f| f.get(&is_border))
 }
 
@@ -82,7 +106,7 @@ pub fn deserialize_problem(url: &str) -> Option<Problem> {
 mod tests {
     use super::*;
 
-    fn problem_for_tests() -> Problem {
+    fn problem_for_tests1() -> Problem {
         vec![
             vec![Some(3), None, None, Some(3), None],
             vec![None, None, None, None, None],
@@ -92,9 +116,17 @@ mod tests {
         ]
     }
 
+    fn problem_for_tests2() -> Problem {
+        vec![
+            vec![Some(3), None, None, Some(1)],
+            vec![None, None, None, None],
+            vec![Some(3), None, None, None],
+        ]
+    }
+
     #[test]
-    fn test_fillmat_problem() {
-        let problem = problem_for_tests();
+    fn test_fillmat_problem1() {
+        let problem = problem_for_tests1();
         let ans = solve_fillmat(&problem);
         assert!(ans.is_some());
         let ans = ans.unwrap();
@@ -118,8 +150,29 @@ mod tests {
     }
 
     #[test]
+    fn test_fillmat_problem2() {
+        let problem = problem_for_tests2();
+        let ans = solve_fillmat(&problem);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+        #[rustfmt::skip]
+        let expected = graph::BoolInnerGridEdgesIrrefutableFacts {
+            horizontal: crate::util::tests::to_option_bool_2d([
+                [1, 1, 1, 1],
+                [1, 1, 1, 1],
+            ]),
+            vertical: crate::util::tests::to_option_bool_2d([
+                [0, 0, 1],
+                [0, 0, 0],
+                [0, 0, 1],
+            ]),
+        };
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_fillmat_serializer() {
-        let problem = problem_for_tests();
+        let problem = problem_for_tests1();
         let url = "https://puzz.link/p?fillmat/5/5/3b3h1h1b4";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
