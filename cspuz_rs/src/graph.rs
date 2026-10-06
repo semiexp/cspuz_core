@@ -1234,6 +1234,60 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Maximal horizontal and vertical runs of unblocked cells.
+///
+/// Coordinates within each segment are ordered left-to-right or top-to-bottom.
+/// Blocked cells have no segment ID; every other cell belongs to exactly one
+/// horizontal and one vertical segment.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrthogonalSegments {
+    pub horizontal: Vec<Vec<(usize, usize)>>,
+    pub vertical: Vec<Vec<(usize, usize)>>,
+    pub horizontal_id: Vec<Vec<Option<usize>>>,
+    pub vertical_id: Vec<Vec<Option<usize>>>,
+}
+
+/// Extracts maximal unblocked runs from a rectangular grid.
+/// Empty dimensions are allowed; ragged rows cause a panic.
+pub fn orthogonal_segments(blocked: &[Vec<bool>]) -> OrthogonalSegments {
+    let h = blocked.len();
+    let w = blocked.first().map_or(0, Vec::len);
+    assert!(blocked.iter().all(|row| row.len() == w));
+    let mut ret = OrthogonalSegments {
+        horizontal: vec![],
+        vertical: vec![],
+        horizontal_id: vec![vec![None; w]; h],
+        vertical_id: vec![vec![None; w]; h],
+    };
+    for y in 0..h {
+        for x in 0..w {
+            if blocked[y][x] {
+                continue;
+            }
+            if x == 0 || blocked[y][x - 1] {
+                ret.horizontal.push(vec![]);
+            }
+            let id = ret.horizontal.len() - 1;
+            ret.horizontal[id].push((y, x));
+            ret.horizontal_id[y][x] = Some(id);
+        }
+    }
+    for x in 0..w {
+        for y in 0..h {
+            if blocked[y][x] {
+                continue;
+            }
+            if y == 0 || blocked[y - 1][x] {
+                ret.vertical.push(vec![]);
+            }
+            let id = ret.vertical.len() - 1;
+            ret.vertical[id].push((y, x));
+            ret.vertical_id[y][x] = Some(id);
+        }
+    }
+    ret
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1691,5 +1745,56 @@ mod tests {
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
             }
         }
+    }
+
+    #[test]
+    fn test_segments_match_unobstructed_visibility() {
+        for (h, w) in [(0, 0), (3, 0), (1, 4), (4, 1), (2, 3)] {
+            for mask in 0..1usize << (h * w) {
+                let blocked: Vec<Vec<_>> = (0..h)
+                    .map(|y| (0..w).map(|x| mask & (1 << (y * w + x)) != 0).collect())
+                    .collect();
+                let segments = orthogonal_segments(&blocked);
+                for (runs, ids, horizontal) in [
+                    (&segments.horizontal, &segments.horizontal_id, true),
+                    (&segments.vertical, &segments.vertical_id, false),
+                ] {
+                    let mut seen = vec![vec![false; w]; h];
+                    for (id, cells) in runs.iter().enumerate() {
+                        assert!(!cells.is_empty());
+                        for &(y, x) in cells {
+                            assert!(!seen[y][x]);
+                            seen[y][x] = true;
+                            assert_eq!(ids[y][x], Some(id));
+                        }
+                    }
+                    for y in 0..h {
+                        for x in 0..w {
+                            assert_eq!(seen[y][x], !blocked[y][x]);
+                            assert_eq!(ids[y][x].is_none(), blocked[y][x]);
+                            if blocked[y][x] {
+                                continue;
+                            }
+                            for yy in 0..h {
+                                for xx in 0..w {
+                                    let visible = if horizontal {
+                                        y == yy && (x.min(xx)..=x.max(xx)).all(|i| !blocked[y][i])
+                                    } else {
+                                        x == xx && (y.min(yy)..=y.max(yy)).all(|i| !blocked[i][x])
+                                    };
+                                    assert_eq!(ids[y][x] == ids[yy][xx], visible);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_ragged_grid_is_rejected() {
+        orthogonal_segments(&[vec![false], vec![]]);
     }
 }

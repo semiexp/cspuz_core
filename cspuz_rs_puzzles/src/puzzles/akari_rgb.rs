@@ -1,9 +1,10 @@
 use crate::util;
+use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info, kudamono_url_info_to_problem, problem_to_kudamono_url_grid, Choice,
     Combinator, DecInt, Dict, KudamonoGrid, Map, PrefixAndSuffix,
 };
-use cspuz_rs::solver::{IntVar, Solver};
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AkariRGBClue {
@@ -46,62 +47,26 @@ pub fn solve_akari_rgb(clues: &[Vec<AkariRGBClue>]) -> Option<Vec<Vec<Option<i32
         }
     }
 
-    let mut horizontal_group: Vec<Vec<Option<IntVar>>> = vec![vec![None; w]; h];
-    for y in 0..h {
-        let mut start: Option<usize> = None;
-        for x in 0..=w {
-            if x < w && !clues[y][x].is_block() {
-                if start.is_none() {
-                    start = Some(x);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.int_var(0, 3);
-
-                    for c in 1..=3 {
-                        solver.add_expr(
-                            light
-                                .slice_fixed_y((y, s..x))
-                                .eq(c)
-                                .count_true()
-                                .eq(v.eq(c).ite(1, 0)),
-                        );
-                    }
-                    for x2 in s..x {
-                        horizontal_group[y][x2] = Some(v.clone());
-                    }
-                    start = None;
-                }
-            }
-        }
-    }
-
-    let mut vertical_group: Vec<Vec<Option<IntVar>>> = vec![vec![None; w]; h];
-    for x in 0..w {
-        let mut start: Option<usize> = None;
-        for y in 0..=h {
-            if y < h && !clues[y][x].is_block() {
-                if start.is_none() {
-                    start = Some(y);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.int_var(0, 3);
-
-                    for c in 1..=3 {
-                        solver.add_expr(
-                            light
-                                .slice_fixed_x((s..y, x))
-                                .eq(c)
-                                .count_true()
-                                .eq(v.eq(c).ite(1, 0)),
-                        );
-                    }
-                    for y2 in s..y {
-                        vertical_group[y2][x] = Some(v.clone());
-                    }
-                    start = None;
-                }
+    let blocked: Vec<Vec<_>> = clues
+        .iter()
+        .map(|row| row.iter().map(AkariRGBClue::is_block).collect())
+        .collect();
+    let segments = graph::orthogonal_segments(&blocked);
+    let horizontal_group = solver.int_var_1d(segments.horizontal.len(), 0, 3);
+    let vertical_group = solver.int_var_1d(segments.vertical.len(), 0, 3);
+    for (runs, colors) in [
+        (&segments.horizontal, &horizontal_group),
+        (&segments.vertical, &vertical_group),
+    ] {
+        for (id, cells) in runs.iter().enumerate() {
+            for c in 1..=3 {
+                solver.add_expr(
+                    light
+                        .select(cells)
+                        .eq(c)
+                        .count_true()
+                        .eq(colors.at(id).eq(c).ite(1, 0)),
+                );
             }
         }
     }
@@ -111,8 +76,8 @@ pub fn solve_akari_rgb(clues: &[Vec<AkariRGBClue>]) -> Option<Vec<Vec<Option<i32
             if clues[y][x].is_block() {
                 continue;
             }
-            let a = horizontal_group[y][x].as_ref().unwrap();
-            let b = vertical_group[y][x].as_ref().unwrap();
+            let a = &horizontal_group.at(segments.horizontal_id[y][x].unwrap());
+            let b = &vertical_group.at(segments.vertical_id[y][x].unwrap());
 
             match clues[y][x] {
                 AkariRGBClue::Empty => (),
