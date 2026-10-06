@@ -422,6 +422,21 @@ impl<T: Clone> NdArray<(usize, usize), T> {
         self.select(self.eight_neighbor_indices(idx))
     }
 
+    /// Returns cells strictly beyond `center` in the given direction, nearest
+    /// first. Unlike `pointing_cells`, up and left rays are reversed.
+    /// Panics for an out-of-bounds center or `Arrow::Unspecified`.
+    pub fn cell_ray(&self, center: (usize, usize), direction: Arrow) -> NdArray<(usize,), T> {
+        let (y, x) = center;
+        assert!(y < self.shape.0 && x < self.shape.1);
+        match direction {
+            Arrow::Up => self.slice_fixed_x((..y, x)).reverse(),
+            Arrow::Down => self.slice_fixed_x(((y + 1).., x)),
+            Arrow::Left => self.slice_fixed_y((y, ..x)).reverse(),
+            Arrow::Right => self.slice_fixed_y((y, (x + 1)..)),
+            Arrow::Unspecified => panic!("cell_ray requires a direction"),
+        }
+    }
+
     pub fn pointing_cells(
         &self,
         cell: (usize, usize),
@@ -674,6 +689,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::super::Solver;
+    use crate::items::Arrow;
 
     #[test]
     fn test_ndarray_add_0d_0d() {
@@ -972,5 +988,43 @@ mod tests {
             assert_eq!(model.get(a), -2);
             assert_eq!(model.get(b), -3);
         }
+    }
+
+    const DIRECTIONS: [(Arrow, i32, i32); 4] = [
+        (Arrow::Up, -1, 0),
+        (Arrow::Down, 1, 0),
+        (Arrow::Left, 0, -1),
+        (Arrow::Right, 0, 1),
+    ];
+
+    #[test]
+    fn test_cell_rays_are_nearest_first_and_exclude_center() {
+        let mut solver = Solver::new();
+        let cells = solver.int_var_2d((3, 4), 0, 11);
+        for y in 0..3 {
+            for x in 0..4 {
+                solver.add_expr(cells.at((y, x)).eq((y * 4 + x) as i32));
+            }
+        }
+        let model = solver.solve().unwrap();
+        for y in 0..3 {
+            for x in 0..4 {
+                for (direction, dy, dx) in DIRECTIONS {
+                    let (mut yy, mut xx) = (y as i32 + dy, x as i32 + dx);
+                    let mut expected = vec![];
+                    while (0..3).contains(&yy) && (0..4).contains(&xx) {
+                        expected.push(yy * 4 + xx);
+                        yy += dy;
+                        xx += dx;
+                    }
+                    assert_eq!(model.get(&cells.cell_ray((y, x), direction)), expected);
+                }
+            }
+        }
+        // Preserve pointing_cells' existing order.
+        assert_eq!(
+            model.get(&cells.pointing_cells((2, 3), Arrow::Left).unwrap()),
+            vec![8, 9, 10]
+        );
     }
 }

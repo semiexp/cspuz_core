@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{orthogonal_prefix_lengths, Solver};
 
 pub fn solve_canalview(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -22,17 +22,8 @@ pub fn solve_canalview(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool
                 if n < 0 {
                     continue;
                 }
-                let up = is_black.slice_fixed_x((..y, x)).reverse();
-                let down = is_black.slice_fixed_x(((y + 1).., x));
-                let left = is_black.slice_fixed_y((y, ..x)).reverse();
-                let right = is_black.slice_fixed_y((y, (x + 1)..));
-                solver.add_expr(
-                    (up.consecutive_prefix_true()
-                        + down.consecutive_prefix_true()
-                        + left.consecutive_prefix_true()
-                        + right.consecutive_prefix_true())
-                    .eq(n),
-                );
+                let lengths = orthogonal_prefix_lengths(is_black, (y, x));
+                solver.add_expr((lengths.up + lengths.down + lengths.left + lengths.right).eq(n));
             }
         }
     }
