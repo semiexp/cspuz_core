@@ -34,19 +34,8 @@ pub fn solve(url: &str, is_ayeheya: bool) -> Result<Board, &'static str> {
 
     board.add_borders(&borders, "black");
 
-    for y in 0..height {
-        for x in 0..width {
-            if let Some(is_black) = &is_black {
-                if let Some(b) = is_black[y][x] {
-                    board.push(Item::cell(
-                        y,
-                        x,
-                        "green",
-                        if b { ItemKind::Block } else { ItemKind::Dot },
-                    ));
-                }
-            }
-        }
+    if let Some(is_black) = &is_black {
+        board.add_block_dot_answer(is_black, "green");
     }
     let rooms = graph::borders_to_rooms(&borders);
     assert_eq!(rooms.len(), clues.len());
