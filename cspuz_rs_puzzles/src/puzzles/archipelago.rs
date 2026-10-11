@@ -25,6 +25,7 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
             break;
         }
     }
+    maxn = maxn.max(2);
 
     let nums = &solver.int_var_2d((h, w), 1, maxn);
     solver.add_expr((!is_black).imp(nums.eq(1)));
