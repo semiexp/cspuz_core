@@ -20,7 +20,9 @@ pub fn solve_tetrochain_y(clues: &[Vec<Option<NumberedArrow>>]) -> Option<Vec<Ve
             if let Some((dir, n)) = clues[y][x] {
                 solver.add_expr(!is_black.at((y, x)));
                 if let Some(cells) = is_black.pointing_cells((y, x), dir) {
-                    solver.add_expr(cells.count_true().eq(n));
+                    if n != -1 {
+                        solver.add_expr(cells.count_true().eq(n));
+                    }
                 }
             }
         }
