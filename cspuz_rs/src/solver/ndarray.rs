@@ -648,8 +648,17 @@ where
         let orig = self.as_ndarray();
         let (h, w) = orig.shape;
         let (fh, fw) = filter;
-        assert!(h >= fh);
-        assert!(w >= fw);
+
+        assert!(fh > 0);
+        assert!(fw > 0);
+        if h < fh || w < fw {
+            let rh = if h < fh { 0 } else { h - fh + 1 };
+            let rw = if w < fw { 0 } else { w - fw + 1 };
+            return NdArray {
+                shape: (rh, rw),
+                data: vec![],
+            };
+        }
 
         let mut data = vec![];
         for y in 0..=(h - fh) {
@@ -972,5 +981,15 @@ mod tests {
             assert_eq!(model.get(a), -2);
             assert_eq!(model.get(b), -3);
         }
+    }
+
+    #[test]
+    fn test_ndarray_conv2d_large_window() {
+        let mut solver = Solver::new();
+        let a = &solver.bool_var_2d((2, 2));
+
+        assert_eq!(a.conv2d_and((3, 3)).shape(), (0, 0));
+        assert_eq!(a.conv2d_and((1, 5)).shape(), (2, 0));
+        assert_eq!(a.conv2d_and((5, 1)).shape(), (0, 2));
     }
 }
