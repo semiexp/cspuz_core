@@ -66,7 +66,20 @@ pub fn solve_morningwalk(
 
     let ans1 = solver.irrefutable_facts().map(|f| f.get(is_line));
     let ans2 = walk_not_passing_colored_cell(full, colored, num);
-    merge_walk_answers(ans1, ans2)
+    let mut ans = merge_walk_answers(ans1, ans2);
+
+    // cycle passing through colored cells only
+    let has_num = num.iter().any(|row| row.iter().any(|&n| n.is_some()));
+    if !has_num {
+        let colored_neg = colored
+            .iter()
+            .map(|row| row.iter().map(|&b| !b).collect())
+            .collect::<Vec<_>>();
+        let ans3 = walk_not_passing_colored_cell(full, &colored_neg, num);
+        ans = merge_walk_answers(ans, ans3);
+    }
+
+    ans
 }
 
 type Problem = (bool, (Vec<Vec<bool>>, Vec<Vec<Option<i32>>>));
@@ -194,5 +207,14 @@ mod tests {
             let url = "https://pzprxs.vercel.app/p?morningwalk/f/3/2/00l";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
+    }
+
+    #[test]
+    fn test_morningwalk_colored_cell_only() {
+        let full = true;
+        let colored = crate::util::tests::to_bool_2d([[1, 1], [1, 1]]);
+        let num = vec![vec![None, None], vec![None, None]];
+        let ans = solve_morningwalk(full, &colored, &num);
+        assert!(ans.is_some());
     }
 }
