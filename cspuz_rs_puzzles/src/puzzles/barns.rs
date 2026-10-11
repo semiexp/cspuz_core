@@ -12,6 +12,11 @@ pub fn solve_barns(
 ) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(icebarn);
 
+    if h <= 1 || w <= 1 {
+        // no cycle is possible in a 1xN or Nx1 grid
+        return None;
+    }
+
     let mut solver = Solver::new();
     let is_line = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
     solver.add_answer_key_bool(&is_line.horizontal);
@@ -163,5 +168,16 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?barns/5/6/0gce000g00000g00";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_barns_1x2() {
+        let icebarn = crate::util::tests::to_bool_2d([[1, 0]]);
+        let borders = InnerGridEdges {
+            horizontal: vec![],
+            vertical: crate::util::tests::to_bool_2d([[0]]),
+        };
+        let ans = solve_barns(&icebarn, &borders);
+        assert!(ans.is_none());
     }
 }
