@@ -29,29 +29,33 @@ pub fn solve_icewalk(
                 solver.add_expr(is_passed.at((y, x)));
             }
             if icebarn[y][x] {
-                if x == 0 {
-                    solver.add_expr(!is_line.horizontal.at((y, x)));
-                } else if x == w - 1 {
-                    solver.add_expr(!is_line.horizontal.at((y, x - 1)));
-                } else {
-                    solver.add_expr(
-                        is_line
-                            .horizontal
-                            .at((y, x - 1))
-                            .iff(is_line.horizontal.at((y, x))),
-                    );
+                if w >= 2 {
+                    if x == 0 {
+                        solver.add_expr(!is_line.horizontal.at((y, x)));
+                    } else if x == w - 1 {
+                        solver.add_expr(!is_line.horizontal.at((y, x - 1)));
+                    } else {
+                        solver.add_expr(
+                            is_line
+                                .horizontal
+                                .at((y, x - 1))
+                                .iff(is_line.horizontal.at((y, x))),
+                        );
+                    }
                 }
-                if y == 0 {
-                    solver.add_expr(!is_line.vertical.at((y, x)));
-                } else if y == h - 1 {
-                    solver.add_expr(!is_line.vertical.at((y - 1, x)));
-                } else {
-                    solver.add_expr(
-                        is_line
-                            .vertical
-                            .at((y - 1, x))
-                            .iff(is_line.vertical.at((y, x))),
-                    );
+                if h >= 2 {
+                    if y == 0 {
+                        solver.add_expr(!is_line.vertical.at((y, x)));
+                    } else if y == h - 1 {
+                        solver.add_expr(!is_line.vertical.at((y - 1, x)));
+                    } else {
+                        solver.add_expr(
+                            is_line
+                                .vertical
+                                .at((y - 1, x))
+                                .iff(is_line.vertical.at((y, x))),
+                        );
+                    }
                 }
             } else {
                 solver.add_expr(!is_cross.at((y, x)));
@@ -213,5 +217,14 @@ mod tests {
             let url = "https://pzprxs.vercel.app/p?icewalk/f/3/2/00l";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
+    }
+
+    #[test]
+    fn test_icewalk_degenerated() {
+        let full = false;
+        let icebarn = vec![vec![false, true, false]];
+        let num = vec![vec![None, None, None]];
+        let ans = solve_icewalk(full, &icebarn, &num);
+        assert!(ans.is_none());
     }
 }
