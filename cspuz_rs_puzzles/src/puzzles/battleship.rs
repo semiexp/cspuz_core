@@ -4,7 +4,7 @@ use cspuz_rs::polyomino::{
 };
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Map, Optionalize, OutsideCells2, Size, Spaces, Tuple3,
+    Dict, HexInt, Map, Optionalize, OutsideCells2, Size, Spaces, Tuple3,
 };
 use cspuz_rs::solver::{Solver, FALSE};
 
@@ -172,6 +172,7 @@ pub type Problem = (
 fn clue_combinator() -> impl Combinator<BattleshipClue> {
     Choice::new(vec![
         Box::new(Spaces::new(BattleshipClue::None, 'g')),
+        Box::new(Dict::new(BattleshipClue::ShipAny, ".")),
         Box::new(Map::new(
             HexInt,
             |x: BattleshipClue| match x {
@@ -397,6 +398,12 @@ mod tests {
         {
             let problem = problem_for_tests2();
             let url = "https://puzz.link/p?battleship/2/5/m7hai89g/2/22u/22u";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2a();
+            let url = "https://puzz.link/p?battleship/2/5/m.h.i..g/2/22u/22u";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 
