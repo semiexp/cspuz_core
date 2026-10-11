@@ -381,4 +381,11 @@ mod tests {
         let url = "https://pzprxs.vercel.app/p?archipelago/6/5/g3j2s2g3h.j";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
     }
+
+    #[test]
+    fn test_archipelago_1x2() {
+        let problem = vec![vec![Some(1), None]];
+        let ans = solve_archipelago(&problem);
+        assert!(ans.is_none());
+    }
 }
