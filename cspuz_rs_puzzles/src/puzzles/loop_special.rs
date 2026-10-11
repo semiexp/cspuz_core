@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Map, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{any, Solver};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LoopSpecialClue {
@@ -29,16 +29,27 @@ pub fn solve_loop_special(
     solver.add_answer_key_bool(&is_line.vertical);
 
     let mut max_num = 0;
+    let mut num_numberless = 0;
+    let mut labels = vec![];
     for y in 0..h {
         for x in 0..w {
             if let LoopSpecialClue::Num(n) = clues[y][x] {
+                if n <= 0 {
+                    num_numberless += 1;
+                } else {
+                    labels.push(n);
+                }
                 max_num = max_num.max(n);
             }
         }
     }
+    labels.sort();
+    labels.dedup();
 
-    let horizontal = &solver.int_var_2d((h, w - 1), 0, max_num);
-    let vertical = &solver.int_var_2d((h - 1, w), 0, max_num);
+    let max_loop_id = labels.len() as i32 + num_numberless;
+
+    let horizontal = &solver.int_var_2d((h, w - 1), 0, max_loop_id);
+    let vertical = &solver.int_var_2d((h - 1, w), 0, max_loop_id);
     solver.add_expr(is_line.horizontal.iff(horizontal.ne(0)));
     solver.add_expr(is_line.vertical.iff(vertical.ne(0)));
 
@@ -56,28 +67,43 @@ pub fn solve_loop_special(
         }
     }
 
-    for i in 1..=max_num {
+    for i in 1..=max_loop_id {
         let loop_i = &graph::BoolGridEdges::new(&mut solver, (h - 1, w - 1));
         solver.add_expr(loop_i.horizontal.iff(horizontal.eq(i)));
         solver.add_expr(loop_i.vertical.iff(vertical.eq(i)));
-        graph::crossable_single_cycle_grid_edges(&mut solver, loop_i);
+        let (is_passed, _) = graph::crossable_single_cycle_grid_edges(&mut solver, loop_i);
 
         for y in 0..h {
             for x in 0..w {
                 if let LoopSpecialClue::Num(n) = clues[y][x] {
                     if n > 0 {
+                        let n_id = labels.binary_search(&n).unwrap() as i32 + 1;
                         solver.add_expr(
-                            loop_i.vertex_neighbors((y, x)).count_true().eq(if n == i {
-                                2
-                            } else {
-                                0
-                            }),
+                            loop_i
+                                .vertex_neighbors((y, x))
+                                .count_true()
+                                .eq(if n_id == i { 2 } else { 0 }),
                         );
                     } else {
                         solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(2));
                     }
                 }
             }
+        }
+
+        if i > labels.len() as i32 {
+            let mut pass_circle = vec![];
+            for y in 0..h {
+                for x in 0..w {
+                    if let LoopSpecialClue::Num(n) = clues[y][x] {
+                        if n <= 0 {
+                            pass_circle.push(is_passed.at((y, x)));
+                        }
+                    }
+                }
+            }
+            solver
+                .add_expr((loop_i.horizontal.any() | loop_i.vertical.any()).imp(any(pass_circle)));
         }
     }
 
@@ -229,5 +255,41 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?loopsp/6/7/1n2tln2qhomv1oku";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_loop_special_absent_num() {
+        let problem = vec![
+            vec![LoopSpecialClue::Empty, LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::Num(2), LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::DownRight, LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::Empty, LoopSpecialClue::Empty],
+        ];
+        let ans = solve_loop_special(&problem);
+        assert!(ans.is_none());
+    }
+
+    #[test]
+    fn test_loop_special_numberless_circle() {
+        let problem = vec![
+            vec![LoopSpecialClue::Empty, LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::Num(1), LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::DownRight, LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::Num(-1), LoopSpecialClue::Empty],
+        ];
+        let ans = solve_loop_special(&problem);
+        assert!(ans.is_some());
+    }
+
+    #[test]
+    fn test_loop_special_numberless_circle2() {
+        let problem = vec![
+            vec![LoopSpecialClue::Empty, LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::Num(1), LoopSpecialClue::Empty],
+            vec![LoopSpecialClue::DownRight, LoopSpecialClue::Num(-1)],
+            vec![LoopSpecialClue::Num(-1), LoopSpecialClue::Num(-1)],
+        ];
+        let ans = solve_loop_special(&problem);
+        assert!(ans.is_some());
     }
 }
