@@ -28,7 +28,6 @@ pub fn solve_loop_special(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let mut max_num = 0;
     let mut num_numberless = 0;
     let mut labels = vec![];
     for y in 0..h {
@@ -39,7 +38,6 @@ pub fn solve_loop_special(
                 } else {
                     labels.push(n);
                 }
-                max_num = max_num.max(n);
             }
         }
     }
