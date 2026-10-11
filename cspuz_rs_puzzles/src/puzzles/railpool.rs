@@ -92,6 +92,9 @@ pub fn solve_railpool(
                 if c == 0 {
                     clue_n_question += 1;
                 } else {
+                    if c > max_length as i32 {
+                        return None;
+                    }
                     clue_nums.push(c);
                 }
             }
