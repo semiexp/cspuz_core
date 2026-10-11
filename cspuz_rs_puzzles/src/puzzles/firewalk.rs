@@ -169,7 +169,9 @@ pub fn solve_firewalk(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = num[y][x] {
-                solver.add_expr(line_size.at((y, x)).eq(n));
+                if n > 0 {
+                    solver.add_expr(line_size.at((y, x)).eq(n));
+                }
             }
         }
     }
@@ -207,6 +209,7 @@ fn combinator() -> impl Combinator<Problem> {
             )),
             ContextBasedGrid::new(Choice::new(vec![
                 Box::new(Optionalize::new(HexInt)),
+                Box::new(Dict::new(Some(-1), ".")),
                 Box::new(Spaces::new(None, 'g')),
             ])),
         )),
