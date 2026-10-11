@@ -37,27 +37,31 @@ pub fn solve_hashi(clues: &[Vec<Option<i32>>]) -> Option<GridEdges<Vec<Vec<Optio
                     solver.add_expr(sum(deg).gt(0));
                 }
             } else {
-                if y == 0 {
-                    solver.add_expr(answer_vertical.at((y, x)).eq(0));
-                } else if y == h - 1 {
-                    solver.add_expr(answer_vertical.at((y - 1, x)).eq(0));
-                } else {
-                    solver.add_expr(
-                        answer_vertical
-                            .at((y - 1, x))
-                            .eq(answer_vertical.at((y, x))),
-                    );
+                if h >= 2 {
+                    if y == 0 {
+                        solver.add_expr(answer_vertical.at((y, x)).eq(0));
+                    } else if y == h - 1 {
+                        solver.add_expr(answer_vertical.at((y - 1, x)).eq(0));
+                    } else {
+                        solver.add_expr(
+                            answer_vertical
+                                .at((y - 1, x))
+                                .eq(answer_vertical.at((y, x))),
+                        );
+                    }
                 }
-                if x == 0 {
-                    solver.add_expr(answer_horizontal.at((y, x)).eq(0));
-                } else if x == w - 1 {
-                    solver.add_expr(answer_horizontal.at((y, x - 1)).eq(0));
-                } else {
-                    solver.add_expr(
-                        answer_horizontal
-                            .at((y, x - 1))
-                            .eq(answer_horizontal.at((y, x))),
-                    );
+                if w >= 2 {
+                    if x == 0 {
+                        solver.add_expr(answer_horizontal.at((y, x)).eq(0));
+                    } else if x == w - 1 {
+                        solver.add_expr(answer_horizontal.at((y, x - 1)).eq(0));
+                    } else {
+                        solver.add_expr(
+                            answer_horizontal
+                                .at((y, x - 1))
+                                .eq(answer_horizontal.at((y, x))),
+                        );
+                    }
                 }
 
                 if 0 < y && y < h - 1 && 0 < x && x < w - 1 {
@@ -148,5 +152,12 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?hashi/6/6/3g1g2.g.g2h.g2g.h.g4g3h4g.g2g.h2";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_hashi_degenerated() {
+        let problem = vec![vec![Some(1), None, Some(1)]];
+        let ans = solve_hashi(&problem);
+        assert!(ans.is_some());
     }
 }
