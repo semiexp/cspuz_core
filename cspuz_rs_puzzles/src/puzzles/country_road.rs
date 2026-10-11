@@ -22,15 +22,18 @@ pub fn solve_country_road(
     let is_passed = &graph::single_cycle_grid_edges(&mut solver, is_line);
 
     let is_line_dual = is_line.clone().dual();
-    for i in 0..rooms.len() {
-        let num_entrances = room_partition.boundary_edges(i, &is_line_dual).count_true();
-        // Check every room is entered only once
-        if empty {
-            // With empty rooms
-            solver.add_expr(num_entrances.eq(0) | num_entrances.eq(2));
-        } else {
-            // Without
-            solver.add_expr(num_entrances.eq(2));
+    // If there is only one room, we don't need to check the number of entrances
+    if rooms.len() > 1 {
+        for i in 0..rooms.len() {
+            let num_entrances = room_partition.boundary_edges(i, &is_line_dual).count_true();
+            // Check every room is entered only once
+            if empty {
+                // With empty rooms
+                solver.add_expr(num_entrances.eq(0) | num_entrances.eq(2));
+            } else {
+                // Without
+                solver.add_expr(num_entrances.eq(2));
+            }
         }
     }
 
