@@ -57,8 +57,8 @@ pub fn solve_circlesquare(clues: &[Vec<CircleSquareClue>]) -> Option<Vec<Vec<Opt
             .eq(is_border.vertical.ite(0, num_right.slice((.., 1..)) + 1)),
     );
 
-    for x in 0..h {
-        for y in 0..w {
+    for y in 0..h {
+        for x in 0..w {
             solver.add_expr(
                 (!is_black.at((y, x))).imp(
                     (num_up.at((y, x)) + num_down.at((y, x)))
@@ -146,5 +146,12 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?circlesquare/5/5/0799i8010";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_circlesquare_no_square() {
+        let problem = vec![vec![CircleSquareClue::None; 5]; 4];
+        let ans = solve_circlesquare(&problem);
+        assert!(ans.is_some());
     }
 }
