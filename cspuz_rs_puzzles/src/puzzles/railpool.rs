@@ -80,41 +80,61 @@ pub fn solve_railpool(
     let max_length = (h.max(w) as i32 - 1) as usize;
     let rooms = graph::borders_to_rooms(&borders);
     for room in &rooms {
+        // merge clues
+        let mut clue_nums = vec![];
+        let mut clue_n_question = 0;
         for &(y, x) in room {
             let clue = &clues[y][x];
             if clue.is_empty() {
                 continue;
             }
-            let lengths = &solver.bool_var_1d(max_length + 1);
-            for i in 1..=max_length {
-                solver.add_expr(lengths.at(i).iff(
-                    horizontal_len.select(room).eq(i as i32).any()
-                        | vertical_len.select(room).eq(i as i32).any(),
-                ));
-            }
-
-            let mut n_question = 0;
             for &c in clue {
                 if c == 0 {
-                    n_question += 1;
+                    clue_n_question += 1;
+                } else {
+                    clue_nums.push(c);
                 }
             }
+        }
+        clue_nums.sort();
+        clue_nums.dedup();
+        let mut clue = clue_nums;
+        for _ in 0..clue_n_question {
+            clue.push(0);
+        }
+        if clue.is_empty() {
+            continue;
+        }
 
-            if n_question == 0 {
-                for i in 1..=max_length {
-                    solver.add_expr(lengths.at(i).iff(clue.contains(&(i as i32))));
-                }
-            } else {
-                let mut other = vec![];
-                for i in 1..=max_length {
-                    if clue.contains(&(i as i32)) {
-                        solver.add_expr(lengths.at(i));
-                    } else {
-                        other.push(lengths.at(i));
-                    }
-                }
-                solver.add_expr(count_true(other).eq(n_question));
+        let lengths = &solver.bool_var_1d(max_length + 1);
+        for i in 1..=max_length {
+            solver.add_expr(lengths.at(i).iff(
+                horizontal_len.select(room).eq(i as i32).any()
+                    | vertical_len.select(room).eq(i as i32).any(),
+            ));
+        }
+
+        let mut n_question = 0;
+        for &c in &clue {
+            if c == 0 {
+                n_question += 1;
             }
+        }
+
+        if n_question == 0 {
+            for i in 1..=max_length {
+                solver.add_expr(lengths.at(i).iff(clue.contains(&(i as i32))));
+            }
+        } else {
+            let mut other = vec![];
+            for i in 1..=max_length {
+                if clue.contains(&(i as i32)) {
+                    solver.add_expr(lengths.at(i));
+                } else {
+                    other.push(lengths.at(i));
+                }
+            }
+            solver.add_expr(count_true(other).eq(n_question));
         }
     }
 
@@ -255,5 +275,17 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?railpool/7/5/0zp00o20rg8032h040gg00000020";
         assert_eq!(deserialize_problem(url).unwrap(), problem);
+    }
+
+    #[test]
+    fn test_railpool_merge_clues_in_room() {
+        let problem1 = problem_for_tests();
+        let ans1 = solve_railpool(&problem1.1, &problem1.0, &problem1.2);
+
+        let url = "https://puzz.link/p?railpool/7/5/0zp00o2q02/g8032h040gg00000020";
+        let problem2 = deserialize_problem(url).unwrap();
+        let ans2 = solve_railpool(&problem2.1, &problem2.0, &problem2.2);
+
+        assert_eq!(ans1, ans2);
     }
 }
