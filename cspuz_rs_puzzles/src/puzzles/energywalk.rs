@@ -101,6 +101,8 @@ pub fn solve_energywalk(
         for x in 0..w {
             let is_passed = &solver.bool_var();
             if colored[y][x] {
+                // If h == 1 or w == 1, a colored cell can be an endpoint, but this is not explicitly prohibited
+                // according to the rules. So we don't add constraints for colored cells in this case.
                 solver.add_expr(is_line.vertex_neighbors((y, x)).iff(is_passed));
             } else {
                 solver.add_expr(
