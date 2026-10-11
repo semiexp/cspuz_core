@@ -24,16 +24,16 @@ pub fn solve_yinyang(clues: &[Vec<YinYangClue>]) -> Option<Vec<Vec<Option<bool>>
     solver.add_expr(!(!is_black).conv2d_and((2, 2)));
 
     solver.add_expr(
-        !(is_black.slice((..(h - 1), ..(h - 1)))
+        !(is_black.slice((..(h - 1), ..(w - 1)))
             & is_black.slice((1.., 1..))
             & !is_black.slice((..(h - 1), 1..))
-            & !is_black.slice((1.., ..(h - 1)))),
+            & !is_black.slice((1.., ..(w - 1)))),
     );
     solver.add_expr(
-        !(!is_black.slice((..(h - 1), ..(h - 1)))
+        !(!is_black.slice((..(h - 1), ..(w - 1)))
             & !is_black.slice((1.., 1..))
             & is_black.slice((..(h - 1), 1..))
-            & is_black.slice((1.., ..(h - 1)))),
+            & is_black.slice((1.., ..(w - 1)))),
     );
 
     for y in 0..h {
@@ -125,5 +125,12 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?yinyang/6/6/6a166b230900";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_yinyang_rectangular_board() {
+        let problem = vec![vec![YinYangClue::None; 3]; 2];
+        let ans = solve_yinyang(&problem);
+        assert!(ans.is_some());
     }
 }
