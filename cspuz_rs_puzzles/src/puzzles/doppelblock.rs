@@ -15,6 +15,10 @@ pub fn solve_doppelblock(
     if size != clues_up.len() {
         return None;
     }
+    if size <= 1 {
+        // cannot put two black cells in a row or column
+        return None;
+    }
 
     let mut solver = Solver::new();
     let numbers = &solver.int_var_2d((size, size), 0, (size - 2) as i32);

@@ -85,7 +85,7 @@ pub fn solve_bosanowa(
                 }
             } else if circles[y][x] {
                 if range[y][x].1 == -1 {
-                    return Err("cell unreachable by given clues");
+                    return Err("cell unreachable by given clues (unsupported by this solver)");
                 }
                 solver.add_expr(num.at((y, x)).ne(-1));
                 solver.add_expr(is_num.at((y, x)));
@@ -143,11 +143,10 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
                             visited[r][s] = false;
                             depth[r][s] = depth[p][q] + 1;
                             cells.push_back((r, s));
-                            if range[r][s].1 == -1
-                                || range[r][s].1 > CheckedInt::new(fibonacci(depth[r][s]) * n)
-                            {
+                            let upper_bound = fibonacci(depth[r][s]) * CheckedInt::new(n);
+                            if range[r][s].1 == -1 || range[r][s].1 > upper_bound {
                                 // Upper bound
-                                range[r][s].1 = fibonacci(depth[r][s]) * n;
+                                range[r][s].1 = upper_bound.get();
                             }
                         }
                     }
@@ -159,11 +158,11 @@ fn range_optimization(circles: &[Vec<bool>], clues: &Vec<Option<i32>>) -> Vec<Ve
     range
 }
 
-fn fibonacci(term: i32) -> i32 {
+fn fibonacci(term: i32) -> CheckedInt {
     if term == 0 {
-        return 0;
+        return CheckedInt::new(0);
     }
-    let (mut a, mut b) = (0, 1);
+    let (mut a, mut b) = (CheckedInt::new(0), CheckedInt::new(1));
     for _ in 1..term {
         let temp = b;
         b += a;
@@ -280,5 +279,12 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?bosanowa/6/5/jo9037g2n2n3g4j3i"; // Example puzzle on puzz.link
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_fibonacci_overflow() {
+        assert_eq!(fibonacci(46), CheckedInt::new(1_836_311_903));
+        fibonacci(47);
     }
 }

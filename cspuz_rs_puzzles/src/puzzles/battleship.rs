@@ -4,7 +4,7 @@ use cspuz_rs::polyomino::{
 };
 use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, ContextBasedGrid,
-    HexInt, Map, Optionalize, OutsideCells2, Size, Spaces, Tuple3,
+    Dict, HexInt, Map, Optionalize, OutsideCells2, Size, Spaces, Tuple3,
 };
 use cspuz_rs::solver::{Solver, FALSE};
 
@@ -22,6 +22,7 @@ pub enum BattleshipClue {
     ShipUpRight,
     ShipDownLeft,
     ShipDownRight,
+    ShipAny,
 }
 
 pub fn solve_battleship(
@@ -55,6 +56,7 @@ pub fn solve_battleship(
     for y in 0..h {
         for x in 0..w {
             match board[y][x] {
+                BattleshipClue::None => (),
                 BattleshipClue::Water => solver.add_expr(!is_ship.at((y, x))),
                 BattleshipClue::ShipSquare
                 | BattleshipClue::ShipUp
@@ -65,8 +67,8 @@ pub fn solve_battleship(
                 | BattleshipClue::ShipUpLeft
                 | BattleshipClue::ShipUpRight
                 | BattleshipClue::ShipDownLeft
-                | BattleshipClue::ShipDownRight => solver.add_expr(is_ship.at((y, x))),
-                _ => (),
+                | BattleshipClue::ShipDownRight
+                | BattleshipClue::ShipAny => solver.add_expr(is_ship.at((y, x))),
             }
         }
     }
@@ -86,9 +88,10 @@ pub fn solve_battleship(
                 || board[y][x] == BattleshipClue::ShipUpRight
                 || board[y][x] == BattleshipClue::ShipDownRight;
             if (board[y][x] != BattleshipClue::ShipCircle)
-                & (board[y][x] != BattleshipClue::ShipSquare)
-                & (board[y][x] != BattleshipClue::Water)
-                & (board[y][x] != BattleshipClue::None)
+                && (board[y][x] != BattleshipClue::ShipSquare)
+                && (board[y][x] != BattleshipClue::Water)
+                && (board[y][x] != BattleshipClue::None)
+                && (board[y][x] != BattleshipClue::ShipAny)
             {
                 solver.add_expr(is_ship.at_offset((y, x), (1, 0), FALSE).iff(has_up));
                 solver.add_expr(is_ship.at_offset((y, x), (-1, 0), FALSE).iff(has_down));
@@ -169,6 +172,7 @@ pub type Problem = (
 fn clue_combinator() -> impl Combinator<BattleshipClue> {
     Choice::new(vec![
         Box::new(Spaces::new(BattleshipClue::None, 'g')),
+        Box::new(Dict::new(BattleshipClue::ShipAny, ".")),
         Box::new(Map::new(
             HexInt,
             |x: BattleshipClue| match x {
@@ -273,6 +277,25 @@ mod tests {
         (outside_clues, ret, pieces)
     }
 
+    // Corner ship testing, ShipAny
+    fn problem_for_tests2a() -> Problem {
+        // https://puzz.link/p?battleship/2/5/m.h.i..g/2/22u/22u
+        let mut ret = vec![vec![BattleshipClue::None; 2]; 5];
+        ret[0][0] = BattleshipClue::ShipAny;
+        ret[1][1] = BattleshipClue::ShipAny;
+        ret[3][1] = BattleshipClue::ShipAny;
+        ret[4][0] = BattleshipClue::ShipAny;
+
+        let outside_clues = (vec![None; 2], vec![None; 5]);
+
+        let pieces = vec![
+            vec![vec![true, true], vec![true, true]],
+            vec![vec![true, true], vec![true, true]],
+        ];
+
+        (outside_clues, ret, pieces)
+    }
+
     // Ends and squares on border testing
     fn problem_for_tests3() -> Problem {
         // https://puzz.link/p?battleship/7/7/ti5s1i5g3g4g5i2s5i/5/31s/31s/31s/31s/33bk
@@ -334,6 +357,18 @@ mod tests {
     }
 
     #[test]
+    fn test_battleship_problem2a() {
+        let (outside_clues, grid, pieces) = problem_for_tests2a();
+        let ans = solve_battleship(&outside_clues.0, &outside_clues.1, &grid, &pieces);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+
+        let expected =
+            crate::util::tests::to_option_bool_2d([[1, 1], [1, 1], [0, 0], [1, 1], [1, 1]]);
+        assert_eq!(ans, expected);
+    }
+
+    #[test]
     fn test_battleship_problem3() {
         let (outside_clues, grid, pieces) = problem_for_tests3();
         let ans = solve_battleship(&outside_clues.0, &outside_clues.1, &grid, &pieces);
@@ -363,6 +398,12 @@ mod tests {
         {
             let problem = problem_for_tests2();
             let url = "https://puzz.link/p?battleship/2/5/m7hai89g/2/22u/22u";
+            util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+        }
+
+        {
+            let problem = problem_for_tests2a();
+            let url = "https://puzz.link/p?battleship/2/5/m.h.i..g/2/22u/22u";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
 

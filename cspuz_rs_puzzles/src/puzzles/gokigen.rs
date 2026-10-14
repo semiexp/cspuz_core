@@ -20,6 +20,9 @@ pub fn solve_gokigen(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<i32>>>
     for y in 0..=h {
         for x in 0..=w {
             if let Some(n) = clues[y][x] {
+                if n == -1 {
+                    continue;
+                }
                 let mut adj = vec![];
 
                 if y > 0 && x > 0 {

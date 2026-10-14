@@ -70,13 +70,15 @@ pub fn solve_moonsun(
         }
     }
     let is_line_dual = is_line.clone().dual();
-    for i in 0..rooms.len() {
-        solver.add_expr(
-            room_partition
-                .boundary_edges(i, &is_line_dual)
-                .count_true()
-                .eq(2),
-        );
+    if rooms.len() >= 2 {
+        for i in 0..rooms.len() {
+            solver.add_expr(
+                room_partition
+                    .boundary_edges(i, &is_line_dual)
+                    .count_true()
+                    .eq(2),
+            );
+        }
     }
 
     solver.irrefutable_facts().map(|f| f.get(is_line))
@@ -173,5 +175,16 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?moonsun/6/6/adclai5dipkg903l916i7306";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_moonsun_single_room() {
+        let borders = graph::InnerGridEdges {
+            horizontal: vec![vec![false, false, false], vec![false, false, false]],
+            vertical: vec![vec![false, false], vec![false, false], vec![false, false]],
+        };
+        let clues = vec![vec![0, 1, 0], vec![0, 0, 0], vec![0, 2, 0]];
+        let ans = solve_moonsun(&borders, &clues);
+        assert!(ans.is_some());
     }
 }

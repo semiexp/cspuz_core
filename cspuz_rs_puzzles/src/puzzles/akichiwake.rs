@@ -59,9 +59,12 @@ pub fn solve_akichiwake(
             }
             if rooms[i].len() == 1 {
                 let p = rooms[i][0];
+                if reduced {
+                    continue;
+                }
                 if n == 0 {
-                    solver.add_expr(is_black.at(p));
-                } else if n == 1 && !reduced {
+                    unreachable!(); // This case is already handled above
+                } else if n == 1 {
                     solver.add_expr(!is_black.at(p));
                 } else {
                     return None;
@@ -222,5 +225,18 @@ mod tests {
                 deserialize_problem,
             );
         }
+    }
+
+    #[test]
+    fn test_akichiwake_reduced() {
+        let reduced = true;
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([[1, 0]]),
+            vertical: crate::util::tests::to_bool_2d([[1], [0]]),
+        };
+        let clues = vec![Some(1), None];
+
+        let ans = solve_akichiwake(reduced, &borders, &clues);
+        assert!(ans.is_some());
     }
 }

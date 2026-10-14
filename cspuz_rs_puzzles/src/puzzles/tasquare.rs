@@ -91,8 +91,8 @@ pub fn solve_tasquare(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>
             .eq(is_border.vertical.ite(0, num_right.slice((.., 1..)) + 1)),
     );
 
-    for x in 0..h {
-        for y in 0..w {
+    for y in 0..h {
+        for x in 0..w {
             solver.add_expr(
                 is_black.at((y, x)).imp(
                     (num_up.at((y, x)) + num_down.at((y, x)))
@@ -161,5 +161,15 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?tasquare/6/6/.h4n.i5h3i.n2h.";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_tasquare_rectangular_board() {
+        let problem = vec![vec![Some(4), None, None], vec![None, None, None]];
+        let ans = solve_tasquare(&problem);
+        assert!(ans.is_some());
+        let ans = ans.unwrap();
+        let expected = crate::util::tests::to_option_bool_2d([[0, 1, 1], [0, 1, 1]]);
+        assert_eq!(ans, expected);
     }
 }

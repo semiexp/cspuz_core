@@ -169,7 +169,9 @@ pub fn solve_firewalk(
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = num[y][x] {
-                solver.add_expr(line_size.at((y, x)).eq(n));
+                if n > 0 {
+                    solver.add_expr(line_size.at((y, x)).eq(n));
+                }
             }
         }
     }
@@ -183,7 +185,17 @@ pub fn solve_firewalk(
     match (ans1, ans2) {
         (Some((edges, modes)), Some(edges2)) => {
             let merged_edges = merge_walk_answers(Some(edges), Some(edges2))?;
-            Some((merged_edges, modes))
+            let mut merged_modes = vec![vec![None; w]; h];
+            for y in 0..h {
+                for x in 0..w {
+                    if modes[y][x] == Some(true) {
+                        merged_modes[y][x] = None;
+                    } else {
+                        merged_modes[y][x] = modes[y][x];
+                    }
+                }
+            }
+            Some((merged_edges, merged_modes))
         }
         (Some((edges, modes)), None) => Some((edges, modes)),
         (None, Some(edges2)) => Some((edges2, vec![vec![Some(false); w]; h])),
@@ -207,6 +219,7 @@ fn combinator() -> impl Combinator<Problem> {
             )),
             ContextBasedGrid::new(Choice::new(vec![
                 Box::new(Optionalize::new(HexInt)),
+                Box::new(Dict::new(Some(-1), ".")),
                 Box::new(Spaces::new(None, 'g')),
             ])),
         )),

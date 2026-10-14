@@ -25,7 +25,7 @@ pub fn solve_creek(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>>
                     is_black
                         .slice((
                             (y.max(1) - 1)..((y + 1).min(h)),
-                            (x.max(1) - 1)..((x + 1).min(h)),
+                            (x.max(1) - 1)..((x + 1).min(w)),
                         ))
                         .count_true()
                         .eq(n),

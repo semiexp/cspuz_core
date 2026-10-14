@@ -124,12 +124,11 @@ pub fn solve_tilecity(
     for y in 0..h {
         for x in 0..w {
             if let Some(c) = clues[y][x] {
-                if c == -1 {
-                    continue;
-                }
                 let r = room_id[y][x];
                 solver.add_expr(!is_black_room.at(r));
-                solver.add_expr(room_max_size.at(r).eq(c));
+                if c != -1 {
+                    solver.add_expr(room_max_size.at(r).eq(c));
+                }
             }
         }
     }

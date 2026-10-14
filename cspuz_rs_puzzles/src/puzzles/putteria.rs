@@ -28,13 +28,13 @@ pub fn solve_putteria(
     solver.add_answer_key_int(num);
 
     // Check no duplicates in rows
-    for i in 0..h {
+    for i in 0..w {
         for j in &ranges {
             solver.add_expr(num.slice_fixed_x((.., i)).eq(*j).count_true().le(1));
         }
     }
 
-    for i in 0..w {
+    for i in 0..h {
         for j in &ranges {
             solver.add_expr(num.slice_fixed_y((i, ..)).eq(*j).count_true().le(1));
         }
@@ -148,5 +148,16 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?putteria/6/6/mvvuus8o7s83i.zk.l"; // Credits to botaku
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_putteria_not_square() {
+        let borders = graph::InnerGridEdges {
+            horizontal: crate::util::tests::to_bool_2d([[0, 0, 0]]),
+            vertical: crate::util::tests::to_bool_2d([[0, 0], [0, 0]]),
+        };
+        let clues = vec![vec![None, None, None], vec![None, None, None]];
+        let ans = solve_putteria(&borders, &clues);
+        assert!(ans.is_some());
     }
 }

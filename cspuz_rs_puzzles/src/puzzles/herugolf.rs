@@ -25,7 +25,7 @@ pub fn solve_herugolf(
             }
         }
     }
-    if clue_max >= h as i32 || clue_max >= w as i32 {
+    if clue_max >= h as i32 && clue_max >= w as i32 {
         return None;
     }
     let level = &solver.int_var_2d((h, w), 0, clue_max);
@@ -250,5 +250,13 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://puzz.link/p?herugolf/6/6/04008400jhjho2i2rhk4m";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_herugolf_initial_check() {
+        let pond = crate::util::tests::to_bool_2d(vec![vec![0, 0, 0], vec![0, 0, 0]]);
+        let clues = vec![vec![Some(2), None, Some(-1)], vec![None, None, None]];
+        let ans = solve_herugolf(&pond, &clues);
+        assert!(ans.is_some());
     }
 }

@@ -25,6 +25,7 @@ pub fn solve_archipelago(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
             break;
         }
     }
+    maxn = maxn.max(2);
 
     let nums = &solver.int_var_2d((h, w), 1, maxn);
     solver.add_expr((!is_black).imp(nums.eq(1)));
@@ -379,5 +380,12 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?archipelago/6/5/g3j2s2g3h.j";
         util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_archipelago_1x2() {
+        let problem = vec![vec![Some(1), None]];
+        let ans = solve_archipelago(&problem);
+        assert!(ans.is_none());
     }
 }

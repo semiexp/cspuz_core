@@ -51,7 +51,9 @@ pub fn solve_bramble(
     assert_eq!(rooms.len(), clues.len());
     for i in 0..rooms.len() {
         if let Some(n) = clues[i] {
-            solver.add_expr(is_black.select(&rooms[i]).count_true().eq(n));
+            if n != -1 {
+                solver.add_expr(is_black.select(&rooms[i]).count_true().eq(n));
+            }
         }
     }
 
@@ -154,5 +156,14 @@ mod tests {
         let problem = (borders, clues);
         let url = "https://pzprxs.vercel.app/p?bramble/5/5/4cql3su032g222g";
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_bramble_unknown_clue() {
+        let (borders, clues) = problem_for_tests();
+        let mut clues = clues;
+        clues[1] = Some(-1);
+        let ans = solve_bramble(&borders, &clues);
+        assert!(ans.is_some());
     }
 }

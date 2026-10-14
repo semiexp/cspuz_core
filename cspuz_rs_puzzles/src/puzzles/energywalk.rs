@@ -102,6 +102,13 @@ pub fn solve_energywalk(
             let is_passed = &solver.bool_var();
             if colored[y][x] {
                 solver.add_expr(is_line.vertex_neighbors((y, x)).iff(is_passed));
+
+                // If h == 1 or w == 1, a colored cell can be an endpoint.
+                // This is prohibited in the English rule, but not in the Japanese rule.
+                // Since the implementation of the player is based on the English rule, we need to disallow this case.
+                if h == 1 || w == 1 {
+                    solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().ne(1));
+                }
             } else {
                 solver.add_expr(
                     is_line
@@ -269,5 +276,14 @@ mod tests {
             let url = "https://pzprxs.vercel.app/p?energywalk/f/3/2/00l";
             util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
         }
+    }
+
+    #[test]
+    fn test_energywalk_degenerated_case() {
+        let full = false;
+        let colored = crate::util::tests::to_bool_2d([[1, 0, 1]]);
+        let num = vec![vec![None, None, None]];
+        let ans = solve_energywalk(full, &colored, &num);
+        assert!(ans.is_none());
     }
 }

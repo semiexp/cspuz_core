@@ -73,6 +73,16 @@ pub fn solve_sendai(
     let idx_in_room = &room_partition.index_in_room;
     for (room_id, room) in rooms.iter().enumerate() {
         if let Some(clue) = clues[room_id] {
+            if clue == -1 {
+                // no constraint for this room
+                continue;
+            }
+
+            if clue > room.len() as i32 {
+                // impossible to satisfy the clue
+                return None;
+            }
+
             let num_vertices = room.len();
             let mut edges = vec![];
             let mut edge_values = vec![];
@@ -948,5 +958,28 @@ mod tests {
         let problem = problem_for_tests();
         let url = "https://pzprxs.vercel.app/p?sendai/5/5/dj7ej83g14i2g";
         crate::util::tests::serializer_test(problem, url, serialize_problem, deserialize_problem);
+    }
+
+    #[test]
+    fn test_sendai_large_clues() {
+        {
+            let borders = graph::InnerGridEdges {
+                horizontal: crate::util::tests::to_bool_2d([[0, 0, 0]]),
+                vertical: crate::util::tests::to_bool_2d([[0, 0], [0, 0]]),
+            };
+            let clues = vec![Some(6), None];
+            let ans = solve_sendai(&borders, &clues);
+            assert!(ans.is_some());
+        }
+
+        {
+            let borders = graph::InnerGridEdges {
+                horizontal: crate::util::tests::to_bool_2d([[0, 0, 0]]),
+                vertical: crate::util::tests::to_bool_2d([[0, 0], [0, 0]]),
+            };
+            let clues = vec![Some(100), None];
+            let ans = solve_sendai(&borders, &clues);
+            assert!(ans.is_none());
+        }
     }
 }
