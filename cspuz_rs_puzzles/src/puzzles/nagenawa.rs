@@ -3,7 +3,7 @@ use cspuz_rs::serializer::{
     problem_to_url_with_context, url_to_problem, Choice, Combinator, Context, Dict, HexInt,
     Optionalize, RoomsWithValues, Size, Spaces,
 };
-use cspuz_rs::solver::{count_true, Solver, FALSE};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_nagenawa(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -16,67 +16,7 @@ pub fn solve_nagenawa(
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let horizontal_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let horizontal_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let horizontal_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let horizontal_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let vertical_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let vertical_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let vertical_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let vertical_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-
-    for y in 0..h {
-        for x in 0..w {
-            if 0 < y {
-                solver.add_expr(is_line.vertical.at((y - 1, x)).imp(
-                    vertical_h.at((y - 1, x)).eq(vertical_h.at((y, x)))
-                        & vertical_w.at((y - 1, x)).eq(vertical_w.at((y, x)))
-                        & vertical_y.at((y - 1, x)).eq(vertical_y.at((y, x)) - 1)
-                        & vertical_x.at((y - 1, x)).eq(vertical_x.at((y, x))),
-                ));
-            }
-            if 0 < x {
-                solver.add_expr(is_line.horizontal.at((y, x - 1)).imp(
-                    horizontal_h.at((y, x - 1)).eq(horizontal_h.at((y, x)))
-                        & horizontal_w.at((y, x - 1)).eq(horizontal_w.at((y, x)))
-                        & horizontal_y.at((y, x - 1)).eq(horizontal_y.at((y, x)))
-                        & horizontal_x.at((y, x - 1)).eq(horizontal_x.at((y, x)) - 1),
-                ));
-            }
-
-            let is_corner = &solver.bool_var();
-            solver.add_expr(is_corner.iff(
-                is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
-                    ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
-            ));
-            solver.add_expr(is_corner.iff(
-                is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
-                    ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
-            ));
-            solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), FALSE))
-                    .imp(vertical_y.at((y, x)).eq(0)),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), FALSE))
-                    .imp(vertical_y.at((y, x)).eq(vertical_h.at((y, x)))),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), FALSE))
-                    .imp(horizontal_x.at((y, x)).eq(0)),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), FALSE))
-                    .imp(horizontal_x.at((y, x)).eq(horizontal_w.at((y, x)))),
-            );
-            solver.add_expr(is_corner.imp(
-                horizontal_y.at((y, x)).eq(vertical_y.at((y, x)))
-                    & horizontal_x.at((y, x)).eq(vertical_x.at((y, x)))
-                    & horizontal_h.at((y, x)).eq(vertical_h.at((y, x)))
-                    & horizontal_w.at((y, x)).eq(vertical_w.at((y, x))),
-            ));
-        }
-    }
+    graph::add_rectangular_loops(&mut solver, is_line);
 
     let rooms = graph::borders_to_rooms(borders);
     assert_eq!(rooms.len(), clues.len());
