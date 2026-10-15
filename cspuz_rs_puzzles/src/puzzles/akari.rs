@@ -1,8 +1,10 @@
+use crate::puzzles::akari_common::add_akari_lighting_constraints;
 use crate::util;
+use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumSpaces, Spaces,
 };
-use cspuz_rs::solver::{BoolVar, Solver};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_akari(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -14,7 +16,6 @@ pub fn solve_akari(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>>
     for y in 0..h {
         for x in 0..w {
             if let Some(n) = clues[y][x] {
-                solver.add_expr(!has_light.at((y, x)));
                 if n >= 0 {
                     solver.add_expr(has_light.four_neighbors((y, x)).count_true().eq(n));
                 }
@@ -22,68 +23,12 @@ pub fn solve_akari(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>>
         }
     }
 
-    let mut horizontal_group: Vec<Vec<Option<BoolVar>>> = vec![vec![None; w]; h];
-    for y in 0..h {
-        let mut start: Option<usize> = None;
-        for x in 0..=w {
-            if x < w && clues[y][x].is_none() {
-                if start.is_none() {
-                    start = Some(x);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.bool_var();
-                    solver.add_expr(
-                        has_light
-                            .slice_fixed_y((y, s..x))
-                            .count_true()
-                            .eq(v.ite(1, 0)),
-                    );
-                    for x2 in s..x {
-                        horizontal_group[y][x2] = Some(v.clone());
-                    }
-                    start = None;
-                }
-            }
-        }
-    }
-
-    let mut vertical_group: Vec<Vec<Option<BoolVar>>> = vec![vec![None; w]; h];
-    for x in 0..w {
-        let mut start: Option<usize> = None;
-        for y in 0..=h {
-            if y < h && clues[y][x].is_none() {
-                if start.is_none() {
-                    start = Some(y);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.bool_var();
-                    solver.add_expr(
-                        has_light
-                            .slice_fixed_x((s..y, x))
-                            .count_true()
-                            .eq(v.ite(1, 0)),
-                    );
-                    for y2 in s..y {
-                        vertical_group[y2][x] = Some(v.clone());
-                    }
-                    start = None;
-                }
-            }
-        }
-    }
-
-    for y in 0..h {
-        for x in 0..w {
-            if clues[y][x].is_none() {
-                solver.add_expr(
-                    horizontal_group[y][x].as_ref().unwrap()
-                        | vertical_group[y][x].as_ref().unwrap(),
-                );
-            }
-        }
-    }
+    let blocked: Vec<Vec<_>> = clues
+        .iter()
+        .map(|row| row.iter().map(Option::is_some).collect())
+        .collect();
+    let segments = graph::orthogonal_segments(&blocked);
+    add_akari_lighting_constraints(&mut solver, has_light, &segments);
 
     solver.irrefutable_facts().map(|f| f.get(has_light))
 }
