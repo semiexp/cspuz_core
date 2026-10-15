@@ -1234,6 +1234,47 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Returns the entire orthogonally connected component of `allowed_cells`
+/// containing `root`.
+///
+/// The root is required to be allowed. Connectivity excludes other components,
+/// and closure under allowed neighbors prevents selecting only part of the
+/// root's component. The input may be a Boolean expression array.
+///
+/// # Panics
+/// Panics if `root` is outside the array.
+pub fn connected_component_from_2d<T>(
+    solver: &mut Solver,
+    allowed_cells: T,
+    root: (usize, usize),
+) -> BoolVarArray2D
+where
+    T: Operand<Shape = (usize, usize), Value = CSPBoolExpr>,
+{
+    let allowed = allowed_cells.as_ndarray();
+    let (h, w) = allowed.shape();
+    assert!(root.0 < h && root.1 < w);
+    let component = solver.bool_var_2d((h, w));
+    solver.add_expr(component.at(root));
+    solver.add_expr(component.imp(&allowed));
+    active_vertices_connected_2d(solver, &component);
+    solver.add_expr(
+        (allowed.slice((..(h - 1), ..)) & allowed.slice((1.., ..))).imp(
+            component
+                .slice((..(h - 1), ..))
+                .iff(component.slice((1.., ..))),
+        ),
+    );
+    solver.add_expr(
+        (allowed.slice((.., ..(w - 1))) & allowed.slice((.., 1..))).imp(
+            component
+                .slice((.., ..(w - 1)))
+                .iff(component.slice((.., 1..))),
+        ),
+    );
+    component
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1689,6 +1730,47 @@ mod tests {
                 }
                 active_edges_acyclic_grid_edges(&mut solver, &edges);
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_component_is_exactly_the_reachable_set() {
+        for (h, w) in [(1, 1), (1, 4), (4, 1), (2, 3)] {
+            for mask in 0..1usize << (h * w) {
+                for root in 0..h * w {
+                    let mut solver = Solver::new();
+                    let allowed = solver.bool_var_2d((h, w));
+                    for i in 0..h * w {
+                        solver.add_expr(allowed.at((i / w, i % w)).iff(mask & (1 << i) != 0));
+                    }
+                    let component =
+                        connected_component_from_2d(&mut solver, !!allowed, (root / w, root % w));
+                    solver.add_answer_key_bool(&component);
+                    let facts = solver.irrefutable_facts();
+                    if mask & (1 << root) == 0 {
+                        assert!(facts.is_none());
+                        continue;
+                    }
+
+                    let mut visited = vec![false; h * w];
+                    let mut stack = vec![root];
+                    visited[root] = true;
+                    while let Some(i) = stack.pop() {
+                        for j in 0..h * w {
+                            let adjacent = (i / w).abs_diff(j / w) + (i % w).abs_diff(j % w) == 1;
+                            if adjacent && !visited[j] && mask & (1 << j) != 0 {
+                                visited[j] = true;
+                                stack.push(j);
+                            }
+                        }
+                    }
+                    let expected: Vec<Vec<_>> = visited
+                        .chunks(w)
+                        .map(|row| row.iter().map(|&v| Some(v)).collect())
+                        .collect();
+                    assert_eq!(facts.unwrap().get(&component), expected);
+                }
             }
         }
     }
