@@ -5,7 +5,7 @@ use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, NumberedArrowCombinator,
     Optionalize, Spaces, Tuple2,
 };
-use cspuz_rs::solver::{Solver, FALSE};
+use cspuz_rs::solver::Solver;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -25,37 +25,7 @@ pub fn solve_castle_wall(
     solver.add_answer_key_bool(&is_line.vertical);
     graph::single_cycle_grid_edges(&mut solver, is_line);
 
-    let cell_sides = &solver.bool_var_2d((h - 1, w - 1));
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 {
-                let a = if x == 0 {
-                    FALSE
-                } else {
-                    cell_sides.at((y, x - 1)).expr()
-                };
-                let b = if x == w - 1 {
-                    FALSE
-                } else {
-                    cell_sides.at((y, x)).expr()
-                };
-                solver.add_expr(is_line.vertical.at((y, x)) ^ a.iff(b));
-            }
-            if x < w - 1 {
-                let a = if y == 0 {
-                    FALSE
-                } else {
-                    cell_sides.at((y - 1, x)).expr()
-                };
-                let b = if y == h - 1 {
-                    FALSE
-                } else {
-                    cell_sides.at((y, x)).expr()
-                };
-                solver.add_expr(is_line.horizontal.at((y, x)) ^ a.iff(b));
-            }
-        }
-    }
+    let cell_sides = graph::face_parities(&mut solver, is_line);
 
     for y in 0..h {
         for x in 0..w {

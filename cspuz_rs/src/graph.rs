@@ -1234,6 +1234,33 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Labels grid faces by the parity of line crossings from the outside.
+///
+/// The outside is false, and an edge is selected exactly when the labels on its
+/// two sides differ. This enforces consistent parity (so open paths are rejected)
+/// but does not require a single loop or forbid crossings. With nested loops,
+/// faces inside an even number of loops are false, not part of an interior union.
+/// The returned array has shape `edges.base_shape()`.
+pub fn face_parities(solver: &mut Solver, edges: &BoolGridEdges) -> BoolVarArray2D {
+    let (h, w) = edges.base_shape();
+    let sides = solver.bool_var_2d((h, w));
+    for y in 0..=h {
+        for x in 0..w {
+            let above = sides.at_offset((y, x), (-1, 0), false);
+            let below = sides.at_offset((y, x), (0, 0), false);
+            solver.add_expr(edges.horizontal.at((y, x)).iff(above ^ below));
+        }
+    }
+    for y in 0..h {
+        for x in 0..=w {
+            let left = sides.at_offset((y, x), (0, -1), false);
+            let right = sides.at_offset((y, x), (0, 0), false);
+            solver.add_expr(edges.vertical.at((y, x)).iff(left ^ right));
+        }
+    }
+    sides
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1691,5 +1718,78 @@ mod tests {
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
             }
         }
+    }
+
+    #[test]
+    fn test_parity_exists_exactly_for_even_degree_edge_sets() {
+        for (h, w) in [(0, 0), (0, 3), (3, 0), (1, 2), (2, 2)] {
+            let n = (h + 1) * w + h * (w + 1);
+            for mask in 0..1usize << n {
+                let horizontal = |y: usize, x: usize| mask & (1usize << (y * w + x)) != 0;
+                let vertical =
+                    |y: usize, x: usize| mask & (1usize << ((h + 1) * w + y * (w + 1) + x)) != 0;
+                let mut expected = true;
+                for y in 0..=h {
+                    for x in 0..=w {
+                        let odd = (x > 0 && horizontal(y, x - 1))
+                            ^ (x < w && horizontal(y, x))
+                            ^ (y > 0 && vertical(y - 1, x))
+                            ^ (y < h && vertical(y, x));
+                        expected &= !odd;
+                    }
+                }
+                let mut solver = Solver::new();
+                let edges = BoolGridEdges::new(&mut solver, (h, w));
+                for y in 0..=h {
+                    for x in 0..w {
+                        solver.add_expr(edges.horizontal.at((y, x)).iff(horizontal(y, x)));
+                    }
+                }
+                for y in 0..h {
+                    for x in 0..=w {
+                        solver.add_expr(edges.vertical.at((y, x)).iff(vertical(y, x)));
+                    }
+                }
+                let sides = face_parities(&mut solver, &edges);
+                solver.add_answer_key_bool(&sides);
+                let facts = solver.irrefutable_facts();
+                assert_eq!(facts.is_some(), expected, "shape={h},{w}, mask={mask}");
+                if let Some(facts) = facts {
+                    let actual = facts.get(&sides);
+                    for y in 0..h {
+                        for x in 0..w {
+                            let parity = (0..=x).filter(|&xx| vertical(y, xx)).count() % 2 == 1;
+                            assert_eq!(actual[y][x], Some(parity));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_nested_loops_alternate_parity() {
+        let mut solver = Solver::new();
+        let edges = BoolGridEdges::new(&mut solver, (3, 3));
+        for y in 0..=3 {
+            for x in 0..3 {
+                solver.add_expr(edges.horizontal.at((y, x)).iff(y == 0 || y == 3 || x == 1));
+            }
+        }
+        for y in 0..3 {
+            for x in 0..=3 {
+                solver.add_expr(edges.vertical.at((y, x)).iff(x == 0 || x == 3 || y == 1));
+            }
+        }
+        let sides = face_parities(&mut solver, &edges);
+        solver.add_answer_key_bool(&sides);
+        assert_eq!(
+            solver.irrefutable_facts().unwrap().get(&sides),
+            vec![
+                vec![Some(true), Some(true), Some(true)],
+                vec![Some(true), Some(false), Some(true)],
+                vec![Some(true), Some(true), Some(true)],
+            ]
+        );
     }
 }
