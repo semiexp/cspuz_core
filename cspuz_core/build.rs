@@ -74,6 +74,13 @@ fn build_cadical() {
         }
     }
 
+    cc::Build::new()
+        .cpp(false)
+        .file("lib/cadical/src/kitten.c")
+        .include("lib/cadical/src")
+        .warnings(false)
+        .compile("cadical_c");
+
     cpp17_build()
         .cpp(true)
         .file("lib/cadical_bridge.cpp")
@@ -81,8 +88,9 @@ fn build_cadical() {
         .include("lib/cadical/src")
         .flag("-DVERSION=\"1.5.3\"") // TODO
         .flag("-DNBUILD")
+        .flag("-DNCLOSEFROM")
         .warnings(false)
-        .compile("cadical");
+        .compile("cadical_cpp");
 
     println!("cargo:rerun-if-changed=lib/cadical_bridge.cpp");
 }
