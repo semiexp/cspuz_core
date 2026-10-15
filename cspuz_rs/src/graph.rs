@@ -1234,6 +1234,43 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Requires each connected component of active vertices to contain a vertex
+/// whose seed expression is true.
+///
+/// Multiple components and an empty active set are allowed. A seed at an inactive
+/// vertex is allowed, but does not help an active component reach a seed. In
+/// particular, this does not impose `seeds => active`.
+///
+/// # Panics
+/// Panics unless both arrays contain one expression per graph vertex.
+pub fn active_components_reach_seeds<A: BoolArrayLike, S: BoolArrayLike>(
+    solver: &mut Solver,
+    active: A,
+    seeds: S,
+    graph: &Graph,
+) {
+    let active = BoolExprArray1D::from_raw(active.to_vec());
+    let seeds = BoolExprArray1D::from_raw(seeds.to_vec());
+    let n = graph.n_vertices();
+    assert_eq!(active.len(), n);
+    assert_eq!(seeds.len(), n);
+
+    let mut aux_graph = Graph::new(2 * n + 1);
+    for &(u, v) in &graph.edges {
+        aux_graph.add_edge(u, v);
+    }
+    for v in 0..n {
+        aux_graph.add_edge(v, n + v);
+        aux_graph.add_edge(n + v, 2 * n);
+    }
+    let vertices: Vec<_> = active
+        .into_iter()
+        .chain(seeds)
+        .chain([crate::solver::TRUE])
+        .collect();
+    active_vertices_connected(solver, vertices, &aux_graph);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1691,5 +1728,61 @@ mod tests {
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
             }
         }
+    }
+
+    #[test]
+    fn test_every_active_component_needs_its_own_seed() {
+        // A cycle, a tail, and an isolated vertex, including non-grid adjacency.
+        let mut graph = Graph::new(5);
+        let links = [(0, 1), (1, 2), (2, 0), (2, 3)];
+        for &(a, b) in &links {
+            graph.add_edge(a, b);
+        }
+        for active in 0..32 {
+            for seeds in 0..32 {
+                let mut expected = true;
+                let mut visited = 0;
+                for root in 0..5 {
+                    if active & (1 << root) == 0 || visited & (1 << root) != 0 {
+                        continue;
+                    }
+                    let mut component = 1 << root;
+                    loop {
+                        let previous = component;
+                        for &(a, b) in &links {
+                            if component & (1 << a) != 0 && active & (1 << b) != 0 {
+                                component |= 1 << b;
+                            }
+                            if component & (1 << b) != 0 && active & (1 << a) != 0 {
+                                component |= 1 << a;
+                            }
+                        }
+                        if component == previous {
+                            break;
+                        }
+                    }
+                    visited |= component;
+                    expected &= component & seeds != 0;
+                }
+                let mut solver = Solver::new();
+                let a: Vec<_> = (0..5).map(|i| active & (1 << i) != 0).collect();
+                let s: Vec<_> = (0..5).map(|i| seeds & (1 << i) != 0).collect();
+                active_components_reach_seeds(&mut solver, a, s, &graph);
+                assert_eq!(
+                    solver.solve().is_some(),
+                    expected,
+                    "active={active}, seeds={seeds}"
+                );
+            }
+        }
+
+        let mut solver = Solver::new();
+        active_components_reach_seeds(
+            &mut solver,
+            Vec::<bool>::new(),
+            Vec::<bool>::new(),
+            &Graph::new(0),
+        );
+        assert!(solver.solve().is_some());
     }
 }
