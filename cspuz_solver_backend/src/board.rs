@@ -479,4 +479,210 @@ impl Board {
             kind, height, width, default_style, has_answer, data, uniqueness
         )
     }
+
+    pub fn to_text(&self) -> Option<String> {
+        const EMPTY_TOKEN: &str = " ";
+
+        fn green_cell_token(kind: &ItemKind) -> Option<String> {
+            match kind {
+                ItemKind::Block | ItemKind::Fill => Some("#".to_string()),
+                ItemKind::Dot => Some(".".to_string()),
+                ItemKind::Square => Some("s".to_string()),
+                ItemKind::Num(n) => Some(n.to_string()),
+                _ => None,
+            }
+        }
+
+        fn green_edge_token(kind: &ItemKind, is_horizontal: bool) -> Option<&'static str> {
+            match kind {
+                ItemKind::Cross => Some("x"),
+                ItemKind::Line
+                | ItemKind::Wall
+                | ItemKind::BoldWall
+                | ItemKind::DottedLine
+                | ItemKind::DoubleLine
+                | ItemKind::DottedWall
+                | ItemKind::DottedHorizontalWall
+                | ItemKind::DottedVerticalWall => {
+                    if is_horizontal {
+                        Some("-")
+                    } else {
+                        Some("|")
+                    }
+                }
+                _ => None,
+            }
+        }
+
+        fn set_token(grid: &mut [Vec<String>], y: usize, x: usize, token: String) -> Option<()> {
+            let current = &grid[y][x];
+            if current == EMPTY_TOKEN {
+                grid[y][x] = token;
+                Some(())
+            } else if current == &token {
+                Some(())
+            } else {
+                None
+            }
+        }
+
+        let h = self.height * 2 + 1;
+        let w = self.width * 2 + 1;
+        let mut grid = vec![vec![EMPTY_TOKEN.to_string(); w]; h];
+        let is_dot_grid = matches!(self.kind, BoardKind::DotGrid);
+        if is_dot_grid {
+            for y in (0..h).step_by(2) {
+                for x in (0..w).step_by(2) {
+                    grid[y][x] = "+".to_string();
+                }
+            }
+        }
+
+        let mut has_green = false;
+        for item in &self.data {
+            if item.color != "green" {
+                continue;
+            }
+            if item.y >= h || item.x >= w {
+                return None;
+            }
+
+            has_green = true;
+            let y = item.y;
+            let x = item.x;
+            if y % 2 == 1 && x % 2 == 1 {
+                let token = green_cell_token(&item.kind)?;
+                set_token(&mut grid, y, x, token)?;
+            } else if y % 2 == 0 && x % 2 == 1 {
+                let token = green_edge_token(&item.kind, true)?;
+                set_token(&mut grid, y, x, token.to_string())?;
+            } else if y % 2 == 1 && x % 2 == 0 {
+                let token = green_edge_token(&item.kind, false)?;
+                set_token(&mut grid, y, x, token.to_string())?;
+            } else {
+                return None;
+            }
+        }
+
+        if !has_green {
+            return None;
+        }
+
+        let lines = if is_dot_grid {
+            fn is_edge_position(y: usize, x: usize) -> bool {
+                y % 2 != x % 2
+            }
+
+            let has_edge = |y: usize, x: usize| -> bool {
+                if y >= h || x >= w {
+                    return false;
+                }
+                is_edge_position(y, x) && grid[y][x] != EMPTY_TOKEN
+            };
+
+            let mut lines = vec![];
+            for y in 0..h {
+                let mut line = String::new();
+                for x in 0..w {
+                    if y % 2 == 0 && x % 2 == 0 {
+                        let has_adjacent_edge = (x > 0 && has_edge(y, x - 1))
+                            || (x + 1 < w && has_edge(y, x + 1))
+                            || (y > 0 && has_edge(y - 1, x))
+                            || (y + 1 < h && has_edge(y + 1, x));
+                        if has_adjacent_edge {
+                            line.push('+');
+                        } else {
+                            line.push(' ');
+                        }
+                    } else if y % 2 == 0 && x % 2 == 1 {
+                        if grid[y][x] == "-" {
+                            line.push_str("---");
+                        } else if grid[y][x] == "x" {
+                            line.push_str(" x ");
+                        } else {
+                            line.push_str("   ");
+                        }
+                    } else if y % 2 == 1 && x % 2 == 0 {
+                        if grid[y][x] == "|" || grid[y][x] == "x" {
+                            line.push_str(&grid[y][x]);
+                        } else {
+                            line.push(' ');
+                        }
+                    } else if grid[y][x] == EMPTY_TOKEN {
+                        line.push_str("   ");
+                    } else {
+                        line.push_str(&format!("{:^3}", grid[y][x]));
+                    }
+                }
+                lines.push(line.trim_end().to_string());
+            }
+            lines
+        } else {
+            grid.into_iter()
+                .map(|row| row.join(" ").trim_end().to_string())
+                .collect::<Vec<_>>()
+        };
+
+        let start = lines.iter().position(|s| !s.is_empty())?;
+        let end = lines
+            .iter()
+            .rposition(|s| !s.is_empty())
+            .expect("start implies at least one non-empty line");
+        let lines = &lines[start..=end];
+
+        if lines.is_empty() {
+            None
+        } else {
+            Some(lines.join("\n"))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Board, BoardKind, Item, ItemKind};
+    use crate::decode_and_solve;
+    use crate::uniqueness::Uniqueness;
+
+    #[test]
+    fn test_to_text_required_puzzles() {
+        let urls = [
+            "https://puzz.link/p?nurikabe/6/6/m8n8i9u",
+            "https://pzprxs.vercel.app/p?fillomino/5/5/g1k34g2h5h4n",
+            "https://pzprxs.vercel.app/p?slither/4/4/dgdh2c71",
+            "https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g",
+            "https://puzz.link/p?heyawake/6/6/aa66aapv0fu0g2i3k",
+            "https://puzz.link/p?dbchoco/6/6/pu9hgpe05zu",
+            "https://puzz.link/p?evolmino/6/7/i6900910k00005zz1p0008222o",
+        ];
+        for url in urls {
+            let board = decode_and_solve(url.as_bytes()).unwrap();
+            let text = board.to_text();
+            assert!(text.is_some(), "to_text() returned None for {}", url);
+        }
+    }
+
+    #[test]
+    fn test_to_text_unsupported_item_returns_none() {
+        let mut board = Board::new(BoardKind::Grid, 1, 1, Uniqueness::Unique);
+        board.push(Item::cell(0, 0, "green", ItemKind::Triangle));
+        assert_eq!(board.to_text(), None);
+    }
+
+    #[test]
+    fn test_to_text_slitherlink_has_continuous_border() {
+        let board = decode_and_solve("https://pzprxs.vercel.app/p?slither/4/4/dgdh2c71".as_bytes())
+            .expect("decode_and_solve failed for slitherlink regression URL");
+        let text = board.to_text().unwrap();
+        assert!(text.contains("+---+"), "unexpected text output:\n{}", text);
+    }
+
+    #[test]
+    fn test_to_text_yajilin_does_not_use_dot_grid_vertices() {
+        let board =
+            decode_and_solve("https://pzprxs.vercel.app/p?yajilin/10/10/w32a41b21a21l22e30m21a12b11r20d30g".as_bytes())
+                .expect("decode_and_solve failed for yajilin regression URL");
+        let text = board.to_text().unwrap();
+        assert!(!text.contains('+'), "unexpected text output:\n{}", text);
+    }
 }
