@@ -38,10 +38,9 @@ pub fn solve_shikaku(
     }
 
     let ids = solver.int_var_2d((h, w), 0, clue_pos.len() as i32 - 1);
-    for i in 0..clue_pos.len() {
-        graph::active_vertices_connected_2d(&mut solver, ids.eq(i as i32));
-        let (y, x, n) = clue_pos[i];
-        solver.add_expr(ids.at((y, x)).eq(i as i32));
+    let seeds: Vec<_> = clue_pos.iter().map(|&(y, x, _)| (y, x)).collect();
+    graph::seeded_partition_2d(&mut solver, &ids, edges, &seeds);
+    for &(y, x, n) in &clue_pos {
         if n > 0 {
             let rect_up = (!edges.horizontal.slice_fixed_x((..y, x)))
                 .reverse()
@@ -63,20 +62,8 @@ pub fn solve_shikaku(
                 }
             }
             solver.add_expr(any(cand));
-            //solver.add_expr(ids.eq(i as i32).count_true().eq(n));
         }
     }
-    solver.add_expr(
-        edges
-            .horizontal
-            .iff(ids.slice((..(h - 1), ..)).ne(ids.slice((1.., ..)))),
-    );
-    solver.add_expr(
-        edges
-            .vertical
-            .iff(ids.slice((.., ..(w - 1))).ne(ids.slice((.., 1..)))),
-    );
-
     solver.irrefutable_facts().map(|f| f.get(edges))
 }
 

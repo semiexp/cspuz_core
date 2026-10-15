@@ -33,23 +33,9 @@ pub fn solve_compass(
         }
     }
     let group_id = solver.int_var_2d((h, w), 0, compasses.len() as i32 - 1);
-    solver.add_expr(
-        edges.horizontal.iff(
-            group_id
-                .slice((..(h - 1), ..))
-                .ne(group_id.slice((1.., ..))),
-        ),
-    );
-    solver.add_expr(
-        edges.vertical.iff(
-            group_id
-                .slice((.., ..(w - 1)))
-                .ne(group_id.slice((.., 1..))),
-        ),
-    );
+    let seeds: Vec<_> = compasses.iter().map(|&(y, x, _)| (y, x)).collect();
+    graph::seeded_partition_2d(&mut solver, &group_id, edges, &seeds);
     for (i, &(y, x, c)) in compasses.iter().enumerate() {
-        graph::active_vertices_connected_2d(&mut solver, group_id.eq(i as i32));
-        solver.add_expr(group_id.at((y, x)).eq(i as i32));
         if let Some(n) = c.up {
             solver.add_expr(group_id.slice((..y, ..)).eq(i as i32).count_true().eq(n));
         }
