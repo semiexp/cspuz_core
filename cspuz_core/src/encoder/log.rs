@@ -935,6 +935,28 @@ mod tests {
     }
 
     #[test]
+    fn test_decompose_linear_lit_log() {
+        for op in [CmpOp::Ge, CmpOp::Eq, CmpOp::Ne] {
+            let mut tester = EncoderTester::new();
+
+            let terms = (0..7)
+                .map(|_| (tester.add_int_var_log_encoding(Domain::range(1, 2)), 1))
+                .collect::<Vec<_>>();
+
+            let lit = LinearLit::new(linear_sum(&terms, -6), op);
+            let decomposed = decompose_linear_lit_log(&mut tester.env(), &lit);
+            assert!(decomposed.len() > 1);
+            for part in decomposed {
+                let clause_set = encode_linear_log(&mut tester.env(), &part.sum, part.op);
+                tester.add_clause_set(clause_set);
+            }
+
+            tester.add_constraint_linear_lit(lit);
+            tester.run_check();
+        }
+    }
+
+    #[test]
     fn test_encode_linear_eq_log_encoding_1() {
         let mut tester = EncoderTester::new();
 
