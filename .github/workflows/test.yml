@@ -10,13 +10,17 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+
 jobs:
   styles:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Run rustfmt
@@ -30,9 +34,10 @@ jobs:
   rust-x86-latest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Build
@@ -42,9 +47,10 @@ jobs:
   rust-x86-latest-glucose-rs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Build
@@ -54,9 +60,10 @@ jobs:
   rust-x86-latest-no-default-features:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Build
@@ -66,10 +73,11 @@ jobs:
   rust-wasm-latest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
-    - uses: actions/setup-node@v4
+        persist-credentials: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
       with:
         node-version: '22.x'
     - name: Setup environment
@@ -78,8 +86,9 @@ jobs:
         cd ${{ runner.temp }}
         git clone https://github.com/emscripten-core/emsdk.git
         cd emsdk
-        ./emsdk install latest
-        ./emsdk activate latest
+        git checkout 35659964bc2762fffec0d257997fb61475f765b7
+        ./emsdk install 6.0.12
+        ./emsdk activate 6.0.12
     - name: Build
       run: |
         source ${{ runner.temp }}/emsdk/emsdk_env.sh
