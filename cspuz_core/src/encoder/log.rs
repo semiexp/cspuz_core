@@ -204,7 +204,10 @@ pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<Li
         }
 
         if aux_dom.is_empty() {
-            return vec![LinearLit::new(LinearSum::constant(CheckedInt::new(1)), CmpOp::Eq)];
+            return vec![LinearLit::new(
+                LinearSum::constant(CheckedInt::new(1)),
+                CmpOp::Eq,
+            )];
         }
 
         let aux_var = env
@@ -976,7 +979,12 @@ mod tests {
                 let mut tester = EncoderTester::new();
 
                 let terms = (0..7)
-                    .map(|i| (tester.add_int_var_log_encoding(Domain::range(0, 1)), if ((coef_mask >> i) & 1) == 1 { 1 } else { -1 }))
+                    .map(|i| {
+                        (
+                            tester.add_int_var_log_encoding(Domain::range(0, 1)),
+                            if ((coef_mask >> i) & 1) == 1 { 1 } else { -1 },
+                        )
+                    })
                     .collect::<Vec<_>>();
 
                 let lit = LinearLit::new(linear_sum(&terms, -4), op);
