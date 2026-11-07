@@ -943,7 +943,7 @@ mod tests {
                 .map(|_| (tester.add_int_var_log_encoding(Domain::range(1, 2)), 1))
                 .collect::<Vec<_>>();
 
-            let lit = LinearLit::new(linear_sum(&terms, -6), op);
+            let lit = LinearLit::new(linear_sum(&terms, -10), op);
             let decomposed = decompose_linear_lit_log(&mut tester.env(), &lit);
             assert!(decomposed.len() > 1);
             for part in decomposed {
