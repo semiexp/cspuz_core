@@ -8,13 +8,17 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+
 jobs:
   rust-x86-fuzz:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Run fuzz tests
@@ -22,9 +26,10 @@ jobs:
   rust-x86-fuzz-glucose-rs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Setup environment
       run: rustup update
     - name: Run fuzz tests
