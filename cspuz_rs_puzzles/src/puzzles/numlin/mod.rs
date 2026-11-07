@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::Solver;
+use cspuz_rs::solver::{any, Solver};
 
 mod propagator;
 
@@ -29,13 +29,37 @@ pub fn enumerate_answers_numlin_impl(
 
     for y in 0..h {
         for x in 0..w {
+            let vars = is_line.vertex_neighbors((y, x));
             if clues[y][x].is_some() {
-                solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(1));
+                // solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(1));
+                solver.add_expr(vars.any());
+                for i in 0..vars.len() {
+                    for j in (i + 1)..vars.len() {
+                        solver.add_expr(!vars.at(i) | !vars.at(j));
+                    }
+                }
             } else {
-                solver.add_expr(
-                    is_line.vertex_neighbors((y, x)).count_true().eq(0)
-                        | is_line.vertex_neighbors((y, x)).count_true().eq(2),
-                );
+                // solver.add_expr(
+                //     is_line.vertex_neighbors((y, x)).count_true().eq(0)
+                //         | is_line.vertex_neighbors((y, x)).count_true().eq(2),
+                // );
+
+                for i in 0..vars.len() {
+                    let mut others = vec![];
+                    for j in 0..vars.len() {
+                        if i != j {
+                            others.push(vars.at(j));
+                        }
+                    }
+                    solver.add_expr(vars.at(i).imp(any(&others)));
+                }
+                for i in 0..vars.len() {
+                    for j in (i + 1)..vars.len() {
+                        for k in (j + 1)..vars.len() {
+                            solver.add_expr(!vars.at(i) | !vars.at(j) | !vars.at(k));
+                        }
+                    }
+                }
             }
         }
     }
@@ -43,7 +67,15 @@ pub fn enumerate_answers_numlin_impl(
     // forbid trivial detour
     for y in 0..(h - 1) {
         for x in 0..(w - 1) {
-            solver.add_expr(is_line.cell_neighbors((y, x)).count_true().le(2));
+            // solver.add_expr(is_line.cell_neighbors((y, x)).count_true().le(2));
+            let vars = is_line.cell_neighbors((y, x));
+            for i in 0..vars.len() {
+                for j in (i + 1)..vars.len() {
+                    for k in (j + 1)..vars.len() {
+                        solver.add_expr(!vars.at(i) | !vars.at(j) | !vars.at(k));
+                    }
+                }
+            }
         }
     }
 
