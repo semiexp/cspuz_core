@@ -156,40 +156,58 @@ pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<Li
 
     const N_MAX_TERM: usize = 6;
     while queue_positive.len() + queue_negative.len() > N_MAX_TERM {
-        let target_queue;
-        let another_queue;
-        let selecting_negative;
-        if queue_positive.len() > queue_negative.len() {
-            target_queue = &mut queue_positive;
-            another_queue = &mut queue_negative;
-            selecting_negative = false;
-        } else {
-            target_queue = &mut queue_negative;
-            another_queue = &mut queue_positive;
-            selecting_negative = true;
-        }
-
-        let n_pack = N_MAX_TERM.min(target_queue.len());
+        // Suppose current literal is of the form:
+        // k_1 v_1 + k_2 v_2 + ... + k_n v_n + ... + lit.constant (lit.op) 0
+        // Then we replace the first l terms with an auxiliary variable:
+        // - k_1 v_1 + ... + k_l v_l (op_for_aux_lits) aux_var_sign * aux
+        // - aux_var_sign * aux + k_(l+1) v_(l+1) + ... + lit.constant (lit.op) 0
 
         let mut aux_sum = LinearSum::new();
-        for _ in 0..n_pack {
-            let (var, coef) = target_queue.pop_front().unwrap();
-            aux_sum.add_coef(var, coef);
+        let aux_var_sign;
+
+        if queue_positive.len() > queue_negative.len() {
+            aux_var_sign = 1;
+            let n_pack = N_MAX_TERM.min(queue_positive.len());
+            for _ in 0..n_pack {
+                let (var, coef) = queue_positive.pop_front().unwrap();
+                aux_sum.add_coef(var, coef);
+            }
+        } else {
+            aux_var_sign = -1;
+            let n_pack = N_MAX_TERM.min(queue_negative.len());
+            for _ in 0..n_pack {
+                let (var, coef) = queue_negative.pop_front().unwrap();
+                aux_sum.add_coef(var, coef);
+            }
         }
+
+        // At this point, `aux_dom` is the domain of `aux_var_sign * aux`
         let mut aux_dom = env.norm_vars.get_domain_linear_sum(&aux_sum);
 
-        let mut rem_sum = LinearSum::new();
-        for &(var, coef) in target_queue.iter() {
-            rem_sum.add_coef(var, coef);
+        if lit.op != CmpOp::Ne {
+            let mut other_sum = LinearSum::new();
+            for &(var, coef) in &queue_positive {
+                other_sum.add_coef(var, coef);
+            }
+            for &(var, coef) in &queue_negative {
+                other_sum.add_coef(var, coef);
+            }
+            let other_dom = env.norm_vars.get_domain_linear_sum(&other_sum);
+            aux_dom.refine_lower_bound(-(lit.sum.constant + other_dom.upper_bound_checked()));
+            if lit.op == CmpOp::Eq {
+                aux_dom.refine_upper_bound(-(lit.sum.constant + other_dom.lower_bound_checked()));
+            }
         }
-        for &(var, coef) in another_queue.iter() {
-            rem_sum.add_coef(var, coef);
-        }
-        let rem_dom = env.norm_vars.get_domain_linear_sum(&rem_sum);
-        aux_dom.refine_upper_bound(-(lit.sum.constant + rem_dom.lower_bound_checked()));
-        aux_dom.refine_lower_bound(-(lit.sum.constant + rem_dom.upper_bound_checked()));
-        if selecting_negative {
+
+        if aux_var_sign == -1 {
             aux_dom = aux_dom * CheckedInt::new(-1);
+        }
+
+        if aux_dom.is_empty() {
+            return vec![LinearLit::new(
+                LinearSum::constant(CheckedInt::new(1)),
+                CmpOp::Eq,
+            )];
         }
 
         let aux_var = env
@@ -198,16 +216,14 @@ pub fn decompose_linear_lit_log(env: &mut EncoderEnv, lit: &LinearLit) -> Vec<Li
         env.map
             .convert_int_var_log_encoding(env.norm_vars, env.sat, aux_var);
 
-        aux_sum.add_coef(
-            aux_var,
-            CheckedInt::new(if selecting_negative { 1 } else { -1 }),
-        );
+        aux_sum.add_coef(aux_var, CheckedInt::new(-aux_var_sign));
         ret.push(LinearLit::new(aux_sum, op_for_aux_lits));
 
-        target_queue.push_back((
-            aux_var,
-            CheckedInt::new(if selecting_negative { -1 } else { 1 }),
-        ));
+        if aux_var_sign == 1 {
+            queue_positive.push_back((aux_var, CheckedInt::new(1)));
+        } else {
+            queue_negative.push_back((aux_var, CheckedInt::new(-1)));
+        }
     }
 
     let mut sum = LinearSum::constant(lit.sum.constant);
@@ -931,6 +947,64 @@ mod tests {
             );
 
             tester.run_check();
+        }
+    }
+
+    #[test]
+    fn test_decompose_linear_lit_log() {
+        for op in [CmpOp::Ge, CmpOp::Eq, CmpOp::Ne] {
+            let mut tester = EncoderTester::new();
+
+            let terms = (0..7)
+                .map(|_| (tester.add_int_var_log_encoding(Domain::range(1, 2)), 1))
+                .collect::<Vec<_>>();
+
+            let lit = LinearLit::new(linear_sum(&terms, -10), op);
+            let decomposed = decompose_linear_lit_log(&mut tester.env(), &lit);
+            assert!(decomposed.len() > 1);
+            for part in decomposed {
+                let clause_set = encode_linear_log(&mut tester.env(), &part.sum, part.op);
+                tester.add_clause_set(clause_set);
+            }
+
+            tester.add_constraint_linear_lit(lit);
+            tester.run_check();
+        }
+    }
+
+    #[test]
+    fn test_decompose_linear_lit_log_negative_domains() {
+        for op in [CmpOp::Ge, CmpOp::Eq, CmpOp::Ne] {
+            for coef_mask in 0..(1 << 7) {
+                let mut tester = EncoderTester::new();
+
+                let terms = (0..7)
+                    .map(|i| {
+                        (
+                            tester.add_int_var_log_encoding(Domain::range(0, 1)),
+                            if ((coef_mask >> i) & 1) == 1 { 1 } else { -1 },
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                let lit = LinearLit::new(linear_sum(&terms, -4), op);
+                let decomposed = decompose_linear_lit_log(&mut tester.env(), &lit);
+                assert!(decomposed.len() >= 1);
+                if decomposed.len() == 1 {
+                    // If `lit` is unsatisfiable, `decomposed` may consist of single literal
+                    // which is clearly unsatisfiable
+                    assert_eq!(decomposed[0].op, CmpOp::Eq);
+                    assert_eq!(decomposed[0].sum.len(), 0);
+                    assert_eq!(decomposed[0].sum.constant, 1);
+                }
+                for part in decomposed {
+                    let clause_set = encode_linear_log(&mut tester.env(), &part.sum, part.op);
+                    tester.add_clause_set(clause_set);
+                }
+
+                tester.add_constraint_linear_lit(lit);
+                tester.run_check();
+            }
         }
     }
 
