@@ -24,6 +24,17 @@ impl PyConfig {
     }
 
     #[getter]
+    fn get_use_log_encoding(&self) -> PyResult<bool> {
+        Ok(self.config.use_log_encoding)
+    }
+
+    #[setter]
+    fn set_use_log_encoding(&mut self, value: bool) -> PyResult<()> {
+        self.config.use_log_encoding = value;
+        Ok(())
+    }
+
+    #[getter]
     fn get_use_constant_folding(&self) -> PyResult<bool> {
         Ok(self.config.use_constant_folding)
     }
