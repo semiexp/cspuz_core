@@ -3,7 +3,7 @@ use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     problem_to_url, url_to_problem, Choice, Combinator, Dict, Grid, HexInt, Optionalize, Spaces,
 };
-use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
+use cspuz_rs::solver::{any, int_constant, Solver};
 
 pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bool>>>> {
     let (h, w) = util::infer_shape(clues);
@@ -56,20 +56,9 @@ pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
         }
     }
 
-    let mut aux_graph = graph::Graph::new(h * w * 2 + 1);
-    let mut aux_graph_v = vec![];
+    let mut seeds = vec![];
     for y in 0..h {
         for x in 0..w {
-            if y < h - 1 {
-                aux_graph.add_edge((y * w + x) * 2, ((y + 1) * w + x) * 2);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge((y * w + x) * 2, (y * w + x + 1) * 2);
-            }
-            aux_graph.add_edge((y * w + x) * 2, (y * w + x) * 2 + 1);
-            aux_graph.add_edge((y * w + x) * 2 + 1, h * w * 2);
-
-            aux_graph_v.push(!is_black.at((y, x)));
             let v = solver.bool_var();
             let mut corner = vec![];
             if y > 0 && x > 0 {
@@ -105,11 +94,15 @@ pub fn solve_chocobanana(clues: &[Vec<Option<i32>>]) -> Option<Vec<Vec<Option<bo
                 );
             }
             solver.add_expr(v.iff(any(corner)));
-            aux_graph_v.push(v.expr());
+            seeds.push(v);
         }
     }
-    aux_graph_v.push(TRUE);
-    graph::active_vertices_connected(&mut solver, &aux_graph_v, &aux_graph);
+    graph::active_components_reach_seeds(
+        &mut solver,
+        !is_black,
+        seeds,
+        &graph::infer_graph_from_2d_array((h, w)),
+    );
 
     solver.irrefutable_facts().map(|f| f.get(is_black))
 }
