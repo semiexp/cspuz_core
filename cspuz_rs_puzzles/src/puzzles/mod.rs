@@ -1,4 +1,5 @@
 pub mod akari;
+pub mod akari_common;
 pub mod akari_regions;
 pub mod akari_rgb;
 pub mod akichiwake;
