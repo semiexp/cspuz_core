@@ -204,8 +204,12 @@ int32_t Glucose_SolverEnqueue(Glucose::Solver* solver, int32_t lit, void* wrappe
     return solver->enqueue(Glucose::Lit{lit}, static_cast<Glucose::Constraint*>(wrapper_object)) ? 1 : 0;
 }
 
-int32_t Glucose_IsCurrentLevel(Glucose::Solver* solver, int32_t lit) {
-    return solver->decisionLevel() == solver->level(Glucose::var(Glucose::Lit{lit})) ? 1 : 0;
+int32_t Glucose_DecisionLevel(Glucose::Solver* solver) {
+    return solver->decisionLevel();
+}
+
+int32_t Glucose_DecisionLevelOfLiteral(Glucose::Solver* solver, int32_t lit) {
+    return solver->level(Glucose::var(Glucose::Lit{lit}));
 }
 
 }

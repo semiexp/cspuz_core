@@ -131,6 +131,10 @@ pub unsafe trait SolverManipulator {
 
     /// # Safety
     /// `lit` must be a valid literal associated with the solver.
+    unsafe fn decision_level_of_literal(&self, lit: Lit) -> i32;
+
+    /// # Safety
+    /// `lit` must be a valid literal associated with the solver.
     unsafe fn is_current_level(&self, lit: Lit) -> bool;
 }
 

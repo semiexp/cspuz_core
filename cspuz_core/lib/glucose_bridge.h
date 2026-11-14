@@ -48,6 +48,9 @@ int32_t Glucose_SolverValue(Glucose::Solver* solver, int32_t lit);
 void Glucose_SolverAddWatch(Glucose::Solver* solver, int32_t lit, void* wrapper_object);
 int32_t Glucose_SolverEnqueue(Glucose::Solver* solver, int32_t lit, void* wrapper_object);
 
+int32_t Glucose_DecisionLevel(Glucose::Solver* solver);
+int32_t Glucose_DecisionLevelOfLiteral(Glucose::Solver* solver, int32_t lit);
+
 // Implement functions below in Rust
 int32_t Glucose_CallCustomPropagatorInitialize(Glucose::Solver* solver, void* wrapper_object, void* trait_object);
 int32_t Glucose_CallCustomPropagatorPropagate(Glucose::Solver* solver, void* wrapper_object, void* trait_object, int32_t p, int32_t num_pending_propagation);
