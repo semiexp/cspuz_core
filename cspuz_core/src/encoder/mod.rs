@@ -3,6 +3,8 @@ mod direct;
 mod log;
 mod mixed;
 mod order;
+#[cfg(test)]
+mod test_utils;
 
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
