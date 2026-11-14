@@ -48,6 +48,10 @@ unsafe impl SolverManipulator for GlucoseSolverManipulator {
         (*self.solver).constraint_enqueue(to_raw_lit(lit), self.constraint_idx)
     }
 
+    unsafe fn decision_level_of_literal(&self, lit: Lit) -> i32 {
+        (*self.solver).decision_level_of_literal(to_raw_lit(lit))
+    }
+
     unsafe fn is_current_level(&self, lit: Lit) -> bool {
         (*self.solver).is_current_level(to_raw_lit(lit))
     }

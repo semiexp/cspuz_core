@@ -444,7 +444,8 @@ extern "C-unwind" {
     fn Glucose_SolverAddWatch(solver: *mut Opaque, lit: Lit, wrapper_object: *mut c_void);
     fn Glucose_SolverEnqueue(solver: *mut Opaque, lit: Lit, wrapper_object: *mut c_void) -> i32;
 
-    fn Glucose_IsCurrentLevel(solver: *mut Opaque, lit: Lit) -> i32;
+    fn Glucose_DecisionLevel(solver: *mut Opaque) -> i32;
+    fn Glucose_DecisionLevelOfLiteral(solver: *mut Opaque, lit: Lit) -> i32;
 }
 
 #[derive(Clone, Copy)]
@@ -474,8 +475,12 @@ unsafe impl SolverManipulator for GlucoseSolverManipulator {
         Glucose_SolverEnqueue(self.ptr, lit, self.wrapper_object.unwrap()) != 0
     }
 
+    unsafe fn decision_level_of_literal(&self, lit: Lit) -> i32 {
+        Glucose_DecisionLevelOfLiteral(self.ptr, lit)
+    }
+
     unsafe fn is_current_level(&self, lit: Lit) -> bool {
-        Glucose_IsCurrentLevel(self.ptr, lit) != 0
+        Glucose_DecisionLevel(self.ptr) == Glucose_DecisionLevelOfLiteral(self.ptr, lit)
     }
 }
 
@@ -554,7 +559,7 @@ extern "C-unwind" fn Glucose_CallCustomPropagatorCalcReason(
             "invalid reason literal"
         );
         assert_eq!(unsafe { Glucose_SolverValue(solver, lit) }, 0);
-        if unsafe { Glucose_IsCurrentLevel(solver, lit) } != 0 {
+        if unsafe { Glucose_DecisionLevel(solver) == Glucose_DecisionLevelOfLiteral(solver, lit) } {
             has_current_level = true;
         }
     }
