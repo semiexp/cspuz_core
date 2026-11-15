@@ -1,7 +1,7 @@
 use crate::util;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::strip_prefix;
-use cspuz_rs::solver::{Solver, FALSE};
+use cspuz_rs::solver::Solver;
 
 pub fn solve_ringring(is_black: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrrefutableFacts> {
     let (h, w) = util::infer_shape(is_black);
@@ -11,71 +11,10 @@ pub fn solve_ringring(is_black: &[Vec<bool>]) -> Option<graph::BoolGridEdgesIrre
     solver.add_answer_key_bool(&is_line.horizontal);
     solver.add_answer_key_bool(&is_line.vertical);
 
-    let horizontal_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let horizontal_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let horizontal_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let horizontal_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let vertical_y = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let vertical_x = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-    let vertical_h = solver.int_var_2d((h, w), 0, (h - 1) as i32);
-    let vertical_w = solver.int_var_2d((h, w), 0, (w - 1) as i32);
-
+    graph::add_rectangular_loops(&mut solver, is_line);
     for y in 0..h {
         for x in 0..w {
-            if is_black[y][x] {
-                solver.add_expr(!(is_line.vertex_neighbors((y, x)).any()));
-                continue;
-            }
-
-            if 0 < y {
-                solver.add_expr(is_line.vertical.at((y - 1, x)).imp(
-                    vertical_h.at((y - 1, x)).eq(vertical_h.at((y, x)))
-                        & vertical_w.at((y - 1, x)).eq(vertical_w.at((y, x)))
-                        & vertical_y.at((y - 1, x)).eq(vertical_y.at((y, x)) - 1)
-                        & vertical_x.at((y - 1, x)).eq(vertical_x.at((y, x))),
-                ));
-            }
-            if 0 < x {
-                solver.add_expr(is_line.horizontal.at((y, x - 1)).imp(
-                    horizontal_h.at((y, x - 1)).eq(horizontal_h.at((y, x)))
-                        & horizontal_w.at((y, x - 1)).eq(horizontal_w.at((y, x)))
-                        & horizontal_y.at((y, x - 1)).eq(horizontal_y.at((y, x)))
-                        & horizontal_x.at((y, x - 1)).eq(horizontal_x.at((y, x)) - 1),
-                ));
-            }
-            solver.add_expr(is_line.vertex_neighbors((y, x)).any());
-
-            let is_corner = &solver.bool_var();
-            solver.add_expr(is_corner.iff(
-                is_line.vertical.at_offset((y, x), (-1, 0), FALSE)
-                    ^ is_line.vertical.at_offset((y, x), (0, 0), FALSE),
-            ));
-            solver.add_expr(is_corner.iff(
-                is_line.horizontal.at_offset((y, x), (0, -1), FALSE)
-                    ^ is_line.horizontal.at_offset((y, x), (0, 0), FALSE),
-            ));
-            solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (-1, 0), FALSE))
-                    .imp(vertical_y.at((y, x)).eq(0)),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.vertical.at_offset((y, x), (0, 0), FALSE))
-                    .imp(vertical_y.at((y, x)).eq(vertical_h.at((y, x)))),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, -1), FALSE))
-                    .imp(horizontal_x.at((y, x)).eq(0)),
-            );
-            solver.add_expr(
-                (is_corner & !is_line.horizontal.at_offset((y, x), (0, 0), FALSE))
-                    .imp(horizontal_x.at((y, x)).eq(horizontal_w.at((y, x)))),
-            );
-            solver.add_expr(is_corner.imp(
-                horizontal_y.at((y, x)).eq(vertical_y.at((y, x)))
-                    & horizontal_x.at((y, x)).eq(vertical_x.at((y, x)))
-                    & horizontal_h.at((y, x)).eq(vertical_h.at((y, x)))
-                    & horizontal_w.at((y, x)).eq(vertical_w.at((y, x))),
-            ));
+            solver.add_expr(is_line.vertex_neighbors((y, x)).any().iff(!is_black[y][x]));
         }
     }
 
