@@ -13,13 +13,6 @@ extern "C" {
     fn CaDiCaL_AddClause(solver: *mut Opaque, lits: *const i32, n_lits: i32);
     fn CaDiCaL_Solve(solver: *mut Opaque) -> i32;
     fn CaDiCaL_GetModelValueVar(solver: *mut Opaque, var: i32) -> i32;
-    fn CaDiCaL_AddActiveVerticesConnected(
-        solver: *mut Opaque,
-        n_vertices: i32,
-        lits: *const i32,
-        n_edges: i32,
-        edges: *const i32,
-    );
 }
 
 pub struct Solver {
@@ -61,32 +54,8 @@ impl Solver {
         unsafe { CaDiCaL_AddClause(self.ptr, clause.as_ptr(), clause.len() as i32) };
     }
 
-    pub fn add_active_vertices_connected(&mut self, lits: &[Lit], edges: &[(usize, usize)]) {
-        assert!(lits.len() <= i32::MAX as usize);
-        assert!(edges.len() <= i32::MAX as usize);
-
-        let lits = unsafe { std::mem::transmute::<&[Lit], &[i32]>(lits) };
-        for &l in lits {
-            assert!(0 <= l && l < 2 * self.num_var);
-        }
-
-        let mut edges_flat = vec![];
-        for &(u, v) in edges {
-            assert!(u < lits.len());
-            assert!(v < lits.len());
-            edges_flat.push(u as i32);
-            edges_flat.push(v as i32);
-        }
-
-        unsafe {
-            CaDiCaL_AddActiveVerticesConnected(
-                self.ptr,
-                lits.len() as i32,
-                lits.as_ptr(),
-                edges.len() as i32,
-                edges_flat.as_ptr(),
-            )
-        };
+    pub fn add_active_vertices_connected(&mut self, _lits: &[Lit], _edges: &[(usize, usize)]) {
+        todo!();
     }
 
     pub fn solve(&mut self) -> Option<Model<'_>> {
