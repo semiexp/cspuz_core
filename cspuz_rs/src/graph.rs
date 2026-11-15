@@ -1234,6 +1234,47 @@ pub fn active_edges_acyclic_grid_edges(solver: &mut Solver, edges: &BoolGridEdge
     active_vertices_connected(solver, active, &graph);
 }
 
+/// Partitions a nonempty cell grid into connected regions with ordered seeds.
+///
+/// Region IDs are restricted to `0..seeds.len()`. Seed `i` belongs to region `i`,
+/// every region is orthogonally connected, and a border is present exactly when
+/// the adjacent IDs differ. Existing ID and border variables are constrained in
+/// place. No seeds (or duplicate seeds) makes the constraints unsatisfiable.
+///
+/// # Panics
+/// Panics for empty dimensions, mismatched border shapes, out-of-bounds seeds,
+/// or a seed count that cannot be represented as an `i32`.
+pub fn seeded_partition_2d(
+    solver: &mut Solver,
+    ids: &crate::solver::IntVarArray2D,
+    borders: &BoolInnerGridEdges,
+    seeds: &[(usize, usize)],
+) {
+    let (h, w) = ids.shape();
+    assert!(h > 0 && w > 0);
+    assert_eq!(borders.horizontal.shape(), (h - 1, w));
+    assert_eq!(borders.vertical.shape(), (h, w - 1));
+    for &(y, x) in seeds {
+        assert!(y < h && x < w);
+    }
+    let n = i32::try_from(seeds.len()).expect("too many seeds");
+    solver.add_expr(ids.ge(0) & ids.lt(n));
+    for (i, &seed) in seeds.iter().enumerate() {
+        solver.add_expr(ids.at(seed).eq(i as i32));
+        active_vertices_connected_2d(solver, ids.eq(i as i32));
+    }
+    solver.add_expr(
+        borders
+            .horizontal
+            .iff(ids.slice((..(h - 1), ..)).ne(ids.slice((1.., ..)))),
+    );
+    solver.add_expr(
+        borders
+            .vertical
+            .iff(ids.slice((.., ..(w - 1))).ne(ids.slice((.., 1..)))),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1690,6 +1731,95 @@ mod tests {
                 active_edges_acyclic_grid_edges(&mut solver, &edges);
                 assert_eq!(solver.solve().is_some(), acyclic, "{shape:?}, {mask}");
             }
+        }
+    }
+
+    #[test]
+    fn test_partition_requires_connected_seeded_regions_and_exact_borders() {
+        let (h, w) = (2, 3);
+        // Seed order is deliberately different from row-major order.
+        let seeds: [(usize, usize); 2] = [(1, 2), (0, 0)];
+        for mask in 0..64 {
+            let label = |y, x| ((mask >> (y * w + x)) & 1) as i32;
+            let mut expected = true;
+            for (id, &(y, x)) in seeds.iter().enumerate() {
+                expected &= label(y, x) == id as i32;
+                let mut visited = vec![(y, x)];
+                let mut i = 0;
+                while i < visited.len() {
+                    let (yy, xx) = visited[i];
+                    for y2 in 0..h {
+                        for x2 in 0..w {
+                            if yy.abs_diff(y2) + xx.abs_diff(x2) == 1
+                                && label(y2, x2) == id as i32
+                                && !visited.contains(&(y2, x2))
+                            {
+                                visited.push((y2, x2));
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+                for yy in 0..h {
+                    for xx in 0..w {
+                        expected &= label(yy, xx) != id as i32 || visited.contains(&(yy, xx));
+                    }
+                }
+            }
+            let mut solver = Solver::new();
+            let ids = solver.int_var_2d((h, w), -1, 2);
+            let borders = BoolInnerGridEdges::new(&mut solver, (h, w));
+            solver.add_answer_key_bool(&borders.horizontal);
+            solver.add_answer_key_bool(&borders.vertical);
+            seeded_partition_2d(&mut solver, &ids, &borders, &seeds);
+            for y in 0..h {
+                for x in 0..w {
+                    solver.add_expr(ids.at((y, x)).eq(label(y, x)));
+                }
+            }
+            let facts = solver.irrefutable_facts();
+            assert_eq!(facts.is_some(), expected, "mask={mask}");
+            if let Some(facts) = facts {
+                let borders = facts.get(&borders);
+                for y in 0..h {
+                    for x in 0..w {
+                        if y + 1 < h {
+                            assert_eq!(
+                                borders.horizontal[y][x],
+                                Some(label(y, x) != label(y + 1, x))
+                            );
+                        }
+                        if x + 1 < w {
+                            assert_eq!(
+                                borders.vertical[y][x],
+                                Some(label(y, x) != label(y, x + 1))
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_missing_duplicate_seeds_and_out_of_range_ids_are_rejected() {
+        for seeds in [vec![], vec![(0, 0), (0, 0)]] {
+            let mut solver = Solver::new();
+            let ids = solver.int_var_2d((1, 1), -1, 2);
+            let borders = BoolInnerGridEdges::new(&mut solver, (1, 1));
+            seeded_partition_2d(&mut solver, &ids, &borders, &seeds);
+            assert!(solver.solve().is_none());
+        }
+        for shape in [(1, 3), (3, 1)] {
+            let mut solver = Solver::new();
+            let ids = solver.int_var_2d(shape, -1, 2);
+            let borders = BoolInnerGridEdges::new(&mut solver, shape);
+            seeded_partition_2d(&mut solver, &ids, &borders, &[(0, 0)]);
+            solver.add_answer_key_int(&ids);
+            assert_eq!(
+                solver.irrefutable_facts().unwrap().get(&ids),
+                vec![vec![Some(0); shape.1]; shape.0]
+            );
         }
     }
 }
