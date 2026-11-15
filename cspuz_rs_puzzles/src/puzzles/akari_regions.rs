@@ -1,9 +1,10 @@
+use crate::puzzles::akari_common::add_akari_lighting_constraints;
 use cspuz_rs::graph;
 use cspuz_rs::serializer::{
     get_kudamono_url_info_detailed, parse_kudamono_dimension, Choice, Combinator, Context, DecInt,
     Dict, KudamonoBorder, KudamonoGrid, Optionalize, PrefixAndSuffix,
 };
-use cspuz_rs::solver::{count_true, BoolVar, Solver};
+use cspuz_rs::solver::{count_true, Solver};
 
 pub fn solve_akari_region(
     borders: &graph::InnerGridEdges<Vec<Vec<bool>>>,
@@ -23,8 +24,6 @@ pub fn solve_akari_region(
             if !has_block[y][x] {
                 continue;
             }
-
-            solver.add_expr(!has_light.at((y, x)));
 
             if y > 0 {
                 borders.horizontal[y - 1][x] = true;
@@ -67,68 +66,8 @@ pub fn solve_akari_region(
         }
     }
 
-    let mut horizontal_group: Vec<Vec<Option<BoolVar>>> = vec![vec![None; w]; h];
-    for y in 0..h {
-        let mut start: Option<usize> = None;
-        for x in 0..=w {
-            if x < w && !has_block[y][x] {
-                if start.is_none() {
-                    start = Some(x);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.bool_var();
-                    solver.add_expr(
-                        has_light
-                            .slice_fixed_y((y, s..x))
-                            .count_true()
-                            .eq(v.ite(1, 0)),
-                    );
-                    for x2 in s..x {
-                        horizontal_group[y][x2] = Some(v.clone());
-                    }
-                    start = None;
-                }
-            }
-        }
-    }
-
-    let mut vertical_group: Vec<Vec<Option<BoolVar>>> = vec![vec![None; w]; h];
-    for x in 0..w {
-        let mut start: Option<usize> = None;
-        for y in 0..=h {
-            if y < h && !has_block[y][x] {
-                if start.is_none() {
-                    start = Some(y);
-                }
-            } else {
-                if let Some(s) = start {
-                    let v = solver.bool_var();
-                    solver.add_expr(
-                        has_light
-                            .slice_fixed_x((s..y, x))
-                            .count_true()
-                            .eq(v.ite(1, 0)),
-                    );
-                    for y2 in s..y {
-                        vertical_group[y2][x] = Some(v.clone());
-                    }
-                    start = None;
-                }
-            }
-        }
-    }
-
-    for y in 0..h {
-        for x in 0..w {
-            if !has_block[y][x] {
-                solver.add_expr(
-                    horizontal_group[y][x].as_ref().unwrap()
-                        | vertical_group[y][x].as_ref().unwrap(),
-                );
-            }
-        }
-    }
+    let segments = graph::orthogonal_segments(has_block);
+    add_akari_lighting_constraints(&mut solver, has_light, &segments);
 
     solver.irrefutable_facts().map(|f| f.get(has_light))
 }
