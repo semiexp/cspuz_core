@@ -5,7 +5,7 @@ use cspuz_rs::serializer::{
     parse_kudamono_dimension, Combinator, Context, DecInt, KudamonoGrid, Optionalize,
     PrefixAndSuffix, Sequencer,
 };
-use cspuz_rs::solver::{any, int_constant, Solver, TRUE};
+use cspuz_rs::solver::{any, int_constant, Solver};
 
 pub fn solve_crosswall(
     clues: &[Vec<Option<(i32, i32)>>],
@@ -45,19 +45,7 @@ pub fn solve_crosswall(
     }
     solver.add_graph_division(&sizes, &edges, &edge_vars);
 
-    let mut aux_graph = graph::Graph::new(2 * h * w + 1);
-    for y in 0..h {
-        for x in 0..w {
-            if y < h - 1 {
-                aux_graph.add_edge(y * w + x, (y + 1) * w + x);
-            }
-            if x < w - 1 {
-                aux_graph.add_edge(y * w + x, y * w + x + 1);
-            }
-            aux_graph.add_edge(y * w + x, (y + h) * w + x);
-            aux_graph.add_edge((y + h) * w + x, 2 * h * w);
-        }
-    }
+    let grid_graph = graph::infer_graph_from_2d_array((h, w));
 
     let max_level = (h.min(w) + 1) as i32 / 2;
     let levels = &solver.int_var_2d((h, w), 0, max_level);
@@ -135,19 +123,7 @@ pub fn solve_crosswall(
             ),
         );
 
-        let mut is_active = vec![];
-        for y in 0..h {
-            for x in 0..w {
-                is_active.push(on_level.at((y, x)));
-            }
-        }
-        for y in 0..h {
-            for x in 0..w {
-                is_active.push(is_seed.at((y, x)).expr());
-            }
-        }
-        is_active.push(TRUE);
-        graph::active_vertices_connected(&mut solver, is_active, &aux_graph);
+        graph::active_components_reach_seeds(&mut solver, on_level, is_seed, &grid_graph);
     }
     for y in 0..h {
         for x in 0..w {
