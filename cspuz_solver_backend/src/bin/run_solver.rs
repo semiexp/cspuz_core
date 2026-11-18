@@ -33,6 +33,9 @@ fn main() {
                     _ => panic!(),
                 };
                 println!("Answer Status: {}", answer_status);
+                if let Some(text) = board.to_text() {
+                    println!("\n{}", text);
+                }
             }
         }
         Err(err) => {
