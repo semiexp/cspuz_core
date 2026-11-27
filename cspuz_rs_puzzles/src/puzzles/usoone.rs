@@ -31,6 +31,9 @@ pub fn solve_usoone(
                             .at((y, x))
                             .iff(is_black.four_neighbors((y, x)).count_true().ne(n)),
                     );
+                } else {
+                    // '?' is not counted as a lie
+                    solver.add_expr(!is_lie.at((y, x)));
                 }
             } else {
                 solver.add_expr(!is_lie.at((y, x)));
