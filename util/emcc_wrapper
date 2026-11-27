@@ -4,6 +4,7 @@
 
 import argparse
 import os
+import shutil
 import subprocess
 
 
@@ -26,6 +27,12 @@ def main():
 
     args = ["emcc", "-o", output] + extra_args
     subprocess.check_call(args)
+
+    export_dir = os.environ.get("CSPUZ_WASM_OUTPUT_DIR")
+    if export_dir and os.path.basename(root) == "cspuz_solver_backend":
+        os.makedirs(export_dir, exist_ok=True)
+        shutil.copy2(root + ".js", export_dir)
+        shutil.copy2(root + ".wasm", export_dir)
 
 
 if __name__ == "__main__":
