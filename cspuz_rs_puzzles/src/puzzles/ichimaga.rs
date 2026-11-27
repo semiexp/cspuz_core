@@ -36,6 +36,8 @@ pub fn solve_ichimaga(clues: &[Vec<Option<i32>>]) -> Option<graph::BoolGridEdges
             if let Some(n) = clues[y][x] {
                 if n >= 0 {
                     solver.add_expr(is_line.vertex_neighbors((y, x)).count_true().eq(n));
+                } else {
+                    solver.add_expr(is_line.vertex_neighbors((y, x)).any());
                 }
             } else {
                 let mut adj: [Option<(BoolVar, BoolVar, IntVar)>; 4] = [None, None, None, None];
