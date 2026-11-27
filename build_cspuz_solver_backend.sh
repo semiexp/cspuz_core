@@ -4,6 +4,9 @@ set -eux
 
 MODE=${1:-debug}
 
+mkdir -p build/cspuz_solver_backend
+export CSPUZ_WASM_OUTPUT_DIR=build/cspuz_solver_backend
+
 if [ "$MODE" = "release" ]; then
     cargo build --target wasm32-unknown-emscripten --release --no-default-features
 elif [ "$MODE" = "debug" ]; then
@@ -12,7 +15,3 @@ else
     echo "Invalid mode: $MODE"
     exit 1
 fi
-
-mkdir -p build/cspuz_solver_backend
-cp target/wasm32-unknown-emscripten/${MODE}/deps/cspuz_solver_backend.js build/cspuz_solver_backend/
-cp target/wasm32-unknown-emscripten/${MODE}/deps/cspuz_solver_backend.wasm build/cspuz_solver_backend/

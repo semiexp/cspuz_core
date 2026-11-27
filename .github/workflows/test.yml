@@ -91,13 +91,14 @@ jobs:
         ./emsdk activate 6.0.12
     - name: Build
       run: |
+        mkdir -p ${{ runner.temp }}/wasm-output
         source ${{ runner.temp }}/emsdk/emsdk_env.sh
-        cargo build --target wasm32-unknown-emscripten --verbose --no-default-features
+        CSPUZ_WASM_OUTPUT_DIR=${{ runner.temp }}/wasm-output cargo build --target wasm32-unknown-emscripten --verbose --no-default-features
     - name: Run tests
       run: |
-        mkdir ${{ runner.temp }}/test
-        cp target/wasm32-unknown-emscripten/debug/deps/cspuz_solver_backend.js ${{ runner.temp }}/test/cspuz_solver_backend.mjs
-        cp target/wasm32-unknown-emscripten/debug/deps/cspuz_solver_backend.wasm ${{ runner.temp }}/test
+        mkdir -p ${{ runner.temp }}/test
+        cp ${{ runner.temp }}/wasm-output/cspuz_solver_backend.js ${{ runner.temp }}/test/cspuz_solver_backend.mjs
+        cp ${{ runner.temp }}/wasm-output/cspuz_solver_backend.wasm ${{ runner.temp }}/test
         cp tests/test_cspuz_solver_backend.js ${{ runner.temp }}/test
         cd ${{ runner.temp }}/test
         node test_cspuz_solver_backend.js
