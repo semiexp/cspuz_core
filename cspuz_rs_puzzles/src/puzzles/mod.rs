@@ -163,6 +163,7 @@ pub mod tilecity;
 pub mod timebomb;
 pub mod tontonbeya;
 pub mod tricklayer;
+pub mod twinarea;
 pub mod usoone;
 pub mod walk_common;
 pub mod waterwalk;
