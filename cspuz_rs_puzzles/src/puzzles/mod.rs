@@ -97,6 +97,7 @@ pub mod nagenawa;
 pub mod nanameguri;
 pub mod nanro;
 pub mod narrowfence;
+pub mod nikakoku;
 pub mod nikoji;
 pub mod nonogram;
 pub mod norinori;
