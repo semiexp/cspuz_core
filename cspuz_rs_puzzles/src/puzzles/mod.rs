@@ -85,6 +85,7 @@ pub mod lohkous;
 pub mod loop_common;
 pub mod loop_special;
 pub mod masyu;
+pub mod midloop;
 pub mod milktea;
 pub mod minesweeper;
 pub mod mintonette;
